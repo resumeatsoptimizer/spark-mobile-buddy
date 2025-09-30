@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_logs: {
+        Row: {
+          created_at: string | null
+          email_type: string
+          error_message: string | null
+          event_id: string | null
+          id: string
+          recipient_email: string
+          registration_id: string | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_type: string
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          recipient_email: string
+          registration_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_type?: string
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          recipient_email?: string
+          registration_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           allow_overbooking: boolean | null
@@ -106,36 +157,92 @@ export type Database = {
           },
         ]
       }
+      google_sheets_sync: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_id: string | null
+          id: string
+          last_sync_at: string | null
+          sheet_id: string
+          sync_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          sheet_id: string
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          sheet_id?: string
+          sync_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_sheets_sync_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
+          card_last4: string | null
           created_at: string
           currency: string
           id: string
           omise_charge_id: string | null
+          receipt_url: string | null
+          refund_amount: number | null
+          refunded_at: string | null
           registration_id: string
           status: string
           updated_at: string
+          webhook_data: Json | null
         }
         Insert: {
           amount: number
+          card_last4?: string | null
           created_at?: string
           currency?: string
           id?: string
           omise_charge_id?: string | null
+          receipt_url?: string | null
+          refund_amount?: number | null
+          refunded_at?: string | null
           registration_id: string
           status?: string
           updated_at?: string
+          webhook_data?: Json | null
         }
         Update: {
           amount?: number
+          card_last4?: string | null
           created_at?: string
           currency?: string
           id?: string
           omise_charge_id?: string | null
+          receipt_url?: string | null
+          refund_amount?: number | null
+          refunded_at?: string | null
           registration_id?: string
           status?: string
           updated_at?: string
+          webhook_data?: Json | null
         }
         Relationships: [
           {
@@ -173,35 +280,47 @@ export type Database = {
       }
       registrations: {
         Row: {
+          confirm_token: string | null
           created_at: string
           event_id: string
           form_data: Json | null
           id: string
           payment_status: string
+          promoted_at: string | null
           status: string
+          ticket_generated_at: string | null
           ticket_url: string | null
+          token_expires_at: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          confirm_token?: string | null
           created_at?: string
           event_id: string
           form_data?: Json | null
           id?: string
           payment_status?: string
+          promoted_at?: string | null
           status?: string
+          ticket_generated_at?: string | null
           ticket_url?: string | null
+          token_expires_at?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          confirm_token?: string | null
           created_at?: string
           event_id?: string
           form_data?: Json | null
           id?: string
           payment_status?: string
+          promoted_at?: string | null
           status?: string
+          ticket_generated_at?: string | null
           ticket_url?: string | null
+          token_expires_at?: string | null
           updated_at?: string
           user_id?: string
         }
