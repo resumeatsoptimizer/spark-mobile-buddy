@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
+import AISmartSearch from "@/components/AISmartSearch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TicketType {
   id: string;
@@ -152,24 +154,31 @@ const Events = () => {
 
       {/* Events List */}
       <main className="container mx-auto px-4 py-8">
-        {events.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">ยังไม่มีงานอีเว้นท์</h3>
-              <p className="text-muted-foreground mb-4">
-                {isStaff ? "เริ่มต้นสร้างงานอีเว้นท์แรกของคุณ" : "ยังไม่มีงานอีเว้นท์ที่เปิดรับสมัคร"}
-              </p>
-              {isStaff && (
-                <Button onClick={() => navigate("/events/create")}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  สร้างงานอีเว้นท์
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+            <TabsTrigger value="all">All Events</TabsTrigger>
+            <TabsTrigger value="ai-search">🤖 AI Search</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all">
+            {events.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">ยังไม่มีงานอีเว้นท์</h3>
+                  <p className="text-muted-foreground mb-4">
+                    {isStaff ? "เริ่มต้นสร้างงานอีเว้นท์แรกของคุณ" : "ยังไม่มีงานอีเว้นท์ที่เปิดรับสมัคร"}
+                  </p>
+                  {isStaff && (
+                    <Button onClick={() => navigate("/events/create")}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      สร้างงานอีเว้นท์
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {events.map((event) => {
               const seatsPercentage = (event.seats_remaining / event.seats_total) * 100;
               const isFull = event.seats_remaining === 0;
@@ -302,7 +311,13 @@ const Events = () => {
               );
             })}
           </div>
-        )}
+            )}
+          </TabsContent>
+
+          <TabsContent value="ai-search">
+            <AISmartSearch />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

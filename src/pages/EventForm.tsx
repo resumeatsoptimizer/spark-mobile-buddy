@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { FieldBuilder, CustomField } from "@/components/event-builder/FieldBuilder";
 import { CapacitySettings, TicketType } from "@/components/event-builder/CapacitySettings";
 import { TimeWindowSettings } from "@/components/event-builder/TimeWindowSettings";
 import { WaitlistSettings } from "@/components/event-builder/WaitlistSettings";
 import { VisibilitySettings } from "@/components/event-builder/VisibilitySettings";
+import AIEventCreator from "@/components/AIEventCreator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const EventForm = () => {
   const { id } = useParams();
@@ -42,8 +44,32 @@ const EventForm = () => {
   const [promoteWindowHours, setPromoteWindowHours] = useState(24);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [invitationCode, setInvitationCode] = useState("");
+  const [showAICreator, setShowAICreator] = useState(!id); // Show AI creator for new events
 
   const isEditMode = !!id;
+
+  const handleAIEventGenerated = (eventData: any) => {
+    setTitle(eventData.title);
+    setDescription(eventData.description);
+    
+    // Calculate dates based on suggested duration
+    const now = new Date();
+    const startDateTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 1 week from now
+    const endDateTime = new Date(
+      startDateTime.getTime() + 
+      (eventData.suggestedDuration.hours * 60 + eventData.suggestedDuration.minutes) * 60 * 1000
+    );
+    
+    setStartDate(startDateTime.toISOString().slice(0, 16));
+    setEndDate(endDateTime.toISOString().slice(0, 16));
+    setSeatsTotal(eventData.suggestedCapacity);
+    
+    if (eventData.customFields) {
+      setCustomFields(eventData.customFields);
+    }
+    
+    setShowAICreator(false);
+  };
 
   useEffect(() => {
     checkAuth();
@@ -286,6 +312,34 @@ const EventForm = () => {
       {/* Form */}
       <main className="container mx-auto px-4 py-8">
         <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-6">
+          {/* AI Event Creator (for new events only) */}
+          {!isEditMode && showAICreator && (
+            <div className="mb-6">
+              <AIEventCreator onEventGenerated={handleAIEventGenerated} />
+              <div className="text-center mt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowAICreator(false)}
+                >
+                  Skip AI Assistant
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!isEditMode && !showAICreator && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowAICreator(true)}
+              className="mb-4"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              Use AI Event Creator
+            </Button>
+          )}
+          
           {/* Basic Info */}
           <Card>
             <CardHeader>

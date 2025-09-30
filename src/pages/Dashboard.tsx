@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Users, Settings } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import AIEventRecommendations from "@/components/AIEventRecommendations";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -167,6 +168,13 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* AI Recommendations for Participants */}
+        {!isStaff && (
+          <div className="mt-8">
+            <AIEventRecommendations />
+          </div>
+        )}
       </main>
     </div>
   );
