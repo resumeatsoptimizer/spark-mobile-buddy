@@ -1,23 +1,44 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock, CheckCircle, XCircle, Loader } from "lucide-react";
+import { Calendar, Clock, CheckCircle, XCircle, Loader, CreditCard, Eye, Trash2, MapPin, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
+import { PaymentDialog } from "@/components/PaymentDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Registration {
   id: string;
   status: string;
   payment_status: string;
   created_at: string;
+  event_id: string;
+  ticket_type_id?: string;
   events: {
+    id: string;
     title: string;
     start_date: string;
     end_date: string;
+    location?: string;
+  };
+  ticket_types?: {
+    id: string;
+    name: string;
+    price: number;
   };
 }
 
@@ -26,6 +47,10 @@ const Registrations = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -51,10 +76,19 @@ const Registrations = () => {
         status,
         payment_status,
         created_at,
+        event_id,
+        ticket_type_id,
         events (
+          id,
           title,
           start_date,
-          end_date
+          end_date,
+          location
+        ),
+        ticket_types (
+          id,
+          name,
+          price
         )
       `)
       .eq("user_id", userId)
@@ -70,6 +104,81 @@ const Registrations = () => {
       setRegistrations(data || []);
     }
     setLoading(false);
+  };
+
+  const handlePayNow = (registration: Registration) => {
+    setSelectedRegistration(registration);
+    setPaymentDialogOpen(true);
+  };
+
+  const handleViewDetails = (eventId: string) => {
+    navigate(`/event/${eventId}`);
+  };
+
+  const handleCancelClick = (registration: Registration) => {
+    setSelectedRegistration(registration);
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!selectedRegistration) return;
+
+    setCancelingId(selectedRegistration.id);
+    
+    const { error } = await supabase
+      .from("registrations")
+      .update({ status: "cancelled" })
+      .eq("id", selectedRegistration.id);
+
+    if (error) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถยกเลิกการลงทะเบียนได้",
+        variant: "destructive",
+      });
+    } else {
+      // Send cancellation email
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase.functions.invoke('send-registration-email', {
+            body: {
+              type: 'cancellation',
+              recipientEmail: session.user.email,
+              recipientName: session.user.user_metadata?.name || session.user.email,
+              eventTitle: selectedRegistration.events.title,
+              eventDate: selectedRegistration.events.start_date,
+              eventLocation: selectedRegistration.events.location,
+              registrationId: selectedRegistration.id,
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send cancellation email:', emailError);
+      }
+
+      toast({
+        title: "ยกเลิกสำเร็จ",
+        description: "ยกเลิกการลงทะเบียนเรียบร้อยแล้ว",
+      });
+
+      // Refresh data
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        fetchRegistrations(session.user.id);
+      }
+    }
+
+    setCancelingId(null);
+    setCancelDialogOpen(false);
+    setSelectedRegistration(null);
+  };
+
+  const handlePaymentSuccess = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      fetchRegistrations(session.user.id);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -156,16 +265,109 @@ const Registrations = () => {
                       {format(new Date(registration.events.start_date), "d MMM yyyy", { locale: th })}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  
+                  {registration.events.location && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      <span className="line-clamp-1">{registration.events.location}</span>
+                    </div>
+                  )}
+
+                  {registration.ticket_types && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Tag className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{registration.ticket_types.name}</span>
+                      <span className="ml-auto text-primary font-semibold">
+                        ฿{registration.ticket_types.price.toLocaleString('th-TH')}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2 border-t">
                     <span className="text-sm font-medium">สถานะการชำระเงิน:</span>
                     {getPaymentBadge(registration.payment_status)}
                   </div>
                 </CardContent>
+                
+                <CardFooter className="flex flex-wrap gap-2 pt-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleViewDetails(registration.events.id)}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    ดูรายละเอียด
+                  </Button>
+                  
+                  {registration.payment_status === "unpaid" && registration.status === "confirmed" && registration.ticket_types && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handlePayNow(registration)}
+                    >
+                      <CreditCard className="h-4 w-4 mr-1" />
+                      ชำระตอนนี้
+                    </Button>
+                  )}
+                  
+                  {registration.status !== "cancelled" && registration.payment_status === "unpaid" && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleCancelClick(registration)}
+                      disabled={cancelingId === registration.id}
+                    >
+                      {cancelingId === registration.id ? (
+                        <>
+                          <Loader className="h-4 w-4 mr-1 animate-spin" />
+                          กำลังยกเลิก...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          ยกเลิกการลงทะเบียน
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </CardFooter>
               </Card>
             ))}
           </div>
         )}
       </main>
+
+      {selectedRegistration && selectedRegistration.ticket_types && (
+        <PaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          registrationId={selectedRegistration.id}
+          amount={selectedRegistration.ticket_types.price}
+          eventTitle={selectedRegistration.events.title}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการยกเลิก</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณแน่ใจหรือไม่ที่จะยกเลิกการลงทะเบียนงาน "{selectedRegistration?.events.title}"?
+              การกระทำนี้ไม่สามารถย้อนกลับได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              ยืนยันการยกเลิก
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
