@@ -10,21 +10,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { Search, RefreshCw, Download, Mail } from "lucide-react";
+import { Search, RefreshCw, Download, Mail, FileDown } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { exportRegistrationsToCSV, exportEventRegistrations } from "@/lib/csvExport";
 
 interface Registration {
   id: string;
   created_at: string;
   status: string;
   payment_status: string;
-  event: {
+  form_data?: any;
+  events: {
     id: string;
     title: string;
     start_date: string;
     location: string | null;
   };
-  ticket_type: {
+  ticket_types: {
     name: string;
     price: number;
   } | null;
@@ -90,8 +92,8 @@ const AdminRegistrations = () => {
       .from("registrations")
       .select(`
         *,
-        event:events(id, title, start_date, location),
-        ticket_type:ticket_types(name, price),
+        events(id, title, start_date, location),
+        ticket_types(name, price),
         profiles:user_id(email, name)
       `)
       .order("created_at", { ascending: false });
@@ -135,7 +137,7 @@ const AdminRegistrations = () => {
     try {
       // Find the registration for this email and event
       const registration = registrations.find(r => 
-        r.profiles.email === email && r.event.title === eventTitle
+        r.profiles.email === email && r.events.title === eventTitle
       );
       
       if (!registration) {
@@ -152,12 +154,12 @@ const AdminRegistrations = () => {
           type: 'status_update',
           recipientEmail: registration.profiles.email,
           recipientName: registration.profiles.name,
-          eventTitle: registration.event.title,
-          eventDate: registration.event.start_date,
-          eventLocation: registration.event.location,
+          eventTitle: registration.events.title,
+          eventDate: registration.events.start_date,
+          eventLocation: registration.events.location,
           registrationId: registration.id,
           status: registration.status,
-          ticketType: registration.ticket_type?.name,
+          ticketType: registration.ticket_types?.name,
         }
       });
 
@@ -181,6 +183,54 @@ const AdminRegistrations = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleExportCSV = () => {
+    try {
+      exportRegistrationsToCSV(filteredRegistrations);
+      toast({
+        title: "ส่งออกข้อมูลสำเร็จ",
+        description: `ส่งออกข้อมูล ${filteredRegistrations.length} รายการเรียบร้อยแล้ว`,
+      });
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถส่งออกข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportByEvent = () => {
+    if (!filterEvent || filterEvent === "all") {
+      toast({
+        title: "กรุณาเลือกงาน",
+        description: "กรุณาเลือกงานที่ต้องการส่งออกข้อมูล",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const eventRegistrations = filteredRegistrations.filter(
+      (reg) => reg.events.id === filterEvent
+    );
+
+    if (eventRegistrations.length === 0) {
+      toast({
+        title: "ไม่พบข้อมูล",
+        description: "ไม่มีข้อมูลการลงทะเบียนสำหรับงานนี้",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const eventTitle = events.find((e) => e.id === filterEvent)?.title || "event";
+    exportEventRegistrations(eventRegistrations, eventTitle);
+    toast({
+      title: "ส่งออกข้อมูลสำเร็จ",
+      description: `ส่งออกข้อมูล ${eventRegistrations.length} รายการเรียบร้อยแล้ว`,
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -215,22 +265,15 @@ const AdminRegistrations = () => {
 
   const filteredRegistrations = registrations.filter((reg) => {
     const matchesSearch = 
-      reg.event?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      reg.events?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       reg.profiles?.name?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = filterStatus === "all" || reg.status === filterStatus;
-    const matchesEvent = filterEvent === "all" || reg.event?.id === filterEvent;
+    const matchesEvent = filterEvent === "all" || reg.events?.id === filterEvent;
 
     return matchesSearch && matchesStatus && matchesEvent;
   });
-
-  const exportToCSV = () => {
-    toast({
-      title: "กำลังดำเนินการ",
-      description: "ฟีเจอร์ Export CSV จะเปิดใช้งานในเร็วๆ นี้",
-    });
-  };
 
   if (loading) {
     return (
@@ -255,10 +298,16 @@ const AdminRegistrations = () => {
               <p className="text-muted-foreground">ตรวจสอบและจัดการผู้ลงทะเบียนทั้งหมด</p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={exportToCSV} variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
+              <Button onClick={handleExportCSV} variant="outline">
+                <FileDown className="mr-2 h-4 w-4" />
+                ส่งออก CSV
               </Button>
+              {filterEvent && filterEvent !== "all" && (
+                <Button onClick={handleExportByEvent} variant="outline">
+                  <Download className="mr-2 h-4 w-4" />
+                  ส่งออกงานนี้
+                </Button>
+              )}
               <Button onClick={fetchRegistrations} variant="outline">
                 <RefreshCw className="mr-2 h-4 w-4" />
                 รีเฟรช
@@ -408,10 +457,10 @@ const AdminRegistrations = () => {
                 ) : (
                   filteredRegistrations.map((reg) => (
                     <TableRow key={reg.id}>
-                      <TableCell className="whitespace-nowrap">
+                       <TableCell className="whitespace-nowrap">
                         {format(new Date(reg.created_at), "d MMM yyyy, HH:mm", { locale: th })}
                       </TableCell>
-                      <TableCell>{reg.event?.title}</TableCell>
+                      <TableCell>{reg.events?.title}</TableCell>
                       <TableCell>
                         <div>
                           <p className="font-medium">{reg.profiles?.name}</p>
@@ -419,11 +468,11 @@ const AdminRegistrations = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {reg.ticket_type ? (
+                        {reg.ticket_types ? (
                           <div>
-                            <p className="font-medium">{reg.ticket_type.name}</p>
+                            <p className="font-medium">{reg.ticket_types.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              ฿{reg.ticket_type.price.toLocaleString()}
+                              ฿{reg.ticket_types.price.toLocaleString()}
                             </p>
                           </div>
                         ) : (
@@ -451,7 +500,7 @@ const AdminRegistrations = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => sendConfirmationEmail(reg.profiles?.email, reg.event?.title)}
+                            onClick={() => sendConfirmationEmail(reg.profiles?.email, reg.events?.title)}
                           >
                             <Mail className="h-4 w-4" />
                           </Button>
