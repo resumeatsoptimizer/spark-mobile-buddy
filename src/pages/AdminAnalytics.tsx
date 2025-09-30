@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Activity, TrendingUp, Users, DollarSign, AlertTriangle, Calendar, RefreshCw } from "lucide-react";
+import { Activity, TrendingUp, Users, DollarSign, AlertTriangle, Calendar, RefreshCw, Sparkles } from "lucide-react";
+import { AIInsightsPanel } from "@/components/AIInsightsPanel";
+import { AIChatAssistant } from "@/components/AIChatAssistant";
 
 interface MetricCard {
   title: string;
@@ -244,6 +246,11 @@ export default function AdminAnalytics() {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="ai-insights">
+            <Sparkles className="mr-2 h-4 w-4" />
+            AI Insights
+          </TabsTrigger>
+          <TabsTrigger value="ai-chat">AI Assistant</TabsTrigger>
           <TabsTrigger value="events">Event Performance</TabsTrigger>
           <TabsTrigger value="financial">Financial Analytics</TabsTrigger>
           <TabsTrigger value="system">System Health</TabsTrigger>
@@ -291,6 +298,27 @@ export default function AdminAnalytics() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="ai-insights" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                AI-Powered Insights
+              </CardTitle>
+              <CardDescription>
+                Generate predictive analytics, recommendations, and optimization suggestions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AIInsightsPanel />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ai-chat" className="space-y-6">
+          <AIChatAssistant />
         </TabsContent>
 
         <TabsContent value="events" className="space-y-6">

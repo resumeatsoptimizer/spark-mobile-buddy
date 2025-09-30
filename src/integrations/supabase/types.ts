@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_insights: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          event_id: string | null
+          expires_at: string | null
+          id: string
+          insight_data: Json
+          insight_type: string
+          metadata: Json | null
+          status: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          event_id?: string | null
+          expires_at?: string | null
+          id?: string
+          insight_data?: Json
+          insight_type: string
+          metadata?: Json | null
+          status?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          event_id?: string | null
+          expires_at?: string | null
+          id?: string
+          insight_data?: Json
+          insight_type?: string
+          metadata?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_rules: {
         Row: {
           alert_channels: Json | null
@@ -97,6 +141,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      custom_reports: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean | null
+          last_generated_at: string | null
+          report_config: Json
+          report_name: string
+          schedule_config: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          last_generated_at?: string | null
+          report_config?: Json
+          report_name: string
+          schedule_config?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          last_generated_at?: string | null
+          report_config?: Json
+          report_name?: string
+          schedule_config?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       custom_roles: {
         Row: {
@@ -794,6 +874,42 @@ export type Database = {
           },
         ]
       }
+      predictive_models: {
+        Row: {
+          accuracy_metrics: Json | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_trained_at: string | null
+          model_type: string
+          model_version: string
+          training_data: Json
+          updated_at: string
+        }
+        Insert: {
+          accuracy_metrics?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_trained_at?: string | null
+          model_type: string
+          model_version: string
+          training_data?: Json
+          updated_at?: string
+        }
+        Update: {
+          accuracy_metrics?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_trained_at?: string | null
+          model_type?: string
+          model_version?: string
+          training_data?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1153,6 +1269,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ticket_types_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_behavior_analytics: {
+        Row: {
+          action_data: Json | null
+          action_type: string
+          created_at: string
+          device_info: Json | null
+          event_id: string | null
+          id: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_data?: Json | null
+          action_type: string
+          created_at?: string
+          device_info?: Json | null
+          event_id?: string | null
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_data?: Json | null
+          action_type?: string
+          created_at?: string
+          device_info?: Json | null
+          event_id?: string | null
+          id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_behavior_analytics_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"

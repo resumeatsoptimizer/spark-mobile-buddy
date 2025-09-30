@@ -56,3 +56,9 @@ verify_jwt = false
 
 [functions.report-generator]
 verify_jwt = true
+
+[functions.ai-insights-generator]
+verify_jwt = true
+
+[functions.ai-chat-assistant]
+verify_jwt = true
