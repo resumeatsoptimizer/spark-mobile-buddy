@@ -523,18 +523,18 @@ const EventRegistration = () => {
                   <div className="flex items-center gap-3 p-4 border rounded-lg">
                     <Calendar className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">วันที่จัดงาน</p>
+                      <p className="text-sm text-muted-foreground">เวลาเริ่มต้น</p>
                       <p className="font-medium">
-                        {format(new Date(event.start_date), "d MMM yyyy", { locale: th })}
+                        {format(new Date(event.start_date), "d MMM yyyy, HH:mm", { locale: th })} น.
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-4 border rounded-lg">
                     <Clock className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="text-sm text-muted-foreground">สิ้นสุดวันที่</p>
+                      <p className="text-sm text-muted-foreground">เวลาสิ้นสุด</p>
                       <p className="font-medium">
-                        {format(new Date(event.end_date), "d MMM yyyy", { locale: th })}
+                        {format(new Date(event.end_date), "d MMM yyyy, HH:mm", { locale: th })} น.
                       </p>
                     </div>
                   </div>
