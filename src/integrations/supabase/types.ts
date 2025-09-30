@@ -289,6 +289,7 @@ export type Database = {
           promoted_at: string | null
           status: string
           ticket_generated_at: string | null
+          ticket_type_id: string | null
           ticket_url: string | null
           token_expires_at: string | null
           updated_at: string
@@ -304,6 +305,7 @@ export type Database = {
           promoted_at?: string | null
           status?: string
           ticket_generated_at?: string | null
+          ticket_type_id?: string | null
           ticket_url?: string | null
           token_expires_at?: string | null
           updated_at?: string
@@ -319,6 +321,7 @@ export type Database = {
           promoted_at?: string | null
           status?: string
           ticket_generated_at?: string | null
+          ticket_type_id?: string | null
           ticket_url?: string | null
           token_expires_at?: string | null
           updated_at?: string
@@ -330,6 +333,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_ticket_type_id_fkey"
+            columns: ["ticket_type_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_types"
             referencedColumns: ["id"]
           },
           {
