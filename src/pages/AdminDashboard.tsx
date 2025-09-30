@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, DollarSign, TrendingUp, CreditCard, CheckCircle, XCircle, Clock, Download } from "lucide-react";
+import { Calendar, Users, DollarSign, TrendingUp, CreditCard, CheckCircle, XCircle, Clock, Download, RefreshCw } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { th } from "date-fns/locale";
+import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
 interface DashboardStats {
   totalEvents: number;
@@ -35,6 +37,26 @@ interface RecentRegistration {
   } | null;
 }
 
+interface MonthlyRevenue {
+  month: string;
+  revenue: number;
+}
+
+interface RegistrationTrend {
+  month: string;
+  registrations: number;
+}
+
+interface EventPopularity {
+  name: string;
+  count: number;
+}
+
+interface PaymentDistribution {
+  name: string;
+  value: number;
+}
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,10 +72,54 @@ const AdminDashboard = () => {
     averageTicketPrice: 0,
   });
   const [recentRegistrations, setRecentRegistrations] = useState<RecentRegistration[]>([]);
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
+  const [registrationTrends, setRegistrationTrends] = useState<RegistrationTrend[]>([]);
+  const [eventPopularity, setEventPopularity] = useState<EventPopularity[]>([]);
+  const [paymentDistribution, setPaymentDistribution] = useState<PaymentDistribution[]>([]);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   useEffect(() => {
     checkAuth();
     fetchDashboardData();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('dashboard-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'registrations'
+        },
+        () => {
+          console.log('Registrations changed, refreshing...');
+          fetchDashboardData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'payments'
+        },
+        () => {
+          console.log('Payments changed, refreshing...');
+          fetchDashboardData();
+        }
+      )
+      .subscribe();
+
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(interval);
+    };
   }, []);
 
   const checkAuth = async () => {
@@ -90,17 +156,17 @@ const AdminDashboard = () => {
         .from("events")
         .select("*", { count: "exact", head: true });
 
-      // Fetch registrations
+      // Fetch registrations with created_at
       const { data: registrations, count: registrationsCount } = await supabase
         .from("registrations")
-        .select("*, event:events(title), ticket_type:ticket_types(name, price)", { count: "exact" });
+        .select("*, event:events(title), ticket_type:ticket_types(name, price)");
 
       const confirmedCount = registrations?.filter(r => r.status === "confirmed").length || 0;
 
-      // Fetch payments
+      // Fetch payments with created_at
       const { data: payments } = await supabase
         .from("payments")
-        .select("amount, status");
+        .select("amount, status, created_at");
 
       const totalRevenue = payments?.reduce((sum, p) => p.status === "successful" ? sum + Number(p.amount) : sum, 0) || 0;
       const pendingPayments = payments?.filter(p => p.status === "pending").length || 0;
@@ -124,6 +190,59 @@ const AdminDashboard = () => {
         averageTicketPrice: averagePrice,
       });
 
+      // Calculate monthly revenue for last 6 months
+      const last6Months = Array.from({ length: 6 }, (_, i) => {
+        const date = subMonths(new Date(), 5 - i);
+        return {
+          start: startOfMonth(date),
+          end: endOfMonth(date),
+          label: format(date, 'MMM yyyy', { locale: th })
+        };
+      });
+
+      const revenueData = last6Months.map(month => {
+        const monthPayments = payments?.filter(p => {
+          const pDate = new Date(p.created_at);
+          return p.status === "successful" && pDate >= month.start && pDate <= month.end;
+        }) || [];
+        
+        const revenue = monthPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+        return { month: month.label, revenue };
+      });
+      setMonthlyRevenue(revenueData);
+
+      // Calculate registration trends
+      const trendData = last6Months.map(month => {
+        const monthRegs = registrations?.filter(r => {
+          const rDate = new Date(r.created_at);
+          return rDate >= month.start && rDate <= month.end;
+        }) || [];
+        
+        return { month: month.label, registrations: monthRegs.length };
+      });
+      setRegistrationTrends(trendData);
+
+      // Calculate event popularity (top 5)
+      const eventCounts = registrations?.reduce((acc, reg) => {
+        const eventTitle = reg.event?.title || "ไม่ระบุ";
+        acc[eventTitle] = (acc[eventTitle] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      const popularityData = Object.entries(eventCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, count]) => ({ name, count }));
+      setEventPopularity(popularityData);
+
+      // Payment distribution
+      const distributionData = [
+        { name: "ชำระสำเร็จ", value: successfulPayments },
+        { name: "รอชำระ", value: pendingPayments },
+        { name: "ล้มเหลว", value: failedPayments },
+      ].filter(d => d.value > 0);
+      setPaymentDistribution(distributionData);
+
       // Get recent registrations
       const { data: recent } = await supabase
         .from("registrations")
@@ -132,6 +251,7 @@ const AdminDashboard = () => {
         .limit(10);
 
       setRecentRegistrations(recent || []);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
       toast({
@@ -171,12 +291,23 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-              <p className="text-muted-foreground">ภาพรวมและสถิติการจัดการงานอีเว้นท์</p>
+              <p className="text-muted-foreground">
+                ภาพรวมและสถิติการจัดการงานอีเว้นท์
+                <span className="ml-2 text-xs">
+                  อัพเดทล่าสุด: {format(lastUpdate, "HH:mm:ss", { locale: th })} น.
+                </span>
+              </p>
             </div>
-            <Button onClick={exportToCSV} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export CSV
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={fetchDashboardData} variant="outline" size="sm">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                รีเฟรช
+              </Button>
+              <Button onClick={exportToCSV} variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -282,6 +413,157 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.failedPayments}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
+          {/* Revenue Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>รายได้รายเดือน</CardTitle>
+              <CardDescription>รายได้ย้อนหลัง 6 เดือน</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={monthlyRevenue}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="hsl(var(--foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--foreground))"
+                    fontSize={12}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
+                  />
+                  <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Registration Trends */}
+          <Card>
+            <CardHeader>
+              <CardTitle>แนวโน้มการลงทะเบียน</CardTitle>
+              <CardDescription>จำนวนผู้ลงทะเบียนย้อนหลัง 6 เดือน</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={registrationTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="hsl(var(--foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--foreground))"
+                    fontSize={12}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="registrations" 
+                    stroke="hsl(var(--accent))" 
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(var(--accent))", r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Event Popularity */}
+          <Card>
+            <CardHeader>
+              <CardTitle>งานยอดนิยม</CardTitle>
+              <CardDescription>Top 5 งานที่มีผู้ลงทะเบียนมากที่สุด</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={eventPopularity} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    type="number"
+                    stroke="hsl(var(--foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    width={150}
+                    stroke="hsl(var(--foreground))"
+                    fontSize={12}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
+                  />
+                  <Bar dataKey="count" fill="hsl(var(--accent))" radius={[0, 8, 8, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Payment Distribution */}
+          <Card>
+            <CardHeader>
+              <CardTitle>สัดส่วนสถานะการชำระเงิน</CardTitle>
+              <CardDescription>การกระจายของสถานะการชำระเงิน</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={paymentDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="hsl(var(--primary))"
+                    dataKey="value"
+                  >
+                    {paymentDistribution.map((entry, index) => {
+                      const colors = [
+                        "hsl(142 76% 36%)",  // green for successful
+                        "hsl(48 96% 53%)",   // yellow for pending
+                        "hsl(0 84% 60%)",    // red for failed
+                      ];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
