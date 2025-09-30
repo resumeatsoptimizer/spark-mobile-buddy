@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, ArrowLeft, Clock, MapPin } from "lucide-react";
+import { Calendar, Users, ArrowLeft, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CustomField } from "@/components/event-builder/FieldBuilder";
 
 interface Event {
   id: string;
@@ -22,10 +27,19 @@ interface Event {
   seats_total: number;
   seats_remaining: number;
   custom_fields: any;
+  allow_overbooking: boolean;
+  overbooking_percentage: number;
+  registration_open_date: string | null;
+  registration_close_date: string | null;
+  waitlist_enabled: boolean;
+  max_waitlist_size: number | null;
+  visibility: string;
+  invitation_code: string | null;
 }
 
 const EventRegistration = () => {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -33,6 +47,9 @@ const EventRegistration = () => {
   const [event, setEvent] = useState<Event | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [formData, setFormData] = useState<{ [key: string]: string }>({});
+  const [waitlistCount, setWaitlistCount] = useState(0);
+  const [codeVerified, setCodeVerified] = useState(false);
+  const [inputCode, setInputCode] = useState("");
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -72,16 +89,72 @@ const EventRegistration = () => {
         variant: "destructive",
       });
       navigate("/");
-    } else {
-      setEvent(data);
+      return;
     }
+
+    // Check visibility and invitation code
+    if (data.visibility === "private") {
+      const codeParam = searchParams.get("code");
+      if (!codeParam || codeParam !== data.invitation_code) {
+        setCodeVerified(false);
+        setEvent(data);
+        setLoading(false);
+        return;
+      }
+      setCodeVerified(true);
+    }
+
+    // Count waitlist
+    const { count } = await supabase
+      .from("waitlist")
+      .select("*", { count: "exact", head: true })
+      .eq("event_id", id);
+    
+    setWaitlistCount(count || 0);
+    setEvent(data);
     setLoading(false);
+  };
+
+  const verifyCode = () => {
+    if (inputCode === event?.invitation_code) {
+      setCodeVerified(true);
+      toast({
+        title: "ยืนยันรหัสสำเร็จ",
+        description: "คุณสามารถลงทะเบียนได้แล้ว",
+      });
+    } else {
+      toast({
+        title: "รหัสไม่ถูกต้อง",
+        description: "กรุณาตรวจสอบรหัสเชิญชวนอีกครั้ง",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!userId || !event) return;
+
+    // Check registration window
+    const now = new Date();
+    if (event.registration_open_date && new Date(event.registration_open_date) > now) {
+      toast({
+        title: "ยังไม่เปิดลงทะเบียน",
+        description: `การลงทะเบียนจะเปิดวันที่ ${format(new Date(event.registration_open_date), "d MMM yyyy HH:mm", { locale: th })}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (event.registration_close_date && new Date(event.registration_close_date) < now) {
+      toast({
+        title: "ปิดลงทะเบียนแล้ว",
+        description: "ช่วงเวลาลงทะเบียนสิ้นสุดแล้ว",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Check if already registered
     const { data: existingReg } = await supabase
@@ -103,7 +176,56 @@ const EventRegistration = () => {
 
     setSubmitting(true);
 
-    const status = event.seats_remaining > 0 ? "pending" : "waitlist";
+    const maxSeats = event.allow_overbooking 
+      ? Math.floor(event.seats_total * (1 + event.overbooking_percentage / 100))
+      : event.seats_total;
+    
+    const seatsAvailable = event.seats_remaining > 0 && event.seats_remaining <= maxSeats;
+    
+    // Check if should go to waitlist
+    let shouldWaitlist = !seatsAvailable;
+    if (shouldWaitlist && !event.waitlist_enabled) {
+      toast({
+        title: "ที่นั่งเต็ม",
+        description: "งานนี้ไม่เปิดรับรายการรอ",
+        variant: "destructive",
+      });
+      setSubmitting(false);
+      return;
+    }
+
+    // Check waitlist limit
+    if (shouldWaitlist && event.max_waitlist_size && waitlistCount >= event.max_waitlist_size) {
+      toast({
+        title: "รายการรอเต็ม",
+        description: "รายการรอมีผู้ลงทะเบียนเต็มแล้ว",
+        variant: "destructive",
+      });
+      setSubmitting(false);
+      return;
+    }
+
+    const status = shouldWaitlist ? "waitlist" : "pending";
+
+    if (shouldWaitlist) {
+      // Add to waitlist table
+      const { error: waitlistError } = await supabase
+        .from("waitlist")
+        .insert([{
+          event_id: event.id,
+          user_id: userId,
+        }]);
+
+      if (waitlistError) {
+        toast({
+          title: "เกิดข้อผิดพลาด",
+          description: "ไม่สามารถเพิ่มเข้ารายการรอได้",
+          variant: "destructive",
+        });
+        setSubmitting(false);
+        return;
+      }
+    }
 
     const { error } = await supabase
       .from("registrations")
@@ -160,8 +282,122 @@ const EventRegistration = () => {
     return null;
   }
 
-  const isFull = event.seats_remaining === 0;
+  // Show invitation code form for private events
+  if (event.visibility === "private" && !codeVerified) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle>งานส่วนตัว</CardTitle>
+                <CardDescription>กรุณากรอกรหัสเชิญชวนเพื่อเข้าถึงหน้าลงทะเบียน</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>รหัสเชิญชวน</Label>
+                  <Input
+                    value={inputCode}
+                    onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                    placeholder="กรอกรหัส"
+                  />
+                </div>
+                <Button onClick={verifyCode} className="w-full">
+                  ยืนยัน
+                </Button>
+                <Button variant="outline" onClick={() => navigate("/")} className="w-full">
+                  กลับหน้าแรก
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const maxSeats = event.allow_overbooking 
+    ? Math.floor(event.seats_total * (1 + event.overbooking_percentage / 100))
+    : event.seats_total;
+
+  const isFull = event.seats_remaining === 0 || event.seats_remaining >= maxSeats;
   const seatsPercentage = (event.seats_remaining / event.seats_total) * 100;
+  const customFields = (event.custom_fields as any as CustomField[]) || [];
+  
+  const now = new Date();
+  const isRegistrationOpen = !event.registration_open_date || new Date(event.registration_open_date) <= now;
+  const isRegistrationClosed = event.registration_close_date && new Date(event.registration_close_date) < now;
+  const canRegister = isRegistrationOpen && !isRegistrationClosed;
+
+  const renderCustomField = (field: CustomField) => {
+    const commonProps = {
+      id: field.id,
+      required: field.required,
+      placeholder: field.placeholder,
+    };
+
+    switch (field.type) {
+      case "textarea":
+        return (
+          <Textarea
+            {...commonProps}
+            value={formData[field.id] || ""}
+            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+          />
+        );
+      case "select":
+        return (
+          <Select
+            value={formData[field.id] || ""}
+            onValueChange={(value) => setFormData({ ...formData, [field.id]: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={field.placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {field.options?.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case "checkbox":
+        return (
+          <Checkbox
+            checked={formData[field.id] === "true"}
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, [field.id]: checked.toString() })
+            }
+          />
+        );
+      case "radio":
+        return (
+          <RadioGroup
+            value={formData[field.id] || ""}
+            onValueChange={(value) => setFormData({ ...formData, [field.id]: value })}
+          >
+            {field.options?.map((option) => (
+              <div key={option} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={`${field.id}-${option}`} />
+                <Label htmlFor={`${field.id}-${option}`}>{option}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+        );
+      default:
+        return (
+          <Input
+            {...commonProps}
+            type={field.type}
+            value={formData[field.id] || ""}
+            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+          />
+        );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -240,11 +476,20 @@ const EventRegistration = () => {
                   </div>
                 </div>
 
-                {isFull && (
+                {isFull && event.waitlist_enabled && (
                   <Alert>
                     <AlertDescription>
                       ที่นั่งเต็มแล้ว คุณสามารถลงทะเบียนเข้ารายการรอได้
-                      เมื่อมีที่นั่งว่างจะแจ้งเตือนให้คุณทราบ
+                      {event.max_waitlist_size && ` (${waitlistCount}/${event.max_waitlist_size})`}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {!canRegister && (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      {!isRegistrationOpen && `การลงทะเบียนจะเปิดวันที่ ${format(new Date(event.registration_open_date!), "d MMM yyyy HH:mm", { locale: th })}`}
+                      {isRegistrationClosed && "ปิดลงทะเบียนแล้ว"}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -263,6 +508,7 @@ const EventRegistration = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Basic Fields */}
                   <div className="space-y-2">
                     <Label htmlFor="name">ชื่อ-นามสกุล *</Label>
                     <Input
@@ -286,11 +532,21 @@ const EventRegistration = () => {
                     />
                   </div>
 
+                  {/* Custom Fields */}
+                  {customFields.map((field) => (
+                    <div key={field.id} className="space-y-2">
+                      <Label htmlFor={field.id}>
+                        {field.label} {field.required && "*"}
+                      </Label>
+                      {renderCustomField(field)}
+                    </div>
+                  ))}
+
                   <div className="pt-4 space-y-3">
                     <Button 
                       type="submit" 
                       className="w-full" 
-                      disabled={submitting}
+                      disabled={submitting || !canRegister || (isFull && !event.waitlist_enabled)}
                       size="lg"
                     >
                       {submitting 

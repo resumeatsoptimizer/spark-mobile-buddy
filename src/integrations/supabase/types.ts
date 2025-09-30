@@ -16,43 +16,73 @@ export type Database = {
     Tables: {
       events: {
         Row: {
+          allow_overbooking: boolean | null
+          auto_promote_rule: string | null
           created_at: string
           created_by: string
           custom_fields: Json | null
           description: string | null
           end_date: string
           id: string
+          invitation_code: string | null
+          max_waitlist_size: number | null
+          overbooking_percentage: number | null
+          promote_window_hours: number | null
+          registration_close_date: string | null
+          registration_open_date: string | null
           seats_remaining: number
           seats_total: number
           start_date: string
           title: string
           updated_at: string
+          visibility: string | null
+          waitlist_enabled: boolean | null
         }
         Insert: {
+          allow_overbooking?: boolean | null
+          auto_promote_rule?: string | null
           created_at?: string
           created_by: string
           custom_fields?: Json | null
           description?: string | null
           end_date: string
           id?: string
+          invitation_code?: string | null
+          max_waitlist_size?: number | null
+          overbooking_percentage?: number | null
+          promote_window_hours?: number | null
+          registration_close_date?: string | null
+          registration_open_date?: string | null
           seats_remaining: number
           seats_total: number
           start_date: string
           title: string
           updated_at?: string
+          visibility?: string | null
+          waitlist_enabled?: boolean | null
         }
         Update: {
+          allow_overbooking?: boolean | null
+          auto_promote_rule?: string | null
           created_at?: string
           created_by?: string
           custom_fields?: Json | null
           description?: string | null
           end_date?: string
           id?: string
+          invitation_code?: string | null
+          max_waitlist_size?: number | null
+          overbooking_percentage?: number | null
+          promote_window_hours?: number | null
+          registration_close_date?: string | null
+          registration_open_date?: string | null
           seats_remaining?: number
           seats_total?: number
           start_date?: string
           title?: string
           updated_at?: string
+          visibility?: string | null
+          waitlist_enabled?: boolean | null
         }
         Relationships: [
           {
@@ -176,6 +206,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_types: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          name: string
+          price: number | null
+          seats_allocated: number
+          seats_remaining: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          name: string
+          price?: number | null
+          seats_allocated: number
+          seats_remaining: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          name?: string
+          price?: number | null
+          seats_allocated?: number
+          seats_remaining?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_types_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
