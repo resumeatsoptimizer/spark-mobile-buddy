@@ -142,6 +142,59 @@ export type Database = {
           },
         ]
       }
+      api_keys: {
+        Row: {
+          api_key: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          key_name: string
+          last_used_at: string | null
+          organization_id: string | null
+          permissions: Json
+          rate_limit: number | null
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_name: string
+          last_used_at?: string | null
+          organization_id?: string | null
+          permissions?: Json
+          rate_limit?: number | null
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          key_name?: string
+          last_used_at?: string | null
+          organization_id?: string | null
+          permissions?: Json
+          rate_limit?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_reports: {
         Row: {
           created_at: string
@@ -326,6 +379,104 @@ export type Database = {
           },
           {
             foreignKeyName: "event_category_mapping_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_check_ins: {
+        Row: {
+          check_in_method: string
+          checked_in_at: string
+          checked_in_by: string | null
+          created_at: string
+          device_info: Json | null
+          event_id: string
+          id: string
+          location_data: Json | null
+          registration_id: string
+          station_id: string | null
+        }
+        Insert: {
+          check_in_method?: string
+          checked_in_at?: string
+          checked_in_by?: string | null
+          created_at?: string
+          device_info?: Json | null
+          event_id: string
+          id?: string
+          location_data?: Json | null
+          registration_id: string
+          station_id?: string | null
+        }
+        Update: {
+          check_in_method?: string
+          checked_in_at?: string
+          checked_in_by?: string | null
+          created_at?: string
+          device_info?: Json | null
+          event_id?: string
+          id?: string
+          location_data?: Json | null
+          registration_id?: string
+          station_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_check_ins_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_check_ins_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_messages: {
+        Row: {
+          content: string
+          created_at: string
+          event_id: string
+          id: string
+          is_announcement: boolean | null
+          message_type: string
+          metadata: Json | null
+          read_by: Json | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          event_id: string
+          id?: string
+          is_announcement?: boolean | null
+          message_type?: string
+          metadata?: Json | null
+          read_by?: Json | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_announcement?: boolean | null
+          message_type?: string
+          metadata?: Json | null
+          read_by?: Json | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_messages_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
@@ -952,6 +1103,36 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          device_type: string | null
+          id: string
+          is_active: boolean | null
+          subscription_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          subscription_data: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          subscription_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       registrations: {
         Row: {
           confirm_token: string | null
@@ -1087,6 +1268,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_audit_log: {
+        Row: {
+          action_data: Json | null
+          action_type: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          resource_id: string | null
+          resource_type: string
+          severity: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_data?: Json | null
+          action_type: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type: string
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_data?: Json | null
+          action_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          severity?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       social_media_posts: {
         Row: {
@@ -1276,6 +1496,36 @@ export type Database = {
           },
         ]
       }
+      user_2fa: {
+        Row: {
+          backup_codes: Json | null
+          created_at: string
+          id: string
+          is_enabled: boolean | null
+          secret: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backup_codes?: Json | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          secret: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backup_codes?: Json | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean | null
+          secret?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_behavior_analytics: {
         Row: {
           action_data: Json | null
@@ -1399,6 +1649,56 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhooks: {
+        Row: {
+          created_at: string
+          events: Json
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          organization_id: string | null
+          retry_config: Json | null
+          secret_key: string
+          updated_at: string
+          webhook_name: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          events?: Json
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          organization_id?: string | null
+          retry_config?: Json | null
+          secret_key: string
+          updated_at?: string
+          webhook_name: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          events?: Json
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          organization_id?: string | null
+          retry_config?: Json | null
+          secret_key?: string
+          updated_at?: string
+          webhook_name?: string
+          webhook_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhooks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

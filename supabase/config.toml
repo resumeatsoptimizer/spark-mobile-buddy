@@ -1,5 +1,17 @@
 project_id = "qhvxqmldpifwehnsrlyn"
 
+[functions.qr-code-generator]
+verify_jwt = true
+
+[functions.event-check-in]
+verify_jwt = true
+
+[functions.event-messaging]
+verify_jwt = true
+
+[functions.webhook-handler]
+verify_jwt = true
+
 [functions.event-series-manager]
 verify_jwt = true
 
