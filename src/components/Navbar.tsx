@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X } from "lucide-react";
+import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
@@ -52,6 +52,7 @@ const Navbar = () => {
 
   const isActive = (path: string) => location.pathname === path;
   const isStaff = userRole === "admin" || userRole === "staff";
+  const isAdmin = userRole === "admin";
 
   return (
     <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -93,6 +94,15 @@ const Navbar = () => {
                   <UserCircle className="mr-2 h-4 w-4" />
                   การลงทะเบียน
                 </Button>
+                {isAdmin && (
+                  <Button
+                    variant={isActive("/admin/settings") ? "default" : "ghost"}
+                    onClick={() => navigate("/admin/settings")}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    ตั้งค่า
+                  </Button>
+                )}
               </>
             )}
 
@@ -158,6 +168,19 @@ const Navbar = () => {
                   <UserCircle className="mr-2 h-4 w-4" />
                   การลงทะเบียน
                 </Button>
+                {isAdmin && (
+                  <Button
+                    variant={isActive("/admin/settings") ? "default" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => {
+                      navigate("/admin/settings");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    ตั้งค่า
+                  </Button>
+                )}
               </>
             )}
 
