@@ -2,8 +2,16 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Building2, Users, Shield, Lock, QrCode, ScanLine } from "lucide-react";
+import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Building2, Users, Shield, Lock, QrCode, ScanLine, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -78,15 +86,6 @@ const Navbar = () => {
 
             {user && (
               <>
-                {isStaff && (
-                  <Button
-                    variant={isActive("/admin/dashboard") ? "default" : "ghost"}
-                    onClick={() => navigate("/admin/dashboard")}
-                  >
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Admin
-                  </Button>
-                )}
                 <Button
                   variant={isActive("/registrations") ? "default" : "ghost"}
                   onClick={() => navigate("/registrations")}
@@ -103,62 +102,81 @@ const Navbar = () => {
                 </Button>
                 {isAdmin && (
                   <>
+                    {/* Core Management */}
                     <Button
-                      variant={isActive("/admin/events") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/events")}
+                      variant={isActive("/admin/dashboard") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/dashboard")}
+                    >
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Button>
+                    <Button
+                      variant={isActive("/events") ? "default" : "ghost"}
+                      onClick={() => navigate("/events")}
                     >
                       <FolderTree className="mr-2 h-4 w-4" />
-                      จัดการ
+                      งานอีเว้นท์
                     </Button>
-                    <Button
-                      variant={isActive("/admin/organizations") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/organizations")}
-                    >
-                      <Building2 className="mr-2 h-4 w-4" />
-                      องค์กร
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/teams") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/teams")}
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      ทีม
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/roles") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/roles")}
-                    >
-                      <Shield className="mr-2 h-4 w-4" />
-                      บทบาท
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/security") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/security")}
-                    >
-                      <Lock className="mr-2 h-4 w-4" />
-                      Security
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/automation") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/automation")}
-                    >
-                      <Workflow className="mr-2 h-4 w-4" />
-                      Automation
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/analytics") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/analytics")}
-                    >
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      Analytics
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/integrations") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/integrations")}
-                    >
-                      <Plug className="mr-2 h-4 w-4" />
-                      Integrations
-                    </Button>
+
+                    {/* User & Access Management */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost">
+                          <Users className="mr-2 h-4 w-4" />
+                          จัดการผู้ใช้
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>User & Access Management</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate("/admin/organizations")}>
+                          <Building2 className="mr-2 h-4 w-4" />
+                          องค์กร
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/admin/teams")}>
+                          <Users className="mr-2 h-4 w-4" />
+                          ทีม
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/admin/roles")}>
+                          <Shield className="mr-2 h-4 w-4" />
+                          บทบาท
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* System Management */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost">
+                          <Settings className="mr-2 h-4 w-4" />
+                          ระบบ
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>System Management</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate("/admin/security")}>
+                          <Lock className="mr-2 h-4 w-4" />
+                          Security
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/admin/automation")}>
+                          <Workflow className="mr-2 h-4 w-4" />
+                          Automation
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/admin/analytics")}>
+                          <BarChart3 className="mr-2 h-4 w-4" />
+                          Analytics
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/admin/integrations")}>
+                          <Plug className="mr-2 h-4 w-4" />
+                          Integrations
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* Settings */}
                     <Button
                       variant={isActive("/admin/settings") ? "default" : "ghost"}
                       onClick={() => navigate("/admin/settings")}
@@ -167,25 +185,25 @@ const Navbar = () => {
                       ตั้งค่า
                     </Button>
                 </>
-              )}
-              {isStaff && (
-                <Button
-                  variant={isActive("/check-in") ? "default" : "ghost"}
-                  onClick={() => navigate("/check-in")}
-                >
-                  <ScanLine className="mr-2 h-4 w-4" />
-                  Check-In
-                </Button>
-              )}
-              {userRole === "participant" && (
-                <Button
-                  variant={isActive("/my-qr-code") ? "default" : "ghost"}
-                  onClick={() => navigate("/my-qr-code")}
-                >
-                  <QrCode className="mr-2 h-4 w-4" />
-                  My QR Code
-                </Button>
-              )}
+                )}
+                {isStaff && (
+                  <Button
+                    variant={isActive("/check-in") ? "default" : "ghost"}
+                    onClick={() => navigate("/check-in")}
+                  >
+                    <ScanLine className="mr-2 h-4 w-4" />
+                    Check-In
+                  </Button>
+                )}
+                {userRole === "participant" && (
+                  <Button
+                    variant={isActive("/my-qr-code") ? "default" : "ghost"}
+                    onClick={() => navigate("/my-qr-code")}
+                  >
+                    <QrCode className="mr-2 h-4 w-4" />
+                    My QR Code
+                  </Button>
+                )}
               </>
             )}
 
@@ -227,19 +245,6 @@ const Navbar = () => {
 
             {user && (
               <>
-                {isStaff && (
-                  <Button
-                    variant={isActive("/admin/dashboard") ? "default" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => {
-                      navigate("/admin/dashboard");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Admin
-                  </Button>
-                )}
                 <Button
                   variant={isActive("/registrations") ? "default" : "ghost"}
                   className="w-full justify-start"
@@ -264,17 +269,35 @@ const Navbar = () => {
                 </Button>
                 {isAdmin && (
                   <>
+                    <div className="px-4 py-2 text-sm font-semibold text-muted-foreground">
+                      Core Management
+                    </div>
                     <Button
-                      variant={isActive("/admin/events") ? "default" : "ghost"}
+                      variant={isActive("/admin/dashboard") ? "default" : "ghost"}
                       className="w-full justify-start"
                       onClick={() => {
-                        navigate("/admin/events");
+                        navigate("/admin/dashboard");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Button>
+                    <Button
+                      variant={isActive("/events") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/events");
                         setMobileMenuOpen(false);
                       }}
                     >
                       <FolderTree className="mr-2 h-4 w-4" />
-                      จัดการ
+                      งานอีเว้นท์
                     </Button>
+
+                    <div className="px-4 py-2 text-sm font-semibold text-muted-foreground mt-2">
+                      User & Access Management
+                    </div>
                     <Button
                       variant={isActive("/admin/organizations") ? "default" : "ghost"}
                       className="w-full justify-start"
@@ -308,6 +331,10 @@ const Navbar = () => {
                       <Shield className="mr-2 h-4 w-4" />
                       บทบาท
                     </Button>
+
+                    <div className="px-4 py-2 text-sm font-semibold text-muted-foreground mt-2">
+                      System Management
+                    </div>
                     <Button
                       variant={isActive("/admin/security") ? "default" : "ghost"}
                       className="w-full justify-start"
@@ -352,6 +379,10 @@ const Navbar = () => {
                       <Plug className="mr-2 h-4 w-4" />
                       Integrations
                     </Button>
+
+                    <div className="px-4 py-2 text-sm font-semibold text-muted-foreground mt-2">
+                      Settings
+                    </div>
                     <Button
                       variant={isActive("/admin/settings") ? "default" : "ghost"}
                       className="w-full justify-start"
@@ -364,33 +395,33 @@ const Navbar = () => {
                       ตั้งค่า
                     </Button>
                 </>
-              )}
-              {isStaff && (
-                <Button
-                  variant={isActive("/check-in") ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate("/check-in");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <ScanLine className="mr-2 h-4 w-4" />
-                  Check-In
-                </Button>
-              )}
-              {userRole === "participant" && (
-                <Button
-                  variant={isActive("/my-qr-code") ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate("/my-qr-code");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <QrCode className="mr-2 h-4 w-4" />
-                  My QR Code
-                </Button>
-              )}
+                )}
+                {isStaff && (
+                  <Button
+                    variant={isActive("/check-in") ? "default" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => {
+                      navigate("/check-in");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <ScanLine className="mr-2 h-4 w-4" />
+                    Check-In
+                  </Button>
+                )}
+                {userRole === "participant" && (
+                  <Button
+                    variant={isActive("/my-qr-code") ? "default" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => {
+                      navigate("/my-qr-code");
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <QrCode className="mr-2 h-4 w-4" />
+                    My QR Code
+                  </Button>
+                )}
               </>
             )}
 
