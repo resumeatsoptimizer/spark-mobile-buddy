@@ -259,11 +259,11 @@ const EventDetails = () => {
                     
                     {/* Embedded Google Map */}
                     {(event.google_map_embed_code || event.location || (event.google_map_url && isValidGoogleMapsUrl(event.google_map_url))) && (
-                      <div className="w-full h-[300px] rounded-lg overflow-hidden border shadow-sm">
+                      <div className="w-full h-[300px] rounded-lg overflow-hidden border shadow-sm bg-muted/30 flex items-center justify-center">
                         <iframe
                           src={
                             event.google_map_embed_code 
-                              ? event.google_map_embed_code.match(/src="([^"]+)"/)?.[1] || ''
+                              ? event.google_map_embed_code.match(/src="([^"]+)"/)?.[1]?.replace(/^http:/, 'https:') || ''
                               : convertToEmbedUrl(event.google_map_url || '', event.location || undefined)
                           }
                           width="100%"
@@ -271,6 +271,7 @@ const EventDetails = () => {
                           style={{ border: 0 }}
                           allowFullScreen
                           loading="lazy"
+                          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
                           title={`แผนที่ ${event.location || 'สถานที่จัดงาน'}`}
                         />
                       </div>
