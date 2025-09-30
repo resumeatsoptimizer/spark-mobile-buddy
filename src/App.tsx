@@ -27,6 +27,7 @@ import UserProfile from "./pages/UserProfile";
 import EventCheckIn from "./pages/EventCheckIn";
 import AdminSecurity from "./pages/AdminSecurity";
 import ParticipantQRCode from "./pages/ParticipantQRCode";
+import NotificationsSettings from "./pages/NotificationsSettings";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
           <Route path="/admin/roles" element={<AdminRoles />} />
           <Route path="/admin/security" element={<AdminSecurity />} />
           <Route path="/profile" element={<UserProfile />} />
+          <Route path="/notifications" element={<NotificationsSettings />} />
           <Route path="/check-in" element={<EventCheckIn />} />
           <Route path="/my-qr-code" element={<ParticipantQRCode />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

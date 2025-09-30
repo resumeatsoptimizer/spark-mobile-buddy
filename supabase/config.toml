@@ -12,6 +12,9 @@ verify_jwt = true
 [functions.webhook-handler]
 verify_jwt = true
 
+[functions.send-push-notification]
+verify_jwt = true
+
 [functions.event-series-manager]
 verify_jwt = true
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { QrCode, CheckCircle, XCircle, Smartphone } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { QrCode, CheckCircle, XCircle, Smartphone, Activity, Users, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,8 +11,115 @@ export default function EventCheckIn() {
   const [scanning, setScanning] = useState(false);
   const [qrData, setQrData] = useState('');
   const [lastCheckIn, setLastCheckIn] = useState<any>(null);
+  const [recentCheckIns, setRecentCheckIns] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total: 0, today: 0 });
   const [stationId] = useState(`STATION-${Math.random().toString(36).substring(7).toUpperCase()}`);
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchCheckInStats();
+    fetchRecentCheckIns();
+
+    // Subscribe to real-time check-ins
+    const channel = supabase
+      .channel('check-ins-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'event_check_ins',
+        },
+        async (payload) => {
+          console.log('New check-in:', payload.new);
+          
+          // Update stats
+          setStats(prev => ({ 
+            total: prev.total + 1, 
+            today: prev.today + 1 
+          }));
+
+          // Fetch complete check-in info
+          const { data } = await supabase
+            .from('event_check_ins')
+            .select(`
+              *,
+              registrations (
+                user_id,
+                profiles:user_id (
+                  name,
+                  email
+                )
+              )
+            `)
+            .eq('id', payload.new.id)
+            .single();
+
+          if (data) {
+            setRecentCheckIns(prev => [data, ...prev].slice(0, 5));
+          }
+
+          // Show notification
+          if (Notification.permission === 'granted') {
+            new Notification('New Check-In', {
+              body: 'A participant has checked in',
+              icon: '/placeholder.svg'
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchCheckInStats = async () => {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { count: totalCount } = await supabase
+        .from('event_check_ins')
+        .select('*', { count: 'exact', head: true });
+
+      const { count: todayCount } = await supabase
+        .from('event_check_ins')
+        .select('*', { count: 'exact', head: true })
+        .gte('checked_in_at', today.toISOString());
+
+      setStats({
+        total: totalCount || 0,
+        today: todayCount || 0
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const fetchRecentCheckIns = async () => {
+    try {
+      const { data } = await supabase
+        .from('event_check_ins')
+        .select(`
+          *,
+          registrations (
+            user_id,
+            profiles:user_id (
+              name,
+              email
+            )
+          )
+        `)
+        .order('checked_in_at', { ascending: false })
+        .limit(5);
+
+      setRecentCheckIns(data || []);
+    } catch (error) {
+      console.error('Error fetching recent check-ins:', error);
+    }
+  };
 
   const processCheckIn = async (data: string) => {
     try {
@@ -72,6 +179,47 @@ export default function EventCheckIn() {
             <Smartphone className="w-4 h-4 mr-2" />
             {stationId}
           </Badge>
+        </div>
+
+        {/* Real-time Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Check-Ins</p>
+                  <p className="text-3xl font-bold">{stats.total}</p>
+                </div>
+                <Users className="w-8 h-8 text-primary" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Today</p>
+                  <p className="text-3xl font-bold">{stats.today}</p>
+                </div>
+                <Activity className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Check-In Rate</p>
+                  <p className="text-3xl font-bold">
+                    {stats.total > 0 ? Math.round((stats.today / stats.total) * 100) : 0}%
+                  </p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
@@ -145,6 +293,51 @@ export default function EventCheckIn() {
             </CardContent>
           </Card>
         )}
+
+        {/* Recent Check-Ins */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Recent Check-Ins
+            </CardTitle>
+            <CardDescription>
+              Live updates of participant check-ins
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentCheckIns.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No check-ins yet. Waiting for participants...
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {recentCheckIns.map((checkIn) => {
+                  const profile = checkIn.registrations?.profiles;
+                  const name = profile?.name || profile?.email?.split('@')[0] || 'Unknown';
+                  
+                  return (
+                    <div
+                      key={checkIn.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card animate-in fade-in slide-in-from-top-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <div>
+                          <p className="font-medium">{name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(checkIn.checked_in_at).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline">{checkIn.check_in_method}</Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

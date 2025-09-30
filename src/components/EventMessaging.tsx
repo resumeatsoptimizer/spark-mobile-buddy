@@ -36,9 +36,37 @@ export function EventMessaging({ eventId }: EventMessagingProps) {
           table: 'event_messages',
           filter: `event_id=eq.${eventId}`,
         },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new]);
+        async (payload) => {
+          console.log('New message received:', payload.new);
+          
+          // Fetch complete message with sender info from profiles
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('name, email')
+            .eq('id', (payload.new as any).sender_id)
+            .single();
+
+          const completeMessage: any = {
+            ...payload.new,
+            sender_name: profile?.name,
+            sender_email: profile?.email
+          };
+
+          setMessages((prev) => [...prev, completeMessage]);
           scrollToBottom();
+          
+          // Show browser notification if not from current user
+          if (completeMessage.sender_id !== currentUser?.id && 
+              Notification.permission === 'granted') {
+            const senderName = profile?.name || 
+                              profile?.email?.split('@')[0] || 
+                              'Someone';
+            new Notification(`New message from ${senderName}`, {
+              body: completeMessage.content,
+              icon: '/placeholder.svg',
+              badge: '/placeholder.svg'
+            });
+          }
         }
       )
       .subscribe();
@@ -46,7 +74,7 @@ export function EventMessaging({ eventId }: EventMessagingProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventId]);
+  }, [eventId, currentUser]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -124,7 +152,9 @@ export function EventMessaging({ eventId }: EventMessagingProps) {
             {messages.map((message) => {
               const isOwnMessage = message.sender_id === currentUser?.id;
               const senderName =
+                message.sender_name ||
                 message.sender?.profiles?.name ||
+                message.sender_email ||
                 message.sender?.email?.split('@')[0] ||
                 'Unknown';
 
