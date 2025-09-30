@@ -34,7 +34,7 @@ interface UserRole {
   profiles: {
     email: string;
     name: string | null;
-  };
+  } | null;
 }
 
 const AdminSettings = () => {
@@ -138,8 +138,10 @@ const AdminSettings = () => {
   };
 
   const filteredUsers = userRoles.filter(ur => 
-    ur.profiles.email.toLowerCase().includes(searchEmail.toLowerCase()) ||
-    ur.profiles.name?.toLowerCase().includes(searchEmail.toLowerCase())
+    ur.profiles && (
+      ur.profiles.email.toLowerCase().includes(searchEmail.toLowerCase()) ||
+      ur.profiles.name?.toLowerCase().includes(searchEmail.toLowerCase())
+    )
   );
 
   if (loading) {
@@ -300,9 +302,9 @@ const AdminSettings = () => {
                     filteredUsers.map((userRole) => (
                       <TableRow key={userRole.id}>
                         <TableCell className="font-medium">
-                          {userRole.profiles.name || "ไม่ระบุ"}
+                          {userRole.profiles?.name || "ไม่ระบุ"}
                         </TableCell>
-                        <TableCell>{userRole.profiles.email}</TableCell>
+                        <TableCell>{userRole.profiles?.email || "ไม่มีอีเมล"}</TableCell>
                         <TableCell>{getRoleBadge(userRole.role)}</TableCell>
                         <TableCell>
                           <Select
