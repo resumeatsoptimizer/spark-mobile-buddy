@@ -226,28 +226,50 @@ const EventDetails = () => {
               </div>
 
               {/* Location Info */}
-              {event.location && (
+              {(event.location || event.google_map_url) && (
                 <Card className="bg-muted/50">
-                  <CardContent className="pt-6">
+                  <CardContent className="pt-6 space-y-4">
                     <div className="flex items-start gap-3">
                       <div className="p-2 bg-primary/10 rounded-lg">
                         <MapPin className="h-5 w-5 text-primary" />
                       </div>
                       <div className="flex-1">
                         <p className="text-sm text-muted-foreground">สถานที่จัดงาน</p>
-                        <p className="font-semibold">{event.location}</p>
+                        {event.location ? (
+                          <p className="font-semibold">{event.location}</p>
+                        ) : (
+                          <p className="font-semibold text-muted-foreground">ดูตำแหน่งบนแผนที่</p>
+                        )}
                         {event.google_map_url && (
-                          <a
-                            href={event.google_map_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-primary hover:underline mt-1 inline-block"
-                          >
-                            ดูแผนที่ Google Map →
-                          </a>
+                          <div className="mt-2 space-y-2">
+                            <a
+                              href={event.google_map_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              เปิดใน Google Maps →
+                            </a>
+                          </div>
                         )}
                       </div>
                     </div>
+                    
+                    {/* Embedded Google Map */}
+                    {event.google_map_url && (
+                      <div className="w-full h-[300px] rounded-lg overflow-hidden border">
+                        <iframe
+                          src={`https://www.google.com/maps/embed?pb=${event.google_map_url.split('/').pop()}`}
+                          width="100%"
+                          height="100%"
+                          style={{ border: 0 }}
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          title="Google Map"
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
