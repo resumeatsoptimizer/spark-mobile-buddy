@@ -16,6 +16,8 @@ interface Event {
   title: string;
   description: string | null;
   cover_image_url: string | null;
+  location: string | null;
+  google_map_url: string | null;
   start_date: string;
   end_date: string;
   seats_total: number;
@@ -222,6 +224,33 @@ const EventDetails = () => {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Location Info */}
+              {event.location && (
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <MapPin className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-muted-foreground">สถานที่จัดงาน</p>
+                        <p className="font-semibold">{event.location}</p>
+                        {event.google_map_url && (
+                          <a
+                            href={event.google_map_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline mt-1 inline-block"
+                          >
+                            ดูแผนที่ Google Map →
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Seats Info */}
               <Card className="bg-muted/50">

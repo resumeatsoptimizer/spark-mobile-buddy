@@ -22,6 +22,8 @@ const EventForm = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
+  const [location, setLocation] = useState("");
+  const [googleMapUrl, setGoogleMapUrl] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [seatsTotal, setSeatsTotal] = useState(0);
@@ -97,6 +99,8 @@ const EventForm = () => {
       setTitle(data.title);
       setDescription(data.description || "");
       setCoverImageUrl(data.cover_image_url || "");
+      setLocation(data.location || "");
+      setGoogleMapUrl(data.google_map_url || "");
       setStartDate(data.start_date.substring(0, 16));
       setEndDate(data.end_date.substring(0, 16));
       setSeatsTotal(data.seats_total);
@@ -174,6 +178,8 @@ const EventForm = () => {
       title,
       description: description || null,
       cover_image_url: coverImageUrl || null,
+      location: location || null,
+      google_map_url: googleMapUrl || null,
       start_date: new Date(startDate).toISOString(),
       end_date: new Date(endDate).toISOString(),
       seats_total: seatsTotal,
@@ -326,6 +332,25 @@ const EventForm = () => {
                     />
                   </div>
                 )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">สถานที่จัดงาน</Label>
+                <Input
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="เช่น โรงแรม ABC ห้อง 123"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="googleMapUrl">ลิงค์ Google Map</Label>
+                <Input
+                  id="googleMapUrl"
+                  type="url"
+                  value={googleMapUrl}
+                  onChange={(e) => setGoogleMapUrl(e.target.value)}
+                  placeholder="https://maps.google.com/..."
+                />
               </div>
             </CardContent>
           </Card>

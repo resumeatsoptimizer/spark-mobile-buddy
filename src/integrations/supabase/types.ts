@@ -24,8 +24,10 @@ export type Database = {
           custom_fields: Json | null
           description: string | null
           end_date: string
+          google_map_url: string | null
           id: string
           invitation_code: string | null
+          location: string | null
           max_waitlist_size: number | null
           overbooking_percentage: number | null
           promote_window_hours: number | null
@@ -48,8 +50,10 @@ export type Database = {
           custom_fields?: Json | null
           description?: string | null
           end_date: string
+          google_map_url?: string | null
           id?: string
           invitation_code?: string | null
+          location?: string | null
           max_waitlist_size?: number | null
           overbooking_percentage?: number | null
           promote_window_hours?: number | null
@@ -72,8 +76,10 @@ export type Database = {
           custom_fields?: Json | null
           description?: string | null
           end_date?: string
+          google_map_url?: string | null
           id?: string
           invitation_code?: string | null
+          location?: string | null
           max_waitlist_size?: number | null
           overbooking_percentage?: number | null
           promote_window_hours?: number | null
