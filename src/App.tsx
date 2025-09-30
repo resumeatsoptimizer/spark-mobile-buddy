@@ -18,6 +18,7 @@ import AdminRegistrations from "./pages/AdminRegistrations";
 import AdminAutomation from "./pages/AdminAutomation";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminEventManagement from "./pages/AdminEventManagement";
+import AdminIntegrations from "./pages/AdminIntegrations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/admin/automation" element={<AdminAutomation />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/events" element={<AdminEventManagement />} />
+          <Route path="/admin/integrations" element={<AdminIntegrations />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

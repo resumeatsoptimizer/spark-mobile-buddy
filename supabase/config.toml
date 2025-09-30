@@ -6,6 +6,18 @@ verify_jwt = true
 [functions.bulk-event-operations]
 verify_jwt = true
 
+[functions.google-calendar-sync]
+verify_jwt = true
+
+[functions.meeting-integration]
+verify_jwt = true
+
+[functions.social-media-publisher]
+verify_jwt = true
+
+[functions.email-marketing-sync]
+verify_jwt = true
+
 [functions.omise-webhook]
 verify_jwt = false
 

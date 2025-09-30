@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree } from "lucide-react";
+import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
@@ -118,6 +118,13 @@ const Navbar = () => {
                       Analytics
                     </Button>
                     <Button
+                      variant={isActive("/admin/integrations") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/integrations")}
+                    >
+                      <Plug className="mr-2 h-4 w-4" />
+                      Integrations
+                    </Button>
+                    <Button
                       variant={isActive("/admin/settings") ? "default" : "ghost"}
                       onClick={() => navigate("/admin/settings")}
                     >
@@ -225,6 +232,17 @@ const Navbar = () => {
                     >
                       <BarChart3 className="mr-2 h-4 w-4" />
                       Analytics
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/integrations") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/integrations");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Plug className="mr-2 h-4 w-4" />
+                      Integrations
                     </Button>
                     <Button
                       variant={isActive("/admin/settings") ? "default" : "ghost"}

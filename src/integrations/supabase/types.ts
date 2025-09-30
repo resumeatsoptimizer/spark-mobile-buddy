@@ -359,12 +359,16 @@ export type Database = {
           custom_fields: Json | null
           description: string | null
           end_date: string
+          event_type: string | null
           google_map_embed_code: string | null
           google_map_url: string | null
           id: string
           invitation_code: string | null
           location: string | null
           max_waitlist_size: number | null
+          meeting_id: string | null
+          meeting_platform: string | null
+          meeting_url: string | null
           overbooking_percentage: number | null
           promote_window_hours: number | null
           registration_close_date: string | null
@@ -388,12 +392,16 @@ export type Database = {
           custom_fields?: Json | null
           description?: string | null
           end_date: string
+          event_type?: string | null
           google_map_embed_code?: string | null
           google_map_url?: string | null
           id?: string
           invitation_code?: string | null
           location?: string | null
           max_waitlist_size?: number | null
+          meeting_id?: string | null
+          meeting_platform?: string | null
+          meeting_url?: string | null
           overbooking_percentage?: number | null
           promote_window_hours?: number | null
           registration_close_date?: string | null
@@ -417,12 +425,16 @@ export type Database = {
           custom_fields?: Json | null
           description?: string | null
           end_date?: string
+          event_type?: string | null
           google_map_embed_code?: string | null
           google_map_url?: string | null
           id?: string
           invitation_code?: string | null
           location?: string | null
           max_waitlist_size?: number | null
+          meeting_id?: string | null
+          meeting_platform?: string | null
+          meeting_url?: string | null
           overbooking_percentage?: number | null
           promote_window_hours?: number | null
           registration_close_date?: string | null
@@ -501,6 +513,89 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      integration_logs: {
+        Row: {
+          action: string
+          created_at: string
+          error_message: string | null
+          event_id: string | null
+          id: string
+          integration_type: string
+          request_data: Json | null
+          response_data: Json | null
+          retry_count: number | null
+          status: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          integration_type: string
+          request_data?: Json | null
+          response_data?: Json | null
+          retry_count?: number | null
+          status: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          integration_type?: string
+          request_data?: Json | null
+          response_data?: Json | null
+          retry_count?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_settings: {
+        Row: {
+          access_token: string | null
+          config: Json
+          created_at: string
+          id: string
+          integration_type: string
+          is_enabled: boolean | null
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          integration_type: string
+          is_enabled?: boolean | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          config?: Json
+          created_at?: string
+          id?: string
+          integration_type?: string
+          is_enabled?: boolean | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       notification_settings: {
         Row: {
@@ -752,6 +847,59 @@ export type Database = {
             columns: ["registration_id"]
             isOneToOne: false
             referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_media_posts: {
+        Row: {
+          created_at: string
+          engagement_data: Json | null
+          event_id: string
+          id: string
+          platform: string
+          post_content: string
+          post_id: string | null
+          post_url: string | null
+          posted_at: string | null
+          scheduled_for: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          engagement_data?: Json | null
+          event_id: string
+          id?: string
+          platform: string
+          post_content: string
+          post_id?: string | null
+          post_url?: string | null
+          posted_at?: string | null
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          engagement_data?: Json | null
+          event_id?: string
+          id?: string
+          platform?: string
+          post_content?: string
+          post_id?: string | null
+          post_url?: string | null
+          posted_at?: string | null
+          scheduled_for?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_media_posts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
