@@ -172,7 +172,7 @@ const AdminSettings = () => {
         </div>
 
         {/* Enterprise Features */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3 mb-6">
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/sso')}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -208,6 +208,48 @@ const AdminSettings = () => {
               </CardDescription>
             </CardHeader>
           </Card>
+        </div>
+
+        {/* Security Features */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Security & Privacy</h2>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/security/2fa')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Shield className="h-5 w-5" />
+                  Two-Factor Authentication
+                </CardTitle>
+                <CardDescription>
+                  Enable 2FA for enhanced security
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/data-privacy')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Shield className="h-5 w-5" />
+                  Data & Privacy
+                </CardTitle>
+                <CardDescription>
+                  Manage your data and privacy settings
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/security')}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Shield className="h-5 w-5" />
+                  Security Monitoring
+                </CardTitle>
+                <CardDescription>
+                  View security metrics and alerts
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
         </div>
 
         {/* User Management */}

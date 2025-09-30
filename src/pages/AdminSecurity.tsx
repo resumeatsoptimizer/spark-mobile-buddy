@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Shield, Key, Webhook, AlertTriangle, History } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import SecurityMonitoring from '@/components/SecurityMonitoring';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -114,22 +116,38 @@ export default function AdminSecurity() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Shield className="w-8 h-8" />
-            Security & Compliance
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage API keys, webhooks, and security settings
-          </p>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Shield className="w-8 h-8" />
+              Security & Compliance
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage API keys, webhooks, and security settings
+            </p>
+          </div>
         </div>
-      </div>
+
+        {/* Security Monitoring Dashboard */}
+        <SecurityMonitoring />
 
       <Tabs defaultValue="api-keys" className="space-y-4">
         <TabsList>
@@ -325,6 +343,7 @@ export default function AdminSecurity() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

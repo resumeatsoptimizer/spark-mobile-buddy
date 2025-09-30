@@ -31,6 +31,8 @@ import NotificationsSettings from "./pages/NotificationsSettings";
 import AdminSSO from "./pages/AdminSSO";
 import AdminRBAC from "./pages/AdminRBAC";
 import APIDocumentation from "./pages/APIDocumentation";
+import Security2FA from "./pages/Security2FA";
+import DataPrivacy from "./pages/DataPrivacy";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +67,8 @@ const App = () => (
           <Route path="/admin/sso" element={<AdminSSO />} />
           <Route path="/admin/rbac" element={<AdminRBAC />} />
           <Route path="/admin/api-docs" element={<APIDocumentation />} />
+          <Route path="/security/2fa" element={<Security2FA />} />
+          <Route path="/data-privacy" element={<DataPrivacy />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/notifications" element={<NotificationsSettings />} />
           <Route path="/check-in" element={<EventCheckIn />} />
