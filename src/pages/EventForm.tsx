@@ -339,18 +339,39 @@ const EventForm = () => {
                   id="location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="เช่น โรงแรม ABC ห้อง 123"
+                  placeholder="เช่น โรงแรม ABC กรุงเทพฯ หรือ Central World"
                 />
+                <p className="text-xs text-muted-foreground">
+                  💡 ระบุชื่อสถานที่หรือที่อยู่เพื่อแสดงแผนที่แบบ Embed ในหน้ารายละเอียด
+                </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="googleMapUrl">ลิงค์ Google Map</Label>
+                <Label htmlFor="googleMapUrl">ลิงค์ Google Map (ทางเลือก)</Label>
                 <Input
                   id="googleMapUrl"
                   type="url"
                   value={googleMapUrl}
                   onChange={(e) => setGoogleMapUrl(e.target.value)}
-                  placeholder="https://maps.google.com/..."
+                  placeholder="https://maps.google.com/... หรือ https://goo.gl/maps/..."
                 />
+                <p className="text-xs text-muted-foreground">
+                  🔗 ลิงค์สำหรับปุ่ม "เปิดใน Google Maps" (ใช้ลิงค์ใดก็ได้จาก Google Maps)
+                </p>
+                {location && (
+                  <div className="mt-2 p-3 bg-muted/50 rounded-lg border">
+                    <p className="text-xs font-medium mb-1">ตัวอย่างแผนที่ที่จะแสดง:</p>
+                    <div className="w-full h-[150px] rounded overflow-hidden">
+                      <iframe
+                        src={`https://maps.google.com/maps?q=${encodeURIComponent(location)}&output=embed`}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        title="ตัวอย่างแผนที่"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -241,7 +241,7 @@ const EventDetails = () => {
                           <p className="font-semibold text-muted-foreground">ดูตำแหน่งบนแผนที่</p>
                         )}
                         {event.google_map_url && (
-                          <div className="mt-2 space-y-2">
+                          <div className="mt-2 flex flex-wrap gap-2">
                             <a
                               href={event.google_map_url}
                               target="_blank"
@@ -256,17 +256,17 @@ const EventDetails = () => {
                     </div>
                     
                     {/* Embedded Google Map */}
-                    {event.google_map_url && (
-                      <div className="w-full h-[300px] rounded-lg overflow-hidden border">
+                    {event.location && (
+                      <div className="w-full h-[300px] rounded-lg overflow-hidden border shadow-sm">
                         <iframe
-                          src={`https://www.google.com/maps/embed?pb=${event.google_map_url.split('/').pop()}`}
+                          src={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}&output=embed`}
                           width="100%"
                           height="100%"
                           style={{ border: 0 }}
                           allowFullScreen
                           loading="lazy"
                           referrerPolicy="no-referrer-when-downgrade"
-                          title="Google Map"
+                          title={`แผนที่ ${event.location}`}
                         />
                       </div>
                     )}
