@@ -384,7 +384,7 @@ const EventRegistration = () => {
 
   const isFull = event.seats_remaining === 0 || event.seats_remaining >= maxSeats;
   const seatsPercentage = (event.seats_remaining / event.seats_total) * 100;
-  const customFields = (event.custom_fields as any as CustomField[]) || [];
+  const customFields = Array.isArray(event.custom_fields) ? (event.custom_fields as CustomField[]) : [];
   
   const now = new Date();
   const isRegistrationOpen = !event.registration_open_date || new Date(event.registration_open_date) <= now;
