@@ -24,6 +24,9 @@ import AdminOrganizations from "./pages/AdminOrganizations";
 import AdminTeams from "./pages/AdminTeams";
 import AdminRoles from "./pages/AdminRoles";
 import UserProfile from "./pages/UserProfile";
+import EventCheckIn from "./pages/EventCheckIn";
+import AdminSecurity from "./pages/AdminSecurity";
+import ParticipantQRCode from "./pages/ParticipantQRCode";
 
 const queryClient = new QueryClient();
 
@@ -54,7 +57,10 @@ const App = () => (
           <Route path="/admin/organizations" element={<AdminOrganizations />} />
           <Route path="/admin/teams" element={<AdminTeams />} />
           <Route path="/admin/roles" element={<AdminRoles />} />
+          <Route path="/admin/security" element={<AdminSecurity />} />
           <Route path="/profile" element={<UserProfile />} />
+          <Route path="/check-in" element={<EventCheckIn />} />
+          <Route path="/my-qr-code" element={<ParticipantQRCode />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

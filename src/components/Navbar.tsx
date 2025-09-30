@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Building2, Users, Shield } from "lucide-react";
+import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Building2, Users, Shield, Lock, QrCode, ScanLine } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
@@ -132,6 +132,13 @@ const Navbar = () => {
                       บทบาท
                     </Button>
                     <Button
+                      variant={isActive("/admin/security") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/security")}
+                    >
+                      <Lock className="mr-2 h-4 w-4" />
+                      Security
+                    </Button>
+                    <Button
                       variant={isActive("/admin/automation") ? "default" : "ghost"}
                       onClick={() => navigate("/admin/automation")}
                     >
@@ -159,8 +166,26 @@ const Navbar = () => {
                       <Settings className="mr-2 h-4 w-4" />
                       ตั้งค่า
                     </Button>
-                  </>
-                )}
+                </>
+              )}
+              {isStaff && (
+                <Button
+                  variant={isActive("/check-in") ? "default" : "ghost"}
+                  onClick={() => navigate("/check-in")}
+                >
+                  <ScanLine className="mr-2 h-4 w-4" />
+                  Check-In
+                </Button>
+              )}
+              {userRole === "participant" && (
+                <Button
+                  variant={isActive("/my-qr-code") ? "default" : "ghost"}
+                  onClick={() => navigate("/my-qr-code")}
+                >
+                  <QrCode className="mr-2 h-4 w-4" />
+                  My QR Code
+                </Button>
+              )}
               </>
             )}
 
@@ -284,6 +309,17 @@ const Navbar = () => {
                       บทบาท
                     </Button>
                     <Button
+                      variant={isActive("/admin/security") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/security");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Lock className="mr-2 h-4 w-4" />
+                      Security
+                    </Button>
+                    <Button
                       variant={isActive("/admin/automation") ? "default" : "ghost"}
                       className="w-full justify-start"
                       onClick={() => {
@@ -327,8 +363,34 @@ const Navbar = () => {
                       <Settings className="mr-2 h-4 w-4" />
                       ตั้งค่า
                     </Button>
-                  </>
-                )}
+                </>
+              )}
+              {isStaff && (
+                <Button
+                  variant={isActive("/check-in") ? "default" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => {
+                    navigate("/check-in");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <ScanLine className="mr-2 h-4 w-4" />
+                  Check-In
+                </Button>
+              )}
+              {userRole === "participant" && (
+                <Button
+                  variant={isActive("/my-qr-code") ? "default" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => {
+                    navigate("/my-qr-code");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <QrCode className="mr-2 h-4 w-4" />
+                  My QR Code
+                </Button>
+              )}
               </>
             )}
 
