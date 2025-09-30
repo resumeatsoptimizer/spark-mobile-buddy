@@ -14,6 +14,7 @@ interface Event {
   id: string;
   title: string;
   description: string | null;
+  cover_image_url: string | null;
   start_date: string;
   end_date: string;
   seats_total: number;
@@ -156,7 +157,20 @@ const Events = () => {
               const isFull = event.seats_remaining === 0;
               
               return (
-                <Card key={event.id} className="hover:shadow-lg transition-shadow">
+                <Card key={event.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+                  {event.cover_image_url && (
+                    <div className="relative aspect-video w-full overflow-hidden">
+                      <img
+                        src={event.cover_image_url}
+                        alt={event.title}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
+                        onClick={() => navigate(`/events/${event.id}`)}
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  )}
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -212,10 +226,16 @@ const Events = () => {
                             variant="outline"
                             size="sm"
                             className="flex-1"
+                            onClick={() => navigate(`/events/${event.id}`)}
+                          >
+                            ดูรายละเอียด
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => navigate(`/events/${event.id}/edit`)}
                           >
-                            <Edit className="mr-2 h-4 w-4" />
-                            แก้ไข
+                            <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="destructive"
@@ -226,13 +246,22 @@ const Events = () => {
                           </Button>
                         </>
                       ) : (
-                        <Button
-                          className="w-full"
-                          disabled={isFull}
-                          onClick={() => navigate(`/events/${event.id}/register`)}
-                        >
-                          {isFull ? "ที่นั่งเต็ม" : "ลงทะเบียน"}
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => navigate(`/events/${event.id}`)}
+                          >
+                            ดูรายละเอียด
+                          </Button>
+                          <Button
+                            className="flex-1"
+                            disabled={isFull}
+                            onClick={() => navigate(`/events/${event.id}/register`)}
+                          >
+                            {isFull ? "ที่นั่งเต็ม" : "ลงทะเบียน"}
+                          </Button>
+                        </>
                       )}
                     </div>
                   </CardContent>

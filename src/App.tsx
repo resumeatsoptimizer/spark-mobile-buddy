@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Events from "./pages/Events";
 import EventForm from "./pages/EventForm";
+import EventDetails from "./pages/EventDetails";
 import Registrations from "./pages/Registrations";
 import AdminSettings from "./pages/AdminSettings";
 import EventRegistration from "./pages/EventRegistration";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/events" element={<Events />} />
           <Route path="/events/create" element={<EventForm />} />
+          <Route path="/events/:id" element={<EventDetails />} />
           <Route path="/events/:id/edit" element={<EventForm />} />
           <Route path="/events/:id/register" element={<EventRegistration />} />
           <Route path="/registrations" element={<Registrations />} />
