@@ -24,6 +24,7 @@ export type Database = {
           custom_fields: Json | null
           description: string | null
           end_date: string
+          google_map_embed_code: string | null
           google_map_url: string | null
           id: string
           invitation_code: string | null
@@ -50,6 +51,7 @@ export type Database = {
           custom_fields?: Json | null
           description?: string | null
           end_date: string
+          google_map_embed_code?: string | null
           google_map_url?: string | null
           id?: string
           invitation_code?: string | null
@@ -76,6 +78,7 @@ export type Database = {
           custom_fields?: Json | null
           description?: string | null
           end_date?: string
+          google_map_embed_code?: string | null
           google_map_url?: string | null
           id?: string
           invitation_code?: string | null

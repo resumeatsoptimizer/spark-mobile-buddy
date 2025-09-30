@@ -19,6 +19,7 @@ interface Event {
   cover_image_url: string | null;
   location: string | null;
   google_map_url: string | null;
+  google_map_embed_code: string | null;
   start_date: string;
   end_date: string;
   seats_total: number;
@@ -257,18 +258,25 @@ const EventDetails = () => {
                     </div>
                     
                     {/* Embedded Google Map */}
-                    {(event.location || (event.google_map_url && isValidGoogleMapsUrl(event.google_map_url))) && (
+                    {(event.google_map_embed_code || event.location || (event.google_map_url && isValidGoogleMapsUrl(event.google_map_url))) && (
                       <div className="w-full h-[300px] rounded-lg overflow-hidden border shadow-sm">
-                        <iframe
-                          src={convertToEmbedUrl(event.google_map_url || '', event.location || undefined)}
-                          width="100%"
-                          height="100%"
-                          style={{ border: 0 }}
-                          allowFullScreen
-                          loading="lazy"
-                          referrerPolicy="no-referrer-when-downgrade"
-                          title={`แผนที่ ${event.location || 'สถานที่จัดงาน'}`}
-                        />
+                        {event.google_map_embed_code ? (
+                          <div 
+                            className="w-full h-full" 
+                            dangerouslySetInnerHTML={{ __html: event.google_map_embed_code }}
+                          />
+                        ) : (
+                          <iframe
+                            src={convertToEmbedUrl(event.google_map_url || '', event.location || undefined)}
+                            width="100%"
+                            height="100%"
+                            style={{ border: 0 }}
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            title={`แผนที่ ${event.location || 'สถานที่จัดงาน'}`}
+                          />
+                        )}
                       </div>
                     )}
                   </CardContent>

@@ -24,6 +24,7 @@ const EventForm = () => {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [location, setLocation] = useState("");
   const [googleMapUrl, setGoogleMapUrl] = useState("");
+  const [googleMapEmbedCode, setGoogleMapEmbedCode] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [seatsTotal, setSeatsTotal] = useState(0);
@@ -101,6 +102,7 @@ const EventForm = () => {
       setCoverImageUrl(data.cover_image_url || "");
       setLocation(data.location || "");
       setGoogleMapUrl(data.google_map_url || "");
+      setGoogleMapEmbedCode(data.google_map_embed_code || "");
       setStartDate(data.start_date.substring(0, 16));
       setEndDate(data.end_date.substring(0, 16));
       setSeatsTotal(data.seats_total);
@@ -180,6 +182,7 @@ const EventForm = () => {
       cover_image_url: coverImageUrl || null,
       location: location || null,
       google_map_url: googleMapUrl || null,
+      google_map_embed_code: googleMapEmbedCode || null,
       start_date: new Date(startDate).toISOString(),
       end_date: new Date(endDate).toISOString(),
       seats_total: seatsTotal,
@@ -357,19 +360,31 @@ const EventForm = () => {
                 <p className="text-xs text-muted-foreground">
                   🔗 ลิงค์สำหรับปุ่ม "เปิดใน Google Maps" (ใช้ลิงค์ใดก็ได้จาก Google Maps)
                 </p>
-                {location && (
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code (แนะนำ - แม่นยำที่สุด)</Label>
+                <Textarea
+                  id="googleMapEmbedCode"
+                  value={googleMapEmbedCode}
+                  onChange={(e) => setGoogleMapEmbedCode(e.target.value)}
+                  placeholder='<iframe src="https://www.google.com/maps/embed?pb=..." width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+                  rows={4}
+                  className="font-mono text-xs"
+                />
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>📍 <strong>วิธีใช้:</strong></p>
+                  <ol className="list-decimal list-inside space-y-0.5 ml-2">
+                    <li>เปิด Google Maps แล้วค้นหาสถานที่</li>
+                    <li>กดปุ่ม "แชร์" (Share)</li>
+                    <li>เลือกแท็บ "ฝังแผนที่" (Embed a map)</li>
+                    <li>คัดลอกโค้ด iframe ทั้งหมดมาวางที่นี่</li>
+                  </ol>
+                  <p className="mt-2 text-primary">✨ ถ้ามีโค้ดนี้ จะใช้แผนที่จาก Embed Code ก่อนเสมอ</p>
+                </div>
+                {googleMapEmbedCode && (
                   <div className="mt-2 p-3 bg-muted/50 rounded-lg border">
                     <p className="text-xs font-medium mb-1">ตัวอย่างแผนที่ที่จะแสดง:</p>
-                    <div className="w-full h-[150px] rounded overflow-hidden">
-                      <iframe
-                        src={`https://maps.google.com/maps?q=${encodeURIComponent(location)}&output=embed`}
-                        width="100%"
-                        height="100%"
-                        style={{ border: 0 }}
-                        loading="lazy"
-                        title="ตัวอย่างแผนที่"
-                      />
-                    </div>
+                    <div className="w-full h-[200px] rounded overflow-hidden" dangerouslySetInnerHTML={{ __html: googleMapEmbedCode }} />
                   </div>
                 )}
               </div>
