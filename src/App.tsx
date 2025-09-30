@@ -28,6 +28,9 @@ import EventCheckIn from "./pages/EventCheckIn";
 import AdminSecurity from "./pages/AdminSecurity";
 import ParticipantQRCode from "./pages/ParticipantQRCode";
 import NotificationsSettings from "./pages/NotificationsSettings";
+import AdminSSO from "./pages/AdminSSO";
+import AdminRBAC from "./pages/AdminRBAC";
+import APIDocumentation from "./pages/APIDocumentation";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +62,9 @@ const App = () => (
           <Route path="/admin/teams" element={<AdminTeams />} />
           <Route path="/admin/roles" element={<AdminRoles />} />
           <Route path="/admin/security" element={<AdminSecurity />} />
+          <Route path="/admin/sso" element={<AdminSSO />} />
+          <Route path="/admin/rbac" element={<AdminRBAC />} />
+          <Route path="/admin/api-docs" element={<APIDocumentation />} />
           <Route path="/profile" element={<UserProfile />} />
           <Route path="/notifications" element={<NotificationsSettings />} />
           <Route path="/check-in" element={<EventCheckIn />} />

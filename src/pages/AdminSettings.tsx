@@ -171,6 +171,45 @@ const AdminSettings = () => {
           </p>
         </div>
 
+        {/* Enterprise Features */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/sso')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Shield className="h-5 w-5" />
+                Single Sign-On
+              </CardTitle>
+              <CardDescription>
+                Configure Google and Microsoft OAuth
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/rbac')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="h-5 w-5" />
+                Advanced RBAC
+              </CardTitle>
+              <CardDescription>
+                Define custom roles and permissions
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/api-docs')}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Settings className="h-5 w-5" />
+                API Documentation
+              </CardTitle>
+              <CardDescription>
+                REST API integration guide
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+
         {/* User Management */}
         <Card>
           <CardHeader>
