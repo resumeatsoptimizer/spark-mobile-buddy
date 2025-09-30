@@ -10,6 +10,14 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
 
+interface TicketType {
+  id: string;
+  name: string;
+  price: number;
+  seats_allocated: number;
+  seats_remaining: number;
+}
+
 interface Event {
   id: string;
   title: string;
@@ -20,6 +28,7 @@ interface Event {
   seats_total: number;
   seats_remaining: number;
   created_at: string;
+  ticket_types?: TicketType[];
 }
 
 const Events = () => {
@@ -55,7 +64,16 @@ const Events = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("events")
-      .select("*")
+      .select(`
+        *,
+        ticket_types (
+          id,
+          name,
+          price,
+          seats_allocated,
+          seats_remaining
+        )
+      `)
       .order("start_date", { ascending: false });
 
     if (error) {
@@ -192,6 +210,21 @@ const Events = () => {
                         {format(new Date(event.start_date), "d MMM yyyy", { locale: th })}
                       </span>
                     </div>
+
+                    {/* Price Range */}
+                    {event.ticket_types && event.ticket_types.length > 0 && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Badge variant="secondary" className="font-medium">
+                          {event.ticket_types.length === 1 
+                            ? `฿${event.ticket_types[0].price.toLocaleString()}`
+                            : `฿${Math.min(...event.ticket_types.map(t => t.price)).toLocaleString()} - ฿${Math.max(...event.ticket_types.map(t => t.price)).toLocaleString()}`
+                          }
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {event.ticket_types.length} ประเภทบัตร
+                        </span>
+                      </div>
+                    )}
 
                     {/* Seats Info */}
                     <div className="space-y-2">

@@ -110,19 +110,19 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Admin Settings (Admin/Staff only) */}
-          {isAdmin && (
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin")}>
+          {/* Admin Dashboard (Admin/Staff only) */}
+          {isStaff && (
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/dashboard")}>
               <CardHeader>
                 <Settings className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>ตั้งค่าระบบ</CardTitle>
+                <CardTitle>Admin Dashboard</CardTitle>
                 <CardDescription>
-                  จัดการผู้ใช้และสิทธิ์การเข้าถึง
+                  ดูสถิติและจัดการระบบ
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button className="w-full" variant="outline">
-                  ตั้งค่าระบบ
+                  เข้าสู่ Admin
                 </Button>
               </CardContent>
             </Card>

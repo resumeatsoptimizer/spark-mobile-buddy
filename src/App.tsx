@@ -12,6 +12,9 @@ import EventDetails from "./pages/EventDetails";
 import Registrations from "./pages/Registrations";
 import AdminSettings from "./pages/AdminSettings";
 import EventRegistration from "./pages/EventRegistration";
+import AdminDashboard from "./pages/AdminDashboard";
+import PaymentManagement from "./pages/PaymentManagement";
+import AdminRegistrations from "./pages/AdminRegistrations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +36,9 @@ const App = () => (
           <Route path="/events/:id/register" element={<EventRegistration />} />
           <Route path="/registrations" element={<Registrations />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/payments" element={<PaymentManagement />} />
+          <Route path="/admin/registrations" element={<AdminRegistrations />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

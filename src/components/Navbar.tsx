@@ -80,11 +80,11 @@ const Navbar = () => {
               <>
                 {isStaff && (
                   <Button
-                    variant={isActive("/dashboard") ? "default" : "ghost"}
-                    onClick={() => navigate("/dashboard")}
+                    variant={isActive("/admin/dashboard") ? "default" : "ghost"}
+                    onClick={() => navigate("/admin/dashboard")}
                   >
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Dashboard
+                    Admin
                   </Button>
                 )}
                 <Button
@@ -146,15 +146,15 @@ const Navbar = () => {
               <>
                 {isStaff && (
                   <Button
-                    variant={isActive("/dashboard") ? "default" : "ghost"}
+                    variant={isActive("/admin/dashboard") ? "default" : "ghost"}
                     className="w-full justify-start"
                     onClick={() => {
-                      navigate("/dashboard");
+                      navigate("/admin/dashboard");
                       setMobileMenuOpen(false);
                     }}
                   >
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Dashboard
+                    Admin
                   </Button>
                 )}
                 <Button
