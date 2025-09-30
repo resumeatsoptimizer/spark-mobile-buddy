@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, LogOut, Settings } from "lucide-react";
+import { Calendar, Users, Settings } from "lucide-react";
+import Navbar from "@/components/Navbar";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -43,14 +44,6 @@ const Dashboard = () => {
     setLoading(false);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "ออกจากระบบสำเร็จ",
-      description: "แล้วพบกันใหม่!",
-    });
-    navigate("/auth");
-  };
 
   if (loading) {
     return (
@@ -68,19 +61,17 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
+      
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-6">
           <div>
-            <h1 className="text-2xl font-bold">Iwelty Event Dashboard</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+            <p className="text-muted-foreground">
               ยินดีต้อนรับ, {userName} ({userRole === "admin" ? "ผู้ดูแลระบบ" : userRole === "staff" ? "เจ้าหน้าที่" : "ผู้เข้าร่วม"})
             </p>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            ออกจากระบบ
-          </Button>
         </div>
       </header>
 

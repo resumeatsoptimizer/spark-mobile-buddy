@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, Plus, ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { Calendar, Users, Plus, Edit, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import Navbar from "@/components/Navbar";
 
 interface Event {
   id: string;
@@ -108,20 +109,17 @@ const Events = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
+      
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold">งานอีเว้นท์</h1>
-                <p className="text-sm text-muted-foreground">
-                  {isStaff ? "จัดการงานอีเว้นท์ทั้งหมด" : "งานอีเว้นท์ที่เปิดรับสมัคร"}
-                </p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold mb-2">งานอีเว้นท์ทั้งหมด</h1>
+              <p className="text-muted-foreground">
+                {isStaff ? "จัดการงานอีเว้นท์ทั้งหมด" : "งานอีเว้นท์ที่เปิดรับสมัคร"}
+              </p>
             </div>
             {isStaff && (
               <Button onClick={() => navigate("/events/create")}>
