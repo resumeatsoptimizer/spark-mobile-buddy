@@ -19,6 +19,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CustomField } from "@/components/event-builder/FieldBuilder";
 import { PaymentDialog } from "@/components/PaymentDialog";
 
+interface TicketType {
+  id: string;
+  name: string;
+  price: number;
+  seats_allocated: number;
+  seats_remaining: number;
+}
+
 interface Event {
   id: string;
   title: string;
@@ -54,6 +62,8 @@ const EventRegistration = () => {
   const [inputCode, setInputCode] = useState("");
   const [showPayment, setShowPayment] = useState(false);
   const [newRegistrationId, setNewRegistrationId] = useState<string | null>(null);
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
+  const [selectedTicketTypeId, setSelectedTicketTypeId] = useState<string>("");
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -115,6 +125,19 @@ const EventRegistration = () => {
       .eq("event_id", id);
     
     setWaitlistCount(count || 0);
+
+    // Fetch ticket types
+    const { data: ticketTypesData } = await supabase
+      .from("ticket_types")
+      .select("*")
+      .eq("event_id", id)
+      .order("price", { ascending: true });
+    
+    if (ticketTypesData && ticketTypesData.length > 0) {
+      setTicketTypes(ticketTypesData);
+      setSelectedTicketTypeId(ticketTypesData[0].id);
+    }
+
     setEvent(data);
     setLoading(false);
   };
@@ -139,6 +162,18 @@ const EventRegistration = () => {
     e.preventDefault();
     
     if (!userId || !event) return;
+
+    // Validate ticket type selection
+    if (ticketTypes.length > 0 && !selectedTicketTypeId) {
+      toast({
+        title: "กรุณาเลือกประเภทตั๋ว",
+        description: "โปรดเลือกประเภทตั๋วที่ต้องการ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedTicket = ticketTypes.find(t => t.id === selectedTicketTypeId);
 
     // Check registration window
     const now = new Date();
@@ -237,8 +272,9 @@ const EventRegistration = () => {
         event_id: event.id,
         user_id: userId,
         status,
-        payment_status: "unpaid",
+        payment_status: selectedTicket && selectedTicket.price === 0 ? "paid" : "unpaid",
         form_data: formData,
+        ticket_type_id: selectedTicketTypeId || null,
       }])
       .select()
       .single();
@@ -256,17 +292,29 @@ const EventRegistration = () => {
           .from("events")
           .update({ seats_remaining: event.seats_remaining - 1 })
           .eq("id", event.id);
+
+        // Update ticket type seats if selected
+        if (selectedTicket) {
+          await supabase
+            .from("ticket_types")
+            .update({ seats_remaining: selectedTicket.seats_remaining - 1 })
+            .eq("id", selectedTicketTypeId);
+        }
       }
+
+      const isFreeTicket = selectedTicket && selectedTicket.price === 0;
 
       toast({
         title: "สำเร็จ!",
         description: status === "pending" 
-          ? "ลงทะเบียนเรียบร้อยแล้ว คุณสามารถชำระเงินได้เลย" 
+          ? isFreeTicket 
+            ? "ลงทะเบียนเรียบร้อยแล้ว" 
+            : "ลงทะเบียนเรียบร้อยแล้ว คุณสามารถชำระเงินได้เลย"
           : "เพิ่มเข้ารายการรอเรียบร้อยแล้ว",
       });
 
-      if (status === "pending") {
-        // Show payment dialog for confirmed registrations
+      if (status === "pending" && !isFreeTicket) {
+        // Show payment dialog for paid registrations only
         setNewRegistrationId(registration.id);
         setShowPayment(true);
       } else {
@@ -426,7 +474,7 @@ const EventRegistration = () => {
           open={showPayment}
           onOpenChange={setShowPayment}
           registrationId={newRegistrationId}
-          amount={1000} // TODO: Get amount from event/ticket type
+          amount={ticketTypes.find(t => t.id === selectedTicketTypeId)?.price || 0}
           eventTitle={event.title}
           onSuccess={handlePaymentSuccess}
         />
@@ -561,7 +609,7 @@ const EventRegistration = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                   <div className="space-y-2">
                     <Label htmlFor="phone">เบอร์โทรศัพท์ *</Label>
                     <Input
                       id="phone"
@@ -573,6 +621,28 @@ const EventRegistration = () => {
                     />
                   </div>
 
+                  {/* Ticket Type Selection */}
+                  {ticketTypes.length > 0 && (
+                    <div className="space-y-2">
+                      <Label htmlFor="ticketType">ประเภทตั๋ว *</Label>
+                      <Select
+                        value={selectedTicketTypeId}
+                        onValueChange={setSelectedTicketTypeId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="เลือกประเภทตั๋ว" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          {ticketTypes.map((ticket) => (
+                            <SelectItem key={ticket.id} value={ticket.id}>
+                              {ticket.name} - ฿{ticket.price.toLocaleString()} ({ticket.seats_remaining} ที่นั่งคงเหลือ)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {/* Custom Fields */}
                   {customFields.map((field) => (
                     <div key={field.id} className="space-y-2">
@@ -583,7 +653,7 @@ const EventRegistration = () => {
                     </div>
                   ))}
 
-                  <div className="pt-4 space-y-3">
+                   <div className="pt-4 space-y-3">
                     <Button 
                       type="submit" 
                       className="w-full" 
@@ -597,9 +667,14 @@ const EventRegistration = () => {
                         : "ยืนยันการลงทะเบียน"
                       }
                     </Button>
-                    <p className="text-xs text-muted-foreground text-center">
-                      การลงทะเบียนไม่มีค่าใช้จ่าย
-                    </p>
+                    {ticketTypes.length > 0 && selectedTicketTypeId && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        {ticketTypes.find(t => t.id === selectedTicketTypeId)?.price === 0 
+                          ? "การลงทะเบียนไม่มีค่าใช้จ่าย" 
+                          : `ค่าลงทะเบียน ฿${ticketTypes.find(t => t.id === selectedTicketTypeId)?.price.toLocaleString()}`
+                        }
+                      </p>
+                    )}
                   </div>
                 </form>
               </CardContent>
