@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { Search, RefreshCw, Download, Mail, FileDown } from "lucide-react";
+import { Search, RefreshCw, Download, Mail, FileDown, Trash2, CheckCircle, Send } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { exportRegistrationsToCSV, exportEventRegistrations } from "@/lib/csvExport";
 
@@ -45,6 +48,11 @@ const AdminRegistrations = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterEvent, setFilterEvent] = useState<string>("all");
   const [events, setEvents] = useState<{ id: string; title: string }[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<string>("");
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(0);
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -230,6 +238,162 @@ const AdminRegistrations = () => {
     toast({
       title: "ส่งออกข้อมูลสำเร็จ",
       description: `ส่งออกข้อมูล ${eventRegistrations.length} รายการเรียบร้อยแล้ว`,
+    });
+  };
+
+  // Bulk selection handlers
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredRegistrations.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredRegistrations.map(r => r.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  // Bulk operations
+  const handleBulkAction = (action: string) => {
+    if (selectedIds.size === 0) {
+      toast({
+        title: "กรุณาเลือกรายการ",
+        description: "กรุณาเลือกรายการที่ต้องการดำเนินการ",
+        variant: "destructive",
+      });
+      return;
+    }
+    setBulkAction(action);
+    setShowBulkDialog(true);
+  };
+
+  const confirmBulkAction = async () => {
+    setShowBulkDialog(false);
+    setIsBulkProcessing(true);
+    setBulkProgress(0);
+
+    const selectedRegs = registrations.filter(r => selectedIds.has(r.id));
+    const total = selectedRegs.length;
+
+    try {
+      switch (bulkAction) {
+        case "status-confirmed":
+        case "status-pending":
+        case "status-cancelled":
+          await processBulkStatusUpdate(selectedRegs, bulkAction.replace("status-", ""), total);
+          break;
+        case "email":
+          await processBulkEmail(selectedRegs, total);
+          break;
+        case "export":
+          exportRegistrationsToCSV(selectedRegs, `bulk_export_${format(new Date(), "yyyy-MM-dd_HHmm")}.csv`);
+          toast({
+            title: "ส่งออกสำเร็จ",
+            description: `ส่งออกข้อมูล ${total} รายการเรียบร้อยแล้ว`,
+          });
+          break;
+        case "delete":
+          await processBulkDelete(selectedRegs, total);
+          break;
+      }
+    } catch (error) {
+      console.error("Bulk operation error:", error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถดำเนินการได้ กรุณาลองใหม่อีกครั้ง",
+        variant: "destructive",
+      });
+    }
+
+    setIsBulkProcessing(false);
+    setBulkProgress(0);
+    setSelectedIds(new Set());
+    fetchRegistrations();
+  };
+
+  const processBulkStatusUpdate = async (regs: Registration[], newStatus: string, total: number) => {
+    let completed = 0;
+    
+    for (const reg of regs) {
+      await supabase
+        .from("registrations")
+        .update({ status: newStatus })
+        .eq("id", reg.id);
+      
+      completed++;
+      setBulkProgress((completed / total) * 100);
+    }
+
+    toast({
+      title: "อัปเดตสถานะสำเร็จ",
+      description: `อัปเดตสถานะ ${total} รายการเป็น "${newStatus === 'confirmed' ? 'ยืนยันแล้ว' : newStatus === 'pending' ? 'รอดำเนินการ' : 'ยกเลิก'}" เรียบร้อยแล้ว`,
+    });
+  };
+
+  const processBulkEmail = async (regs: Registration[], total: number) => {
+    let completed = 0;
+    let success = 0;
+    let failed = 0;
+
+    for (const reg of regs) {
+      try {
+        const { error } = await supabase.functions.invoke('send-registration-email', {
+          body: {
+            type: 'status_update',
+            recipientEmail: reg.profiles.email,
+            recipientName: reg.profiles.name,
+            eventTitle: reg.events.title,
+            eventDate: reg.events.start_date,
+            eventLocation: reg.events.location,
+            registrationId: reg.id,
+            status: reg.status,
+            ticketType: reg.ticket_types?.name,
+          }
+        });
+
+        if (error) {
+          failed++;
+        } else {
+          success++;
+        }
+      } catch {
+        failed++;
+      }
+
+      completed++;
+      setBulkProgress((completed / total) * 100);
+    }
+
+    toast({
+      title: "ส่งอีเมลเสร็จสิ้น",
+      description: `ส่งสำเร็จ: ${success} | ล้มเหลว: ${failed}`,
+      variant: failed > 0 ? "destructive" : "default",
+    });
+  };
+
+  const processBulkDelete = async (regs: Registration[], total: number) => {
+    let completed = 0;
+
+    for (const reg of regs) {
+      await supabase
+        .from("registrations")
+        .delete()
+        .eq("id", reg.id);
+      
+      completed++;
+      setBulkProgress((completed / total) * 100);
+    }
+
+    toast({
+      title: "ลบข้อมูลสำเร็จ",
+      description: `ลบข้อมูล ${total} รายการเรียบร้อยแล้ว`,
     });
   };
 
@@ -428,6 +592,84 @@ const AdminRegistrations = () => {
           </CardContent>
         </Card>
 
+        {/* Bulk Action Toolbar */}
+        {selectedIds.size > 0 && (
+          <Card className="mb-6 border-primary">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Badge variant="default" className="text-base px-3 py-1">
+                    เลือกแล้ว {selectedIds.size} รายการ
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedIds(new Set())}
+                  >
+                    ยกเลิกทั้งหมด
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Select onValueChange={(value) => handleBulkAction(value)}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="เปลี่ยนสถานะ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="status-confirmed">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4" />
+                          เป็น "ยืนยันแล้ว"
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="status-pending">เป็น "รอดำเนินการ"</SelectItem>
+                      <SelectItem value="status-cancelled">เป็น "ยกเลิก"</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleBulkAction("email")}
+                  >
+                    <Send className="mr-2 h-4 w-4" />
+                    ส่งอีเมลหมู่
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleBulkAction("export")}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    ส่งออก CSV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleBulkAction("delete")}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    ลบทั้งหมด
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Progress Indicator */}
+        {isBulkProcessing && (
+          <Card className="mb-6 border-primary">
+            <CardContent className="pt-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">กำลังดำเนินการ...</p>
+                  <p className="text-sm text-muted-foreground">{Math.round(bulkProgress)}%</p>
+                </div>
+                <Progress value={bulkProgress} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Registrations Table */}
         <Card>
           <CardHeader>
@@ -438,6 +680,12 @@ const AdminRegistrations = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedIds.size === filteredRegistrations.length && filteredRegistrations.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>วันที่ลงทะเบียน</TableHead>
                   <TableHead>งานอีเว้นท์</TableHead>
                   <TableHead>ผู้ลงทะเบียน</TableHead>
@@ -450,13 +698,19 @@ const AdminRegistrations = () => {
               <TableBody>
                 {filteredRegistrations.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       ไม่พบข้อมูล
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredRegistrations.map((reg) => (
                     <TableRow key={reg.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(reg.id)}
+                          onCheckedChange={() => toggleSelect(reg.id)}
+                        />
+                      </TableCell>
                        <TableCell className="whitespace-nowrap">
                         {format(new Date(reg.created_at), "d MMM yyyy, HH:mm", { locale: th })}
                       </TableCell>
@@ -514,6 +768,45 @@ const AdminRegistrations = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Bulk Action Confirmation Dialog */}
+      <AlertDialog open={showBulkDialog} onOpenChange={setShowBulkDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการดำเนินการ</AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkAction === "delete" && (
+                <>
+                  คุณกำลังจะลบข้อมูล <strong>{selectedIds.size}</strong> รายการ 
+                  การดำเนินการนี้ไม่สามารถยกเลิกได้
+                </>
+              )}
+              {bulkAction === "email" && (
+                <>
+                  คุณกำลังจะส่งอีเมลไปยัง <strong>{selectedIds.size}</strong> รายการ
+                </>
+              )}
+              {bulkAction.startsWith("status-") && (
+                <>
+                  คุณกำลังจะเปลี่ยนสถานะของ <strong>{selectedIds.size}</strong> รายการ
+                  เป็น "{bulkAction === 'status-confirmed' ? 'ยืนยันแล้ว' : bulkAction === 'status-pending' ? 'รอดำเนินการ' : 'ยกเลิก'}"
+                </>
+              )}
+              {bulkAction === "export" && (
+                <>
+                  คุณกำลังจะส่งออกข้อมูล <strong>{selectedIds.size}</strong> รายการ
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBulkAction}>
+              ยืนยัน
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
