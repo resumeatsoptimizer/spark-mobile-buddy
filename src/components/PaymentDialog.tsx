@@ -93,9 +93,41 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
               variant: "destructive",
             });
           } else {
+            // Send payment success email
+            try {
+              const { data: registration } = await supabase
+                .from('registrations')
+                .select(`
+                  *,
+                  events (title, start_date, location),
+                  profiles (name, email),
+                  ticket_types (name)
+                `)
+                .eq('id', registrationId)
+                .single();
+
+              if (registration) {
+                await supabase.functions.invoke('send-registration-email', {
+                  body: {
+                    type: 'payment_success',
+                    recipientEmail: registration.profiles.email,
+                    recipientName: registration.profiles.name,
+                    eventTitle: registration.events.title,
+                    eventDate: registration.events.start_date,
+                    eventLocation: registration.events.location,
+                    registrationId: registrationId,
+                    amount: amount,
+                    ticketType: registration.ticket_types?.name,
+                  }
+                });
+              }
+            } catch (emailError) {
+              console.error('Failed to send payment success email:', emailError);
+            }
+
             toast({
               title: "ชำระเงินสำเร็จ",
-              description: "ระบบได้รับการชำระเงินของคุณแล้ว",
+              description: "ระบบได้รับการชำระเงินของคุณแล้ว และส่งอีเมลยืนยันไปแล้ว",
             });
             onSuccess();
             onOpenChange(false);

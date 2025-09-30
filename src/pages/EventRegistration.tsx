@@ -34,6 +34,7 @@ interface Event {
   cover_image_url: string | null;
   start_date: string;
   end_date: string;
+  location: string | null;
   seats_total: number;
   seats_remaining: number;
   custom_fields: any;
@@ -304,13 +305,35 @@ const EventRegistration = () => {
 
       const isFreeTicket = selectedTicket && selectedTicket.price === 0;
 
+      // Send registration confirmation email
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email) {
+          await supabase.functions.invoke('send-registration-email', {
+            body: {
+              type: 'registration',
+              recipientEmail: session.user.email,
+              recipientName: formData.name,
+              eventTitle: event.title,
+              eventDate: event.start_date,
+              eventLocation: event.location,
+              registrationId: registration.id,
+              ticketType: selectedTicket?.name,
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+        // Don't block the registration flow if email fails
+      }
+
       toast({
         title: "สำเร็จ!",
         description: status === "pending" 
           ? isFreeTicket 
-            ? "ลงทะเบียนเรียบร้อยแล้ว" 
+            ? "ลงทะเบียนเรียบร้อยแล้ว ตรวจสอบอีเมลของคุณ" 
             : "ลงทะเบียนเรียบร้อยแล้ว คุณสามารถชำระเงินได้เลย"
-          : "เพิ่มเข้ารายการรอเรียบร้อยแล้ว",
+          : "เพิ่มเข้ารายการรอเรียบร้อยแล้ว ตรวจสอบอีเมลของคุณ",
       });
 
       if (status === "pending" && !isFreeTicket) {

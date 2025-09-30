@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.omise-refund]
 verify_jwt = true
+
+[functions.send-registration-email]
+verify_jwt = true

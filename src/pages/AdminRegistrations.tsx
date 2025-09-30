@@ -21,6 +21,8 @@ interface Registration {
   event: {
     id: string;
     title: string;
+    start_date: string;
+    location: string | null;
   };
   ticket_type: {
     name: string;
@@ -88,7 +90,7 @@ const AdminRegistrations = () => {
       .from("registrations")
       .select(`
         *,
-        event:events(id, title),
+        event:events(id, title, start_date, location),
         ticket_type:ticket_types(name, price),
         profiles:user_id(email, name)
       `)
@@ -129,11 +131,56 @@ const AdminRegistrations = () => {
     }
   };
 
-  const sendConfirmationEmail = (email: string, eventTitle: string) => {
-    toast({
-      title: "กำลังดำเนินการ",
-      description: "ฟีเจอร์ส่งอีเมลยืนยันจะเปิดใช้งานในเร็วๆ นี้",
-    });
+  const sendConfirmationEmail = async (email: string, eventTitle: string) => {
+    try {
+      // Find the registration for this email and event
+      const registration = registrations.find(r => 
+        r.profiles.email === email && r.event.title === eventTitle
+      );
+      
+      if (!registration) {
+        toast({
+          title: "ไม่พบข้อมูล",
+          description: "ไม่พบข้อมูลการลงทะเบียน",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('send-registration-email', {
+        body: {
+          type: 'status_update',
+          recipientEmail: registration.profiles.email,
+          recipientName: registration.profiles.name,
+          eventTitle: registration.event.title,
+          eventDate: registration.event.start_date,
+          eventLocation: registration.event.location,
+          registrationId: registration.id,
+          status: registration.status,
+          ticketType: registration.ticket_type?.name,
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "ส่งอีเมลล้มเหลว",
+          description: "กรุณาลองใหม่อีกครั้ง",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "ส่งอีเมลสำเร็จ",
+          description: "ส่งอีเมลยืนยันไปยังผู้ลงทะเบียนแล้ว",
+        });
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถส่งอีเมลได้",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
