@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug } from "lucide-react";
+import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Building2, Users, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
@@ -94,6 +94,13 @@ const Navbar = () => {
                   <UserCircle className="mr-2 h-4 w-4" />
                   การลงทะเบียน
                 </Button>
+                <Button
+                  variant={isActive("/profile") ? "default" : "ghost"}
+                  onClick={() => navigate("/profile")}
+                >
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  โปรไฟล์
+                </Button>
                 {isAdmin && (
                   <>
                     <Button
@@ -102,6 +109,27 @@ const Navbar = () => {
                     >
                       <FolderTree className="mr-2 h-4 w-4" />
                       จัดการ
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/organizations") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/organizations")}
+                    >
+                      <Building2 className="mr-2 h-4 w-4" />
+                      องค์กร
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/teams") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/teams")}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      ทีม
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/roles") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/roles")}
+                    >
+                      <Shield className="mr-2 h-4 w-4" />
+                      บทบาท
                     </Button>
                     <Button
                       variant={isActive("/admin/automation") ? "default" : "ghost"}
@@ -198,6 +226,17 @@ const Navbar = () => {
                   <UserCircle className="mr-2 h-4 w-4" />
                   การลงทะเบียน
                 </Button>
+                <Button
+                  variant={isActive("/profile") ? "default" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => {
+                    navigate("/profile");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  โปรไฟล์
+                </Button>
                 {isAdmin && (
                   <>
                     <Button
@@ -210,6 +249,39 @@ const Navbar = () => {
                     >
                       <FolderTree className="mr-2 h-4 w-4" />
                       จัดการ
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/organizations") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/organizations");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Building2 className="mr-2 h-4 w-4" />
+                      องค์กร
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/teams") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/teams");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      ทีม
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/roles") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/roles");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Shield className="mr-2 h-4 w-4" />
+                      บทบาท
                     </Button>
                     <Button
                       variant={isActive("/admin/automation") ? "default" : "ghost"}
