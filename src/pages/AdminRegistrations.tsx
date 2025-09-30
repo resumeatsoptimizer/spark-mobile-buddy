@@ -11,9 +11,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Slider } from "@/components/ui/slider";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { Search, RefreshCw, Download, Mail, FileDown, Trash2, CheckCircle, Send } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Search, RefreshCw, Download, Mail, FileDown, Trash2, CheckCircle, Send, CalendarIcon, Filter, X, Save } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { exportRegistrationsToCSV, exportEventRegistrations } from "@/lib/csvExport";
 
@@ -54,11 +59,32 @@ const AdminRegistrations = () => {
   const [bulkProgress, setBulkProgress] = useState(0);
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
 
+  // Advanced Filter States
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [dateRangeType, setDateRangeType] = useState<"registration" | "event" | "payment">("registration");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [minAmount, setMinAmount] = useState<number>(0);
+  const [maxAmount, setMaxAmount] = useState<number>(10000);
+  const [searchOperator, setSearchOperator] = useState<"contains" | "exact" | "starts">("contains");
+  const [customFieldFilters, setCustomFieldFilters] = useState<Record<string, string>>({});
+  const [availableCustomFields, setAvailableCustomFields] = useState<string[]>([]);
+  const [savedFilters, setSavedFilters] = useState<any[]>([]);
+  const [showSaveFilterDialog, setShowSaveFilterDialog] = useState(false);
+  const [filterName, setFilterName] = useState("");
+
   useEffect(() => {
     checkAuth();
     fetchEvents();
     fetchRegistrations();
+    loadSavedFilters();
   }, []);
+
+  useEffect(() => {
+    if (registrations.length > 0) {
+      analyzeCustomFields();
+    }
+  }, [registrations]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -397,6 +423,118 @@ const AdminRegistrations = () => {
     });
   };
 
+  // Advanced Filter Functions
+  const analyzeCustomFields = () => {
+    const fields = new Set<string>();
+    registrations.forEach(reg => {
+      if (reg.form_data && typeof reg.form_data === 'object') {
+        Object.keys(reg.form_data).forEach(key => fields.add(key));
+      }
+    });
+    setAvailableCustomFields(Array.from(fields));
+  };
+
+  const loadSavedFilters = () => {
+    const saved = localStorage.getItem('adminRegistrationFilters');
+    if (saved) {
+      try {
+        setSavedFilters(JSON.parse(saved));
+      } catch (error) {
+        console.error('Error loading saved filters:', error);
+      }
+    }
+  };
+
+  const saveFilterConfiguration = () => {
+    if (!filterName.trim()) {
+      toast({
+        title: "กรุณาระบุชื่อ Filter",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newFilter = {
+      id: Date.now().toString(),
+      name: filterName,
+      config: {
+        dateRangeType,
+        startDate: startDate?.toISOString(),
+        endDate: endDate?.toISOString(),
+        minAmount,
+        maxAmount,
+        searchQuery,
+        searchOperator,
+        filterStatus,
+        filterEvent,
+        customFieldFilters
+      }
+    };
+
+    const updated = [...savedFilters, newFilter];
+    setSavedFilters(updated);
+    localStorage.setItem('adminRegistrationFilters', JSON.stringify(updated));
+    toast({
+      title: "บันทึก Filter เรียบร้อยแล้ว",
+      description: `บันทึก "${filterName}" เรียบร้อยแล้ว`,
+    });
+    setShowSaveFilterDialog(false);
+    setFilterName("");
+  };
+
+  const loadFilterConfiguration = (filter: any) => {
+    const config = filter.config;
+    setDateRangeType(config.dateRangeType);
+    setStartDate(config.startDate ? new Date(config.startDate) : undefined);
+    setEndDate(config.endDate ? new Date(config.endDate) : undefined);
+    setMinAmount(config.minAmount);
+    setMaxAmount(config.maxAmount);
+    setSearchQuery(config.searchQuery);
+    setSearchOperator(config.searchOperator);
+    setFilterStatus(config.filterStatus);
+    setFilterEvent(config.filterEvent);
+    setCustomFieldFilters(config.customFieldFilters);
+    toast({
+      title: "โหลด Filter เรียบร้อยแล้ว",
+      description: `โหลด "${filter.name}" เรียบร้อยแล้ว`,
+    });
+  };
+
+  const deleteFilterConfiguration = (filterId: string) => {
+    const updated = savedFilters.filter(f => f.id !== filterId);
+    setSavedFilters(updated);
+    localStorage.setItem('adminRegistrationFilters', JSON.stringify(updated));
+    toast({
+      title: "ลบ Filter เรียบร้อยแล้ว",
+    });
+  };
+
+  const clearAllFilters = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setMinAmount(0);
+    setMaxAmount(10000);
+    setSearchQuery("");
+    setSearchOperator("contains");
+    setFilterStatus("all");
+    setFilterEvent("all");
+    setCustomFieldFilters({});
+    toast({
+      title: "ล้าง Filter ทั้งหมดเรียบร้อยแล้ว",
+    });
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (startDate || endDate) count++;
+    if (minAmount > 0 || maxAmount < 10000) count++;
+    if (searchQuery) count++;
+    if (filterStatus !== "all") count++;
+    if (filterEvent !== "all") count++;
+    if (Object.keys(customFieldFilters).length > 0) count++;
+    return count;
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       confirmed: "default",
@@ -428,15 +566,83 @@ const AdminRegistrations = () => {
   };
 
   const filteredRegistrations = registrations.filter((reg) => {
-    const matchesSearch = 
-      reg.events?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      reg.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      reg.profiles?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    // Search filter with operator
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const searchFields = [
+        reg.profiles?.name,
+        reg.profiles?.email,
+        reg.events?.title,
+        ...(reg.form_data && typeof reg.form_data === 'object' 
+          ? Object.values(reg.form_data).map(v => String(v)) 
+          : [])
+      ];
+      
+      const matches = searchFields.some(field => {
+        const fieldLower = field?.toLowerCase() || "";
+        if (searchOperator === "exact") {
+          return fieldLower === query;
+        } else if (searchOperator === "starts") {
+          return fieldLower.startsWith(query);
+        } else {
+          return fieldLower.includes(query);
+        }
+      });
+      
+      if (!matches) return false;
+    }
 
-    const matchesStatus = filterStatus === "all" || reg.status === filterStatus;
-    const matchesEvent = filterEvent === "all" || reg.events?.id === filterEvent;
+    // Date range filter
+    if (startDate || endDate) {
+      let dateToCheck: Date | null = null;
+      
+      if (dateRangeType === "registration") {
+        dateToCheck = new Date(reg.created_at);
+      } else if (dateRangeType === "event" && reg.events?.start_date) {
+        dateToCheck = new Date(reg.events.start_date);
+      }
 
-    return matchesSearch && matchesStatus && matchesEvent;
+      if (dateToCheck) {
+        if (startDate && dateToCheck < startDate) return false;
+        if (endDate) {
+          const endOfDay = new Date(endDate);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (dateToCheck > endOfDay) return false;
+        }
+      }
+    }
+
+    // Payment amount filter
+    if (reg.ticket_types?.price !== undefined && reg.ticket_types?.price !== null) {
+      const amount = Number(reg.ticket_types.price);
+      if (amount < minAmount || amount > maxAmount) return false;
+    } else if (minAmount > 0) {
+      return false;
+    }
+
+    // Status filter
+    if (filterStatus !== "all" && reg.status !== filterStatus) {
+      return false;
+    }
+
+    // Event filter
+    if (filterEvent !== "all" && reg.events?.id !== filterEvent) {
+      return false;
+    }
+
+    // Custom field filters
+    if (Object.keys(customFieldFilters).length > 0) {
+      for (const [key, value] of Object.entries(customFieldFilters)) {
+        if (value && reg.form_data) {
+          const formData = reg.form_data as Record<string, any>;
+          if (!formData[key] || !String(formData[key]).toLowerCase().includes(value.toLowerCase())) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
   });
 
   if (loading) {
@@ -530,7 +736,30 @@ const AdminRegistrations = () => {
         {/* Filters and Search */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>ค้นหาและกรองข้อมูล</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>ค้นหาและกรองข้อมูล</span>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  ฟิลเตอร์ขั้นสูง
+                  {getActiveFilterCount() > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {getActiveFilterCount()}
+                    </Badge>
+                  )}
+                </Button>
+                {getActiveFilterCount() > 0 && (
+                  <Button size="sm" variant="ghost" onClick={clearAllFilters}>
+                    <X className="h-4 w-4 mr-2" />
+                    ล้างทั้งหมด
+                  </Button>
+                )}
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-4">
@@ -588,6 +817,153 @@ const AdminRegistrations = () => {
                   ยกเลิก
                 </Button>
               </div>
+
+              {/* Advanced Filters */}
+              <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+                <CollapsibleContent className="mt-4 space-y-4">
+                  {/* Date Range Filter */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg bg-muted/20">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">ประเภทวันที่</label>
+                      <Select value={dateRangeType} onValueChange={(value: any) => setDateRangeType(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="registration">วันที่ลงทะเบียน</SelectItem>
+                          <SelectItem value="event">วันที่จัดงาน</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">วันที่เริ่มต้น</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? format(startDate, "PPP", { locale: th }) : <span>เลือกวันที่</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus className="pointer-events-auto" />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">วันที่สิ้นสุด</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !endDate && "text-muted-foreground")}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDate ? format(endDate, "PPP", { locale: th }) : <span>เลือกวันที่</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus className="pointer-events-auto" />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+
+                  {/* Payment Amount Range */}
+                  <div className="p-4 border rounded-lg bg-muted/20 space-y-4">
+                    <label className="text-sm font-medium">ช่วงราคา: ฿{minAmount.toLocaleString()} - ฿{maxAmount.toLocaleString()}</label>
+                    <Slider
+                      value={[minAmount, maxAmount]}
+                      onValueChange={([min, max]) => {
+                        setMinAmount(min);
+                        setMaxAmount(max);
+                      }}
+                      max={10000}
+                      min={0}
+                      step={100}
+                      className="w-full"
+                    />
+                    <div className="flex gap-2 flex-wrap">
+                      <Button size="sm" variant="outline" onClick={() => { setMinAmount(0); setMaxAmount(500); }}>
+                        0-500
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setMinAmount(500); setMaxAmount(1000); }}>
+                        500-1,000
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setMinAmount(1000); setMaxAmount(10000); }}>
+                        1,000+
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => { setMinAmount(0); setMaxAmount(0); }}>
+                        งานฟรี
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Search Operator */}
+                  <div className="p-4 border rounded-lg bg-muted/20 space-y-2">
+                    <label className="text-sm font-medium">รูปแบบการค้นหา</label>
+                    <Select value={searchOperator} onValueChange={(value: any) => setSearchOperator(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="contains">มีคำที่ค้นหา (Contains)</SelectItem>
+                        <SelectItem value="exact">ตรงทุกอักษร (Exact)</SelectItem>
+                        <SelectItem value="starts">เริ่มต้นด้วย (Starts With)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Custom Field Filters */}
+                  {availableCustomFields.length > 0 && (
+                    <div className="p-4 border rounded-lg bg-muted/20 space-y-4">
+                      <label className="text-sm font-medium">ฟิลด์เพิ่มเติม</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {availableCustomFields.map(field => (
+                          <div key={field} className="space-y-2">
+                            <label className="text-xs text-muted-foreground">{field}</label>
+                            <Input
+                              placeholder={`ค้นหา ${field}...`}
+                              value={customFieldFilters[field] || ""}
+                              onChange={(e) => setCustomFieldFilters({
+                                ...customFieldFilters,
+                                [field]: e.target.value
+                              })}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Filter Actions */}
+                  <div className="flex gap-2 justify-between">
+                    <div className="flex gap-2 flex-wrap">
+                      {savedFilters.map(filter => (
+                        <div key={filter.id} className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => loadFilterConfiguration(filter)}
+                          >
+                            {filter.name}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={() => deleteFilterConfiguration(filter.id)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button size="sm" onClick={() => setShowSaveFilterDialog(true)}>
+                      <Save className="h-4 w-4 mr-2" />
+                      บันทึก Filter
+                    </Button>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </CardContent>
         </Card>
@@ -804,6 +1180,27 @@ const AdminRegistrations = () => {
             <AlertDialogAction onClick={confirmBulkAction}>
               ยืนยัน
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Save Filter Dialog */}
+      <AlertDialog open={showSaveFilterDialog} onOpenChange={setShowSaveFilterDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>บันทึก Filter</AlertDialogTitle>
+            <AlertDialogDescription>
+              ระบุชื่อสำหรับ Filter Configuration นี้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            placeholder="ชื่อ Filter..."
+            value={filterName}
+            onChange={(e) => setFilterName(e.target.value)}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setFilterName("")}>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={saveFilterConfiguration}>บันทึก</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
