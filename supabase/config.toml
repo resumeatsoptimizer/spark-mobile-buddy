@@ -26,3 +26,15 @@ verify_jwt = true
 
 [functions.payment-reminder-handler]
 verify_jwt = false
+
+[functions.analytics-collector]
+verify_jwt = true
+
+[functions.metrics-aggregator]
+verify_jwt = false
+
+[functions.alert-processor]
+verify_jwt = false
+
+[functions.report-generator]
+verify_jwt = true

@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_rules: {
+        Row: {
+          alert_channels: Json | null
+          condition_config: Json
+          created_at: string
+          enabled: boolean | null
+          id: string
+          last_triggered_at: string | null
+          rule_name: string
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          alert_channels?: Json | null
+          condition_config: Json
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          last_triggered_at?: string | null
+          rule_name: string
+          rule_type: string
+          updated_at?: string
+        }
+        Update: {
+          alert_channels?: Json | null
+          condition_config?: Json
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          last_triggered_at?: string | null
+          rule_name?: string
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      analytics_events: {
+        Row: {
+          created_at: string
+          event_category: string
+          event_data: Json | null
+          event_id: string | null
+          event_type: string
+          id: string
+          registration_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_category: string
+          event_data?: Json | null
+          event_id?: string | null
+          event_type: string
+          id?: string
+          registration_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_category?: string
+          event_data?: Json | null
+          event_id?: string | null
+          event_type?: string
+          id?: string
+          registration_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analytics_events_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           created_at: string | null
@@ -451,6 +535,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_metrics: {
+        Row: {
+          id: string
+          metadata: Json | null
+          metric_name: string
+          metric_type: string
+          metric_value: number
+          recorded_at: string
+        }
+        Insert: {
+          id?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_type: string
+          metric_value: number
+          recorded_at?: string
+        }
+        Update: {
+          id?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_type?: string
+          metric_value?: number
+          recorded_at?: string
+        }
+        Relationships: []
       }
       ticket_types: {
         Row: {
