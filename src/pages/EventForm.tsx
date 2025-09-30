@@ -21,6 +21,7 @@ const EventForm = () => {
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [seatsTotal, setSeatsTotal] = useState(0);
@@ -95,6 +96,7 @@ const EventForm = () => {
     if (data) {
       setTitle(data.title);
       setDescription(data.description || "");
+      setCoverImageUrl(data.cover_image_url || "");
       setStartDate(data.start_date.substring(0, 16));
       setEndDate(data.end_date.substring(0, 16));
       setSeatsTotal(data.seats_total);
@@ -171,6 +173,7 @@ const EventForm = () => {
     const eventData = {
       title,
       description: description || null,
+      cover_image_url: coverImageUrl || null,
       start_date: new Date(startDate).toISOString(),
       end_date: new Date(endDate).toISOString(),
       seats_total: seatsTotal,
@@ -300,6 +303,29 @@ const EventForm = () => {
                   placeholder="รายละเอียดของงานอีเว้นท์..."
                   rows={4}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coverImageUrl">URL ภาพปกงาน</Label>
+                <Input
+                  id="coverImageUrl"
+                  type="url"
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                />
+                {coverImageUrl && (
+                  <div className="mt-2 relative aspect-video w-full max-w-md rounded-lg overflow-hidden border">
+                    <img
+                      src={coverImageUrl}
+                      alt="ตัวอย่างภาพปก"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "";
+                        e.currentTarget.alt = "ไม่สามารถโหลดรูปภาพได้";
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

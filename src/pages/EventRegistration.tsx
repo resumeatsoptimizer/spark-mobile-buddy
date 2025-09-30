@@ -22,6 +22,7 @@ interface Event {
   id: string;
   title: string;
   description: string | null;
+  cover_image_url: string | null;
   start_date: string;
   end_date: string;
   seats_total: number;
@@ -417,6 +418,18 @@ const EventRegistration = () => {
           {/* Event Details */}
           <div className="lg:col-span-2">
             <Card>
+              {event.cover_image_url && (
+                <div className="relative aspect-[21/9] w-full overflow-hidden rounded-t-lg">
+                  <img
+                    src={event.cover_image_url}
+                    alt={event.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                </div>
+              )}
               <CardHeader>
                 <div className="flex items-start justify-between gap-4">
                   <div>

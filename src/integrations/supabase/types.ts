@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           allow_overbooking: boolean | null
           auto_promote_rule: string | null
+          cover_image_url: string | null
           created_at: string
           created_by: string
           custom_fields: Json | null
@@ -41,6 +42,7 @@ export type Database = {
         Insert: {
           allow_overbooking?: boolean | null
           auto_promote_rule?: string | null
+          cover_image_url?: string | null
           created_at?: string
           created_by: string
           custom_fields?: Json | null
@@ -64,6 +66,7 @@ export type Database = {
         Update: {
           allow_overbooking?: boolean | null
           auto_promote_rule?: string | null
+          cover_image_url?: string | null
           created_at?: string
           created_by?: string
           custom_fields?: Json | null
