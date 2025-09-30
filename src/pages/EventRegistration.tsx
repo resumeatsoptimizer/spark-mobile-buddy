@@ -17,6 +17,7 @@ import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CustomField } from "@/components/event-builder/FieldBuilder";
+import { PaymentDialog } from "@/components/PaymentDialog";
 
 interface Event {
   id: string;
@@ -51,6 +52,8 @@ const EventRegistration = () => {
   const [waitlistCount, setWaitlistCount] = useState(0);
   const [codeVerified, setCodeVerified] = useState(false);
   const [inputCode, setInputCode] = useState("");
+  const [showPayment, setShowPayment] = useState(false);
+  const [newRegistrationId, setNewRegistrationId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -228,7 +231,7 @@ const EventRegistration = () => {
       }
     }
 
-    const { error } = await supabase
+    const { data: registration, error } = await supabase
       .from("registrations")
       .insert([{
         event_id: event.id,
@@ -236,7 +239,9 @@ const EventRegistration = () => {
         status,
         payment_status: "unpaid",
         form_data: formData,
-      }]);
+      }])
+      .select()
+      .single();
 
     if (error) {
       toast({
@@ -256,10 +261,17 @@ const EventRegistration = () => {
       toast({
         title: "สำเร็จ!",
         description: status === "pending" 
-          ? "ลงทะเบียนเรียบร้อยแล้ว" 
+          ? "ลงทะเบียนเรียบร้อยแล้ว คุณสามารถชำระเงินได้เลย" 
           : "เพิ่มเข้ารายการรอเรียบร้อยแล้ว",
       });
-      navigate("/registrations");
+
+      if (status === "pending") {
+        // Show payment dialog for confirmed registrations
+        setNewRegistrationId(registration.id);
+        setShowPayment(true);
+      } else {
+        navigate("/registrations");
+      }
     }
 
     setSubmitting(false);
@@ -400,9 +412,25 @@ const EventRegistration = () => {
     }
   };
 
+  const handlePaymentSuccess = () => {
+    navigate("/registrations");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      
+      {/* Payment Dialog */}
+      {showPayment && newRegistrationId && event && (
+        <PaymentDialog
+          open={showPayment}
+          onOpenChange={setShowPayment}
+          registrationId={newRegistrationId}
+          amount={1000} // TODO: Get amount from event/ticket type
+          eventTitle={event.title}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
 
       <main className="container mx-auto px-4 py-8">
         <Button 

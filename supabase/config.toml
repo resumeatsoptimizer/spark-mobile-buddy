@@ -1,1 +1,10 @@
 project_id = "qhvxqmldpifwehnsrlyn"
+
+[functions.omise-webhook]
+verify_jwt = false
+
+[functions.create-omise-charge]
+verify_jwt = true
+
+[functions.omise-refund]
+verify_jwt = true
