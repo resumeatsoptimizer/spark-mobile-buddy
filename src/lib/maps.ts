@@ -24,10 +24,52 @@ export const isValidGoogleMapsUrl = (url: string): boolean => {
     /^https?:\/\/(www\.)?google\.(com|co\.th)\/maps/,
     /^https?:\/\/maps\.google\.(com|co\.th)/,
     /^https?:\/\/goo\.gl\/maps/,
+    /^https?:\/\/maps\.app\.goo\.gl/,
+    /^https?:\/\/g\.co\/maps/,
     /^https?:\/\/share\.google/,
   ];
   
   return validPatterns.some(pattern => pattern.test(url));
+};
+
+/**
+ * Converts Google Maps share link to embed URL
+ * @param url - Google Maps URL (including maps.app.goo.gl)
+ * @param fallbackLocation - Fallback location name if URL cannot be converted
+ * @returns Google Maps embed URL
+ */
+export const convertToEmbedUrl = (url: string, fallbackLocation?: string): string => {
+  if (!url) {
+    return fallbackLocation ? createMapsEmbedUrl(fallbackLocation) : '';
+  }
+
+  // Handle maps.app.goo.gl and other shortened URLs
+  // These need to use the URL directly in the embed src
+  if (url.includes('maps.app.goo.gl') || url.includes('goo.gl/maps') || url.includes('g.co/maps')) {
+    // For shortened URLs, we'll use the direct URL in embed mode
+    return `https://maps.google.com/maps?q=${encodeURIComponent(url)}&output=embed`;
+  }
+
+  // Try to extract place information from the URL
+  const placeMatch = url.match(/place\/([^/]+)/);
+  if (placeMatch) {
+    const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+    return createMapsEmbedUrl(placeName);
+  }
+
+  // Try to extract coordinates
+  const coordMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (coordMatch) {
+    return `https://maps.google.com/maps?q=${coordMatch[1]},${coordMatch[2]}&output=embed`;
+  }
+
+  // Fallback to location name if provided
+  if (fallbackLocation) {
+    return createMapsEmbedUrl(fallbackLocation);
+  }
+
+  // Last resort: try to use the URL as-is
+  return `https://maps.google.com/maps?q=${encodeURIComponent(url)}&output=embed`;
 };
 
 /**

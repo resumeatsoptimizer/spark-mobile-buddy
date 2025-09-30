@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
 import { Progress } from "@/components/ui/progress";
+import { convertToEmbedUrl, isValidGoogleMapsUrl } from "@/lib/maps";
 
 interface Event {
   id: string;
@@ -256,17 +257,17 @@ const EventDetails = () => {
                     </div>
                     
                     {/* Embedded Google Map */}
-                    {event.location && (
+                    {(event.location || (event.google_map_url && isValidGoogleMapsUrl(event.google_map_url))) && (
                       <div className="w-full h-[300px] rounded-lg overflow-hidden border shadow-sm">
                         <iframe
-                          src={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}&output=embed`}
+                          src={convertToEmbedUrl(event.google_map_url || '', event.location || undefined)}
                           width="100%"
                           height="100%"
                           style={{ border: 0 }}
                           allowFullScreen
                           loading="lazy"
                           referrerPolicy="no-referrer-when-downgrade"
-                          title={`แผนที่ ${event.location}`}
+                          title={`แผนที่ ${event.location || 'สถานที่จัดงาน'}`}
                         />
                       </div>
                     )}
