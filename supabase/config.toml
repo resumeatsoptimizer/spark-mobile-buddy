@@ -11,3 +11,18 @@ verify_jwt = true
 
 [functions.send-registration-email]
 verify_jwt = true
+
+[functions.auto-promote-waitlist]
+verify_jwt = true
+
+[functions.check-promotion-timeouts]
+verify_jwt = false
+
+[functions.scheduled-email-sender]
+verify_jwt = false
+
+[functions.event-reminder-scheduler]
+verify_jwt = true
+
+[functions.payment-reminder-handler]
+verify_jwt = false

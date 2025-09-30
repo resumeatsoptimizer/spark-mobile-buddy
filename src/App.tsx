@@ -15,6 +15,7 @@ import EventRegistration from "./pages/EventRegistration";
 import AdminDashboard from "./pages/AdminDashboard";
 import PaymentManagement from "./pages/PaymentManagement";
 import AdminRegistrations from "./pages/AdminRegistrations";
+import AdminAutomation from "./pages/AdminAutomation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/payments" element={<PaymentManagement />} />
           <Route path="/admin/registrations" element={<AdminRegistrations />} />
+          <Route path="/admin/automation" element={<AdminAutomation />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

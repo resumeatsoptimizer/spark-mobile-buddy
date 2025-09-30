@@ -198,6 +198,44 @@ export type Database = {
           },
         ]
       }
+      notification_settings: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          event_id: string | null
+          id: string
+          notification_type: string
+          trigger_config: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          event_id?: string | null
+          id?: string
+          notification_type: string
+          trigger_config?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          event_id?: string | null
+          id?: string
+          notification_type?: string
+          trigger_config?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_settings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -286,7 +324,9 @@ export type Database = {
           form_data: Json | null
           id: string
           payment_status: string
+          priority_score: number | null
           promoted_at: string | null
+          promotion_expires_at: string | null
           status: string
           ticket_generated_at: string | null
           ticket_type_id: string | null
@@ -302,7 +342,9 @@ export type Database = {
           form_data?: Json | null
           id?: string
           payment_status?: string
+          priority_score?: number | null
           promoted_at?: string | null
+          promotion_expires_at?: string | null
           status?: string
           ticket_generated_at?: string | null
           ticket_type_id?: string | null
@@ -318,7 +360,9 @@ export type Database = {
           form_data?: Json | null
           id?: string
           payment_status?: string
+          priority_score?: number | null
           promoted_at?: string | null
+          promotion_expires_at?: string | null
           status?: string
           ticket_generated_at?: string | null
           ticket_type_id?: string | null
@@ -347,6 +391,63 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_tasks: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_id: string | null
+          id: string
+          metadata: Json | null
+          registration_id: string | null
+          retry_count: number | null
+          scheduled_for: string
+          status: string | null
+          task_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          metadata?: Json | null
+          registration_id?: string | null
+          retry_count?: number | null
+          scheduled_for: string
+          status?: string | null
+          task_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_id?: string | null
+          id?: string
+          metadata?: Json | null
+          registration_id?: string | null
+          retry_count?: number | null
+          scheduled_for?: string
+          status?: string | null
+          task_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_tasks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_tasks_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
             referencedColumns: ["id"]
           },
         ]
