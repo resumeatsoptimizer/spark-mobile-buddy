@@ -1,5 +1,11 @@
 project_id = "qhvxqmldpifwehnsrlyn"
 
+[functions.event-series-manager]
+verify_jwt = true
+
+[functions.bulk-event-operations]
+verify_jwt = true
+
 [functions.omise-webhook]
 verify_jwt = false
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3 } from "lucide-react";
+import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Navbar = () => {
@@ -97,6 +97,13 @@ const Navbar = () => {
                 {isAdmin && (
                   <>
                     <Button
+                      variant={isActive("/admin/events") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/events")}
+                    >
+                      <FolderTree className="mr-2 h-4 w-4" />
+                      จัดการ
+                    </Button>
+                    <Button
                       variant={isActive("/admin/automation") ? "default" : "ghost"}
                       onClick={() => navigate("/admin/automation")}
                     >
@@ -186,6 +193,17 @@ const Navbar = () => {
                 </Button>
                 {isAdmin && (
                   <>
+                    <Button
+                      variant={isActive("/admin/events") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/events");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <FolderTree className="mr-2 h-4 w-4" />
+                      จัดการ
+                    </Button>
                     <Button
                       variant={isActive("/admin/automation") ? "default" : "ghost"}
                       className="w-full justify-start"
