@@ -443,6 +443,19 @@ const MemberManagement = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Auto-sync Info */}
+        <div className="mb-4 p-4 bg-muted/50 rounded-lg border border-border">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+            <div>
+              <p className="font-medium text-sm">ซิงค์ข้อมูลอัตโนมัติ</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                ข้อมูลจะถูกอัปเดตอัตโนมัติเมื่อมีการลงทะเบียนหรือชำระเงินใหม่ หากต้องการซิงค์ทันที กดปุ่ม "ซิงค์ข้อมูล"
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Statistics Cards */}
         {statistics && (
           <div className="grid gap-4 md:grid-cols-4 mb-6">
