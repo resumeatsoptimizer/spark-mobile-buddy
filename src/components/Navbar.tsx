@@ -97,8 +97,7 @@ const Navbar = () => {
                             isActive("/events") ||
                             isActive("/admin/payments") ||
                             isActive("/admin/registrations") ||
-                            isActive("/admin/members") ||
-                            isActive("/check-in")
+                            isActive("/admin/members")
                               ? "default"
                               : "ghost"
                           }
@@ -127,12 +126,17 @@ const Navbar = () => {
                           <Users className="mr-2 h-4 w-4" />
                           จัดการสมาชิก
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/check-in")}>
-                          <ScanLine className="mr-2 h-4 w-4" />
-                          Check-in
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+
+                    {/* Check-in */}
+                    <Button
+                      variant={isActive("/check-in") ? "default" : "ghost"}
+                      onClick={() => navigate("/check-in")}
+                    >
+                      <ScanLine className="mr-2 h-4 w-4" />
+                      Check-In
+                    </Button>
 
                     {/* Settings */}
                     <Button
@@ -287,6 +291,10 @@ const Navbar = () => {
                       <Users className="mr-2 h-4 w-4" />
                       จัดการสมาชิก
                     </Button>
+
+                    <div className="px-4 py-2 text-xs font-semibold text-muted-foreground">
+                      Other
+                    </div>
                     <Button
                       variant={isActive("/check-in") ? "default" : "ghost"}
                       className="w-full justify-start"
