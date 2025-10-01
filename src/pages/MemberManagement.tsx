@@ -35,6 +35,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  DollarSign,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import {
@@ -57,23 +58,17 @@ interface MemberStats {
   name: string | null;
   status: MemberStatus;
   created_at: string;
-  last_login_at: string | null;
   total_registrations: number;
-  confirmed_registrations: number;
-  total_payments: number;
   total_amount_paid: number;
   activity_level: ActivityLevel;
-  tags_count: number;
+  last_registration_at?: string;
 }
 
 interface Statistics {
   total_members: number;
   active_members: number;
   inactive_members: number;
-  suspended_members: number;
-  blocked_members: number;
-  new_members_this_month: number;
-  verified_accounts: number;
+  total_revenue: number;
 }
 
 const MemberManagement = () => {
@@ -138,7 +133,7 @@ const MemberManagement = () => {
         variant: "destructive",
       });
     } else {
-      setMembers(data || []);
+      setMembers((data || []) as MemberStats[]);
     }
   };
 
@@ -209,10 +204,14 @@ const MemberManagement = () => {
     const reason = prompt("กรุณาระบุเหตุผล (optional):");
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { error } = await supabase.rpc('update_member_status', {
-        p_user_id: userId,
-        p_new_status: newStatus,
-        p_reason: reason || null,
+        member_id: userId,
+        new_status: newStatus,
+        changed_by_id: user.id,
+        reason_text: reason || null,
       });
 
       if (error) throw error;
@@ -318,7 +317,7 @@ const MemberManagement = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{statistics.total_members}</div>
                 <p className="text-xs text-muted-foreground">
-                  +{statistics.new_members_this_month} เดือนนี้
+                  Total members in system
                 </p>
               </CardContent>
             </Card>
@@ -342,23 +341,23 @@ const MemberManagement = () => {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <XCircle className="h-4 w-4 text-yellow-500" />
-                  Suspended
+                  Inactive
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">{statistics.suspended_members}</div>
+                <div className="text-2xl font-bold text-yellow-600">{statistics.inactive_members}</div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Ban className="h-4 w-4 text-red-500" />
-                  Blocked
+                  <DollarSign className="h-4 w-4 text-purple-500" />
+                  Total Revenue
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{statistics.blocked_members}</div>
+                <div className="text-2xl font-bold text-purple-600">฿{statistics.total_revenue.toLocaleString()}</div>
               </CardContent>
             </Card>
           </div>
@@ -430,7 +429,7 @@ const MemberManagement = () => {
                     <TableHead className="text-right">ลงทะเบียน</TableHead>
                     <TableHead className="text-right">รายได้</TableHead>
                     <TableHead>สมัครเมื่อ</TableHead>
-                    <TableHead>Login ล่าสุด</TableHead>
+                    <TableHead>ลงทะเบียนล่าสุด</TableHead>
                     <TableHead className="text-right">จัดการ</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -453,7 +452,7 @@ const MemberManagement = () => {
                         <TableCell>{getStatusBadge(member.status)}</TableCell>
                         <TableCell>{getActivityBadge(member.activity_level)}</TableCell>
                         <TableCell className="text-right">
-                          {member.total_registrations} ({member.confirmed_registrations})
+                          {member.total_registrations}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           ฿{member.total_amount_paid.toLocaleString()}
@@ -462,8 +461,8 @@ const MemberManagement = () => {
                           {format(new Date(member.created_at), "d MMM yyyy", { locale: th })}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {member.last_login_at
-                            ? format(new Date(member.last_login_at), "d MMM yyyy", { locale: th })
+                          {member.last_registration_at
+                            ? format(new Date(member.last_registration_at), "d MMM yyyy", { locale: th })
                             : "-"}
                         </TableCell>
                         <TableCell className="text-right">

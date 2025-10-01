@@ -201,8 +201,8 @@ const MemberDetail = () => {
         description: "ไม่สามารถโหลดข้อมูลสมาชิกได้",
         variant: "destructive",
       });
-    } else if (data && data.length > 0) {
-      setMember(data[0]);
+    } else if (data) {
+      setMember(data as any);
     }
   };
 
@@ -292,12 +292,15 @@ const MemberDetail = () => {
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { error } = await supabase
       .from("member_notes")
       .insert({
         user_id: memberId,
         note: newNote,
-        is_important: isImportantNote,
+        created_by: user.id,
       });
 
     if (error) {
@@ -347,8 +350,7 @@ const MemberDetail = () => {
       .from("member_tags")
       .insert({
         user_id: memberId,
-        tag_name: newTag,
-        tag_color: newTagColor,
+        tag: newTag,
       });
 
     if (error) {
@@ -372,7 +374,7 @@ const MemberDetail = () => {
       .from("member_tags")
       .delete()
       .eq("user_id", memberId)
-      .eq("tag_name", tagName);
+      .eq("tag", tagName);
 
     if (error) {
       toast({
@@ -393,10 +395,21 @@ const MemberDetail = () => {
     const reason = prompt("กรุณาระบุเหตุผล:");
     if (reason === null) return;
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await supabase.rpc('update_member_status', {
-      p_user_id: memberId,
-      p_new_status: newStatus,
-      p_reason: reason || null,
+      member_id: memberId,
+      new_status: newStatus,
+      changed_by_id: user.id,
+      reason_text: reason || null,
     });
 
     if (error) {

@@ -57,35 +57,25 @@ const UserProfile = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // Explicitly select only columns that should exist
+    // Explicitly select only columns that exist
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, email, name, phone, bio, avatar_url, social_links, line_id, created_at, updated_at")
+      .select("id, email, name, phone, bio, avatar_url, social_links, timezone, preferences, created_at, updated_at")
       .eq("id", session.user.id)
       .single();
 
     if (error) {
       console.error("Profile fetch error:", error);
-
-      // Check if error is due to missing columns
-      if (error.message.includes("column") || error.code === "42703") {
-        toast({
-          title: "ต้องอัพเดทระบบ",
-          description: "กรุณาติดต่อผู้ดูแลระบบเพื่ออัพเดทฐานข้อมูล",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "เกิดข้อผิดพลาด",
-          description: error.message || "ไม่สามารถโหลดข้อมูลโปรไฟล์ได้",
-          variant: "destructive",
-        });
-      }
-    } else {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error.message || "ไม่สามารถโหลดข้อมูลโปรไฟล์ได้",
+        variant: "destructive",
+      });
+    } else if (data) {
       // Initialize social_links if null
       const profileData = {
         ...data,
-        social_links: data.social_links || {},
+        social_links: (data.social_links as any) || {},
       };
       setProfile(profileData as any);
     }

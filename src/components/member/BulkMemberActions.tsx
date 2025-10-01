@@ -96,12 +96,16 @@ export function BulkMemberActions({
   const handleBulkStatusChange = async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       // Update each member's status
       for (const memberId of selectedMembers) {
         await supabase.rpc("update_member_status", {
-          p_user_id: memberId,
-          p_new_status: newStatus,
-          p_reason: statusReason || `Bulk update to ${newStatus}`,
+          member_id: memberId,
+          new_status: newStatus,
+          changed_by_id: user.id,
+          reason_text: statusReason || `Bulk update to ${newStatus}`,
         });
       }
 
