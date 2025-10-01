@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,12 +21,14 @@ import Navbar from "@/components/Navbar";
 const EventForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const routeLocation = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const isDuplicateMode = routeLocation.pathname.includes('/duplicate');
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
-  const [location, setLocation] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
   const [googleMapUrl, setGoogleMapUrl] = useState("");
   const [googleMapEmbedCode, setGoogleMapEmbedCode] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -47,8 +49,9 @@ const EventForm = () => {
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [invitationCode, setInvitationCode] = useState("");
   const [showAICreator, setShowAICreator] = useState(!id); // Show AI creator for new events
+  const [sourceEventTitle, setSourceEventTitle] = useState("");
 
-  const isEditMode = !!id;
+  const isEditMode = !!id && !isDuplicateMode;
 
   const handleAIEventGenerated = (eventData: any) => {
     setTitle(eventData.title);
@@ -76,7 +79,7 @@ const EventForm = () => {
 
   useEffect(() => {
     checkAuth();
-    if (isEditMode) {
+    if (id) {
       fetchEvent();
     }
   }, [id]);
@@ -126,21 +129,42 @@ const EventForm = () => {
     }
 
     if (data) {
-      setTitle(data.title);
+      // In duplicate mode, prefix title and reset some fields
+      if (isDuplicateMode) {
+        setSourceEventTitle(data.title);
+        setTitle(`สำเนา - ${data.title}`);
+        toast({
+          title: "กำลังสร้างสำเนาอีเวนท์",
+          description: `กำลังคัดลอกข้อมูลจาก "${data.title}" - แก้ไขก่อนบันทึก`,
+        });
+      } else {
+        setTitle(data.title);
+      }
+      
       setDescription(data.description || "");
       setCoverImageUrl(data.cover_image_url || "");
-      setLocation(data.location || "");
+      setEventLocation(data.location || "");
       setGoogleMapUrl(data.google_map_url || "");
       setGoogleMapEmbedCode(data.google_map_embed_code || "");
-      setStartDate(data.start_date.substring(0, 16));
-      setEndDate(data.end_date.substring(0, 16));
+      
+      // In duplicate mode, reset dates to empty for user to set new dates
+      if (isDuplicateMode) {
+        setStartDate("");
+        setEndDate("");
+        setRegistrationOpenDate("");
+        setRegistrationCloseDate("");
+      } else {
+        setStartDate(data.start_date.substring(0, 16));
+        setEndDate(data.end_date.substring(0, 16));
+        setRegistrationOpenDate(data.registration_open_date ? data.registration_open_date.substring(0, 16) : "");
+        setRegistrationCloseDate(data.registration_close_date ? data.registration_close_date.substring(0, 16) : "");
+      }
+      
       setSeatsTotal(data.seats_total);
       const customFieldsData = data.custom_fields as { enabled_fields?: string[] } | null;
       setEnabledFields(customFieldsData?.enabled_fields || DEFAULT_ENABLED_FIELDS);
       setAllowOverbooking(data.allow_overbooking || false);
       setOverbookingPercentage(data.overbooking_percentage || 0);
-      setRegistrationOpenDate(data.registration_open_date ? data.registration_open_date.substring(0, 16) : "");
-      setRegistrationCloseDate(data.registration_close_date ? data.registration_close_date.substring(0, 16) : "");
       setWaitlistEnabled(data.waitlist_enabled !== false);
       setMaxWaitlistSize(data.max_waitlist_size || 0);
       setAutoPromoteRule((data.auto_promote_rule as any) || "manual");
@@ -155,7 +179,19 @@ const EventForm = () => {
         .eq("event_id", id);
       
       if (types) {
-        setTicketTypes(types);
+        // In duplicate mode, reset seats and remove IDs
+        if (isDuplicateMode) {
+          const duplicatedTypes = types.map(t => ({
+            id: '', // temporary empty id for new ticket types
+            name: t.name,
+            seats_allocated: t.seats_allocated,
+            seats_remaining: t.seats_allocated, // Reset to allocated
+            price: t.price,
+          }));
+          setTicketTypes(duplicatedTypes);
+        } else {
+          setTicketTypes(types);
+        }
       }
     }
   };
@@ -215,7 +251,7 @@ const EventForm = () => {
         title,
         description: description || null,
         cover_image_url: coverImageUrl || null,
-        location: location || null,
+        location: eventLocation || null,
         google_map_url: googleMapUrl || null,
         google_map_embed_code: googleMapEmbedCode || null,
         start_date: new Date(startDate).toISOString(),
@@ -292,13 +328,14 @@ const EventForm = () => {
           variant: "destructive",
         });
       } else {
-        console.log(`✅ Event ${isEditMode ? 'updated' : 'created'} successfully with enabled fields:`, enabledFields.length);
+        console.log(`✅ Event ${isEditMode ? 'updated' : isDuplicateMode ? 'duplicated' : 'created'} successfully with enabled fields:`, enabledFields.length);
         
+        const actionText = isEditMode ? "แก้ไข" : isDuplicateMode ? "สร้างสำเนา" : "สร้าง";
         toast({
           title: "สำเร็จ",
-          description: `${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์เรียบร้อยแล้ว พร้อมฟิลด์ลงทะเบียน ${enabledFields.length} ฟิลด์`,
+          description: `${actionText}งานอีเว้นท์เรียบร้อยแล้ว พร้อมฟิลด์ลงทะเบียน ${enabledFields.length} ฟิลด์`,
         });
-        navigate("/events");
+        navigate(eventId ? `/events/${eventId}` : "/events");
       }
     } catch (error: any) {
       console.error("❌ Unexpected error:", error);
@@ -337,8 +374,8 @@ const EventForm = () => {
       {/* Form */}
       <main className="container mx-auto px-4 py-8">
         <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-6">
-          {/* AI Event Creator (for new events only) */}
-          {!isEditMode && showAICreator && (
+          {/* AI Event Creator (for new events only, not for duplicate) */}
+          {!isEditMode && !isDuplicateMode && showAICreator && (
             <div className="mb-6">
               <AIEventCreator onEventGenerated={handleAIEventGenerated} />
               <div className="text-center mt-4">
@@ -353,7 +390,7 @@ const EventForm = () => {
             </div>
           )}
 
-          {!isEditMode && !showAICreator && (
+          {!isEditMode && !isDuplicateMode && !showAICreator && (
             <Button
               type="button"
               variant="outline"
@@ -419,8 +456,8 @@ const EventForm = () => {
                 <Label htmlFor="location">สถานที่จัดงาน</Label>
                 <Input
                   id="location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  value={eventLocation}
+                  onChange={(e) => setEventLocation(e.target.value)}
                   placeholder="เช่น โรงแรม ABC กรุงเทพฯ หรือ Central World"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -531,7 +568,7 @@ const EventForm = () => {
               ยกเลิก
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? "กำลังบันทึก..." : isEditMode ? "บันทึกการแก้ไข" : "สร้างงานอีเว้นท์"}
+              {loading ? "กำลังบันทึก..." : isEditMode ? "บันทึกการแก้ไข" : isDuplicateMode ? "สร้างสำเนาอีเวนท์" : "สร้างงานอีเว้นท์"}
             </Button>
           </div>
         </form>

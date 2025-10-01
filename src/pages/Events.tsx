@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, Plus, Edit, Trash2 } from "lucide-react";
+import { Calendar, Users, Plus, Edit, Trash2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
@@ -269,6 +269,13 @@ const Events = () => {
                             onClick={() => navigate(`/events/${event.id}/edit`)}
                           >
                             <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/events/${event.id}/duplicate`)}
+                          >
+                            <Copy className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="destructive"
