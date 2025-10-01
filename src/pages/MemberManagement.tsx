@@ -91,6 +91,7 @@ const MemberManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [members, setMembers] = useState<MemberStats[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -213,15 +214,15 @@ const MemberManagement = () => {
   };
 
   const handleRefreshView = async () => {
-    setLoading(true);
+    setSyncing(true);
     try {
-      const { error } = await supabase.rpc('refresh_member_statistics');
+      const { error } = await supabase.rpc('refresh_member_stats_mv');
       if (error) throw error;
 
       await fetchData();
       toast({
-        title: "รีเฟรชสำเร็จ",
-        description: "ข้อมูลถูกอัปเดตแล้ว",
+        title: "ซิงค์ข้อมูลสำเร็จ",
+        description: "ข้อมูลสมาชิกถูกอัปเดตเรียบร้อยแล้ว",
       });
     } catch (error: any) {
       toast({
@@ -230,7 +231,7 @@ const MemberManagement = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setSyncing(false);
     }
   };
 
@@ -423,9 +424,13 @@ const MemberManagement = () => {
               <p className="text-muted-foreground">จัดการข้อมูลและสถานะสมาชิกทั้งหมด</p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleRefreshView} variant="outline">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                รีเฟรช
+              <Button 
+                onClick={handleRefreshView} 
+                variant="outline"
+                disabled={syncing}
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'กำลังซิงค์...' : 'ซิงค์ข้อมูล'}
               </Button>
               <AddUserDialog onUserAdded={fetchData} />
               <Button onClick={handleExportData} variant="outline">

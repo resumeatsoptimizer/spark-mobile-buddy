@@ -2185,6 +2185,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      refresh_member_stats_mv: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       update_member_status: {
         Args: {
           changed_by_id: string
