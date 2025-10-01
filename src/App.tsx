@@ -20,16 +20,12 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminEventManagement from "./pages/AdminEventManagement";
 import AdminIntegrations from "./pages/AdminIntegrations";
 import NotFound from "./pages/NotFound";
-import AdminOrganizations from "./pages/AdminOrganizations";
-import AdminTeams from "./pages/AdminTeams";
-import AdminRoles from "./pages/AdminRoles";
 import UserProfile from "./pages/UserProfile";
 import EventCheckIn from "./pages/EventCheckIn";
 import AdminSecurity from "./pages/AdminSecurity";
 import ParticipantQRCode from "./pages/ParticipantQRCode";
 import NotificationsSettings from "./pages/NotificationsSettings";
 import AdminSSO from "./pages/AdminSSO";
-import AdminRBAC from "./pages/AdminRBAC";
 import APIDocumentation from "./pages/APIDocumentation";
 import Security2FA from "./pages/Security2FA";
 import DataPrivacy from "./pages/DataPrivacy";
@@ -60,12 +56,8 @@ const App = () => (
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/events" element={<AdminEventManagement />} />
           <Route path="/admin/integrations" element={<AdminIntegrations />} />
-          <Route path="/admin/organizations" element={<AdminOrganizations />} />
-          <Route path="/admin/teams" element={<AdminTeams />} />
-          <Route path="/admin/roles" element={<AdminRoles />} />
           <Route path="/admin/security" element={<AdminSecurity />} />
           <Route path="/admin/sso" element={<AdminSSO />} />
-          <Route path="/admin/rbac" element={<AdminRBAC />} />
           <Route path="/admin/api-docs" element={<APIDocumentation />} />
           <Route path="/security/2fa" element={<Security2FA />} />
           <Route path="/data-privacy" element={<DataPrivacy />} />

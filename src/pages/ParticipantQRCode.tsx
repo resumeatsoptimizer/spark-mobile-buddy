@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { QrCode, Download, Share2, CalendarDays } from "lucide-react";
 import QRCode from "qrcode";
+import Navbar from "@/components/Navbar";
 
 interface Registration {
   id: string;
@@ -153,8 +154,10 @@ const ParticipantQRCode = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">My QR Codes</h1>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto p-6">
+          <h1 className="text-3xl font-bold mb-6">My QR Codes</h1>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
@@ -168,14 +171,17 @@ const ParticipantQRCode = () => {
             </Card>
           ))}
         </div>
+        </div>
       </div>
     );
   }
 
   if (registrations.length === 0) {
     return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">My QR Codes</h1>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto p-6">
+          <h1 className="text-3xl font-bold mb-6">My QR Codes</h1>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <QrCode className="h-16 w-16 text-muted-foreground mb-4" />
@@ -185,16 +191,19 @@ const ParticipantQRCode = () => {
             </Button>
           </CardContent>
         </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">My QR Codes</h1>
-        <p className="text-muted-foreground">Show these QR codes at event check-in</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">My QR Codes</h1>
+          <p className="text-muted-foreground">Show these QR codes at event check-in</p>
+        </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {registrations.map((registration) => (
@@ -258,6 +267,7 @@ const ParticipantQRCode = () => {
             </CardContent>
           </Card>
         ))}
+      </div>
       </div>
     </div>
   );

@@ -174,7 +174,7 @@ const AdminSettings = () => {
         </div>
 
         {/* Enterprise Features */}
-        <div className="grid gap-4 md:grid-cols-3 mb-6">
+        <div className="grid gap-4 md:grid-cols-2 mb-6">
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/sso')}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -183,18 +183,6 @@ const AdminSettings = () => {
               </CardTitle>
               <CardDescription>
                 Configure Google and Microsoft OAuth
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/rbac')}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="h-5 w-5" />
-                Advanced RBAC
-              </CardTitle>
-              <CardDescription>
-                Define custom roles and permissions
               </CardDescription>
             </CardHeader>
           </Card>

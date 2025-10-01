@@ -8,6 +8,7 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { Activity, TrendingUp, Users, DollarSign, AlertTriangle, Calendar, RefreshCw, Sparkles } from "lucide-react";
 import { AIInsightsPanel } from "@/components/AIInsightsPanel";
 import { AIChatAssistant } from "@/components/AIChatAssistant";
+import Navbar from "@/components/Navbar";
 
 interface MetricCard {
   title: string;
@@ -198,7 +199,9 @@ export default function AdminAnalytics() {
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-4xl font-bold">Analytics Dashboard</h1>
@@ -425,6 +428,7 @@ export default function AdminAnalytics() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

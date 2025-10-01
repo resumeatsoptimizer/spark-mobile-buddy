@@ -15,6 +15,7 @@ import { WaitlistSettings } from "@/components/event-builder/WaitlistSettings";
 import { VisibilitySettings } from "@/components/event-builder/VisibilitySettings";
 import AIEventCreator from "@/components/AIEventCreator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Navbar from "@/components/Navbar";
 
 const EventForm = () => {
   const { id } = useParams();
@@ -290,6 +291,7 @@ const EventForm = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">

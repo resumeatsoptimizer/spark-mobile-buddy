@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import Navbar from '@/components/Navbar';
 
 interface APIKey {
   id: string;
@@ -78,6 +79,7 @@ export default function APIDocumentation() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
       <div className="container max-w-6xl mx-auto p-6 space-y-6">
         <div className="flex items-center gap-4">
           <Button

@@ -9,8 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
-import AISmartSearch from "@/components/AISmartSearch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TicketType {
   id: string;
@@ -154,13 +152,6 @@ const Events = () => {
 
       {/* Events List */}
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
-            <TabsTrigger value="all">All Events</TabsTrigger>
-            <TabsTrigger value="ai-search">🤖 AI Search</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all">
             {events.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-16">
@@ -312,12 +303,6 @@ const Events = () => {
             })}
           </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="ai-search">
-            <AISmartSearch />
-          </TabsContent>
-        </Tabs>
       </main>
     </div>
   );

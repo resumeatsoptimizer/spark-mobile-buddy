@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { NotificationsManager } from '@/components/NotificationsManager';
 import { supabase } from '@/integrations/supabase/client';
+import Navbar from '@/components/Navbar';
 
 export default function NotificationsSettings() {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export default function NotificationsSettings() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
       <div className="container max-w-4xl mx-auto p-6 space-y-6">
         <div className="flex items-center gap-4">
           <Button

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, Video, Mail, Share2, Activity } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import Navbar from "@/components/Navbar";
 
 interface Integration {
   id: string;
@@ -159,16 +160,21 @@ export default function AdminIntegrations() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-96">
-          <p>Loading integrations...</p>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-96">
+            <p>Loading integrations...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold mb-2">Integrations</h1>
         <p className="text-muted-foreground">
@@ -262,6 +268,7 @@ export default function AdminIntegrations() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Building2, Users, Shield, Lock, QrCode, ScanLine, ChevronDown } from "lucide-react";
+import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Lock, QrCode, ScanLine, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -76,16 +76,15 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Button
-              variant={isActive("/") ? "default" : "ghost"}
-              onClick={() => navigate("/")}
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              งานอีเว้นท์
-            </Button>
-
             {user && (
               <>
+                <Button
+                  variant={isActive("/events") ? "default" : "ghost"}
+                  onClick={() => navigate("/events")}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  งานอีเว้นท์ทั้งหมด
+                </Button>
                 <Button
                   variant={isActive("/registrations") ? "default" : "ghost"}
                   onClick={() => navigate("/registrations")}
@@ -117,33 +116,6 @@ const Navbar = () => {
                       <FolderTree className="mr-2 h-4 w-4" />
                       งานอีเว้นท์
                     </Button>
-
-                    {/* User & Access Management */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost">
-                          <Users className="mr-2 h-4 w-4" />
-                          จัดการผู้ใช้
-                          <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>User & Access Management</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate("/admin/organizations")}>
-                          <Building2 className="mr-2 h-4 w-4" />
-                          องค์กร
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/admin/teams")}>
-                          <Users className="mr-2 h-4 w-4" />
-                          ทีม
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/admin/roles")}>
-                          <Shield className="mr-2 h-4 w-4" />
-                          บทบาท
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
 
                     {/* System Management */}
                     <DropdownMenu>
@@ -231,20 +203,19 @@ const Navbar = () => {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-2">
-            <Button
-              variant={isActive("/") ? "default" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => {
-                navigate("/");
-                setMobileMenuOpen(false);
-              }}
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              งานอีเว้นท์
-            </Button>
-
             {user && (
               <>
+                <Button
+                  variant={isActive("/events") ? "default" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => {
+                    navigate("/events");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  งานอีเว้นท์ทั้งหมด
+                </Button>
                 <Button
                   variant={isActive("/registrations") ? "default" : "ghost"}
                   className="w-full justify-start"
@@ -293,43 +264,6 @@ const Navbar = () => {
                     >
                       <FolderTree className="mr-2 h-4 w-4" />
                       งานอีเว้นท์
-                    </Button>
-
-                    <div className="px-4 py-2 text-sm font-semibold text-muted-foreground mt-2">
-                      User & Access Management
-                    </div>
-                    <Button
-                      variant={isActive("/admin/organizations") ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        navigate("/admin/organizations");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Building2 className="mr-2 h-4 w-4" />
-                      องค์กร
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/teams") ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        navigate("/admin/teams");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      ทีม
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/roles") ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        navigate("/admin/roles");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Shield className="mr-2 h-4 w-4" />
-                      บทบาท
                     </Button>
 
                     <div className="px-4 py-2 text-sm font-semibold text-muted-foreground mt-2">
