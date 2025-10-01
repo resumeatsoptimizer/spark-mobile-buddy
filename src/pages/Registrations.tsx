@@ -115,7 +115,7 @@ const Registrations = () => {
   };
 
   const handleViewDetails = (eventId: string) => {
-    navigate(`/event/${eventId}`);
+    navigate(`/events/${eventId}`);
   };
 
   const handleCancelClick = (registration: Registration) => {

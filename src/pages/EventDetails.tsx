@@ -4,13 +4,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, MapPin, Clock, ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { Calendar, Users, MapPin, Clock, ArrowLeft, Edit, Trash2, CreditCard, CheckCircle, XCircle, Loader, QrCode, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
 import { Progress } from "@/components/ui/progress";
 import { convertToEmbedUrl, isValidGoogleMapsUrl } from "@/lib/maps";
+import { PaymentDialog } from "@/components/PaymentDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
 interface Event {
   id: string;
@@ -34,6 +53,20 @@ interface Event {
   created_at: string;
 }
 
+interface UserRegistration {
+  id: string;
+  status: string;
+  payment_status: string;
+  created_at: string;
+  ticket_type_id?: string;
+  ticket_types?: {
+    id: string;
+    name: string;
+    price: number;
+  };
+  form_data?: any;
+}
+
 const EventDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -41,10 +74,16 @@ const EventDetails = () => {
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState<Event | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRegistration, setUserRegistration] = useState<UserRegistration | null>(null);
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [canceling, setCanceling] = useState(false);
 
   useEffect(() => {
     checkAuth();
     fetchEvent();
+    fetchUserRegistration();
   }, [id]);
 
   const checkAuth = async () => {
@@ -84,6 +123,51 @@ const EventDetails = () => {
     setLoading(false);
   };
 
+  const fetchUserRegistration = async () => {
+    if (!id) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const { data, error } = await supabase
+      .from("registrations")
+      .select(`
+        id,
+        status,
+        payment_status,
+        created_at,
+        ticket_type_id,
+        form_data,
+        ticket_types (
+          id,
+          name,
+          price
+        )
+      `)
+      .eq("event_id", id)
+      .eq("user_id", session.user.id)
+      .neq("status", "cancelled")
+      .maybeSingle();
+
+    if (!error && data) {
+      setUserRegistration(data);
+      
+      // Generate QR code if paid
+      if (data.payment_status === "paid") {
+        try {
+          const { data: qrData } = await supabase.functions.invoke('qr-code-generator', {
+            body: { registration_id: data.id }
+          });
+          if (qrData?.qrCodeData) {
+            setQrCodeData(qrData.qrCodeData);
+          }
+        } catch (error) {
+          console.error('Failed to generate QR code:', error);
+        }
+      }
+    }
+  };
+
   const handleDelete = async () => {
     if (!event || !confirm(`คุณต้องการลบงานอีเว้นท์ "${event.title}" ใช่หรือไม่?`)) {
       return;
@@ -106,6 +190,74 @@ const EventDetails = () => {
         description: `ลบงานอีเว้นท์ "${event.title}" เรียบร้อยแล้ว`,
       });
       navigate("/events");
+    }
+  };
+
+  const handlePayNow = () => {
+    setPaymentDialogOpen(true);
+  };
+
+  const handleCancelRegistration = () => {
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!userRegistration) return;
+
+    setCanceling(true);
+    
+    const { error } = await supabase
+      .from("registrations")
+      .update({ status: "cancelled" })
+      .eq("id", userRegistration.id);
+
+    if (error) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถยกเลิกการลงทะเบียนได้",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "ยกเลิกสำเร็จ",
+        description: "ยกเลิกการลงทะเบียนเรียบร้อยแล้ว",
+      });
+      setUserRegistration(null);
+      fetchEvent(); // Refresh to update seats
+    }
+
+    setCanceling(false);
+    setCancelDialogOpen(false);
+  };
+
+  const handlePaymentSuccess = async () => {
+    await fetchUserRegistration();
+    await fetchEvent();
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return <Badge className="bg-green-500"><CheckCircle className="mr-1 h-3 w-3" />ยืนยันแล้ว</Badge>;
+      case "pending":
+        return <Badge variant="secondary"><Loader className="mr-1 h-3 w-3" />รอดำเนินการ</Badge>;
+      case "waitlist":
+        return <Badge variant="outline"><Clock className="mr-1 h-3 w-3" />รายการรอ</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  const getPaymentBadge = (paymentStatus: string) => {
+    switch (paymentStatus) {
+      case "paid":
+        return <Badge className="bg-blue-500">ชำระแล้ว</Badge>;
+      case "unpaid":
+        return <Badge variant="outline">ยังไม่ชำระ</Badge>;
+      case "failed":
+        return <Badge variant="destructive">ชำระไม่สำเร็จ</Badge>;
+      default:
+        return <Badge>{paymentStatus}</Badge>;
     }
   };
 
@@ -139,17 +291,32 @@ const EventDetails = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Header */}
+      {/* Header with Breadcrumb */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/events")}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            กลับไปหน้าอีเว้นท์
-          </Button>
+          <Breadcrumb className="mb-4">
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink onClick={() => navigate("/")} className="cursor-pointer">
+                  หน้าหลัก
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator>
+                <ChevronRight className="h-4 w-4" />
+              </BreadcrumbSeparator>
+              <BreadcrumbItem>
+                <BreadcrumbLink onClick={() => navigate("/events")} className="cursor-pointer">
+                  งานอีเว้นท์
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator>
+                <ChevronRight className="h-4 w-4" />
+              </BreadcrumbSeparator>
+              <BreadcrumbItem>
+                <BreadcrumbPage>{event?.title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
       </header>
 
@@ -280,6 +447,111 @@ const EventDetails = () => {
                 </Card>
               )}
 
+              {/* User Registration Status */}
+              {userRegistration && (
+                <Card className="border-2 border-primary/20 bg-primary/5">
+                  <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-primary" />
+                      ข้อมูลการลงทะเบียนของคุณ
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">สถานะ</p>
+                        {getStatusBadge(userRegistration.status)}
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">การชำระเงิน</p>
+                        {getPaymentBadge(userRegistration.payment_status)}
+                      </div>
+                    </div>
+
+                    {userRegistration.ticket_types && (
+                      <div className="p-4 bg-background rounded-lg border">
+                        <p className="text-sm text-muted-foreground mb-1">ประเภทตั๋ว</p>
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold">{userRegistration.ticket_types.name}</p>
+                          <p className="text-lg font-bold text-primary">
+                            ฿{userRegistration.ticket_types.price.toLocaleString('th-TH')}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">ลงทะเบียนเมื่อ</p>
+                      <p className="font-medium">
+                        {format(new Date(userRegistration.created_at), "d MMMM yyyy HH:mm", { locale: th })} น.
+                      </p>
+                    </div>
+
+                    {/* QR Code */}
+                    {qrCodeData && (
+                      <div className="p-4 bg-background rounded-lg border text-center">
+                        <p className="text-sm font-medium mb-3">QR Code สำหรับเช็คอิน</p>
+                        <div className="inline-block p-4 bg-white rounded-lg">
+                          <img 
+                            src={`data:image/png;base64,${qrCodeData}`} 
+                            alt="QR Code" 
+                            className="w-48 h-48 mx-auto"
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          แสดง QR Code นี้เมื่อเช็คอินเข้างาน
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons for Registered User */}
+                    <div className="flex gap-2 pt-2">
+                      {userRegistration.payment_status === "unpaid" && userRegistration.ticket_types && (
+                        <Button
+                          onClick={handlePayNow}
+                          className="flex-1"
+                          size="lg"
+                        >
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          ชำระเงิน
+                        </Button>
+                      )}
+                      {userRegistration.payment_status === "unpaid" && (
+                        <Button
+                          variant="destructive"
+                          onClick={handleCancelRegistration}
+                          disabled={canceling}
+                          size="lg"
+                        >
+                          {canceling ? (
+                            <>
+                              <Loader className="mr-2 h-4 w-4 animate-spin" />
+                              กำลังยกเลิก...
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="mr-2 h-4 w-4" />
+                              ยกเลิก
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      {userRegistration.payment_status === "paid" && (
+                        <Button
+                          variant="outline"
+                          onClick={() => navigate("/participant/qr-code")}
+                          className="flex-1"
+                          size="lg"
+                        >
+                          <QrCode className="mr-2 h-4 w-4" />
+                          ดู QR Code แบบเต็ม
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Seats Info */}
               <Card className="bg-muted/50">
                 <CardContent className="pt-6 space-y-3">
@@ -351,45 +623,95 @@ const EventDetails = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                {isStaff ? (
-                  <>
+              {!userRegistration && (
+                <div className="flex gap-3 pt-4">
+                  {isStaff ? (
+                    <>
+                      <Button
+                        onClick={() => navigate(`/events/${event.id}/edit`)}
+                        className="flex-1"
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        แก้ไขงานอีเว้นท์
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={handleDelete}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        ลบ
+                      </Button>
+                    </>
+                  ) : (
                     <Button
-                      onClick={() => navigate(`/events/${event.id}/edit`)}
-                      className="flex-1"
+                      className="w-full"
+                      size="lg"
+                      disabled={isFull || !registrationOpen || registrationClosed}
+                      onClick={() => navigate(`/events/${event.id}/register`)}
                     >
-                      <Edit className="mr-2 h-4 w-4" />
-                      แก้ไขงานอีเว้นท์
+                      {!registrationOpen
+                        ? "ยังไม่เปิดรับสมัคร"
+                        : registrationClosed
+                        ? "ปิดรับสมัครแล้ว"
+                        : isFull
+                        ? "ที่นั่งเต็ม"
+                        : "ลงทะเบียนเลย"}
                     </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={handleDelete}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      ลบ
-                    </Button>
-                  </>
-                ) : (
+                  )}
+                </div>
+              )}
+
+              {/* Staff actions for registered events */}
+              {isStaff && userRegistration && (
+                <div className="flex gap-3 pt-4">
                   <Button
-                    className="w-full"
-                    size="lg"
-                    disabled={isFull || !registrationOpen || registrationClosed}
-                    onClick={() => navigate(`/events/${event.id}/register`)}
+                    onClick={() => navigate(`/events/${event.id}/edit`)}
+                    variant="outline"
+                    className="flex-1"
                   >
-                    {!registrationOpen
-                      ? "ยังไม่เปิดรับสมัคร"
-                      : registrationClosed
-                      ? "ปิดรับสมัครแล้ว"
-                      : isFull
-                      ? "ที่นั่งเต็ม"
-                      : "ลงทะเบียนเลย"}
+                    <Edit className="mr-2 h-4 w-4" />
+                    แก้ไขงานอีเว้นท์
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </main>
+
+      {/* Payment Dialog */}
+      {userRegistration && userRegistration.ticket_types && (
+        <PaymentDialog
+          open={paymentDialogOpen}
+          onOpenChange={setPaymentDialogOpen}
+          registrationId={userRegistration.id}
+          amount={userRegistration.ticket_types.price}
+          eventTitle={event?.title || ""}
+          onSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการยกเลิก</AlertDialogTitle>
+            <AlertDialogDescription>
+              คุณแน่ใจหรือไม่ที่จะยกเลิกการลงทะเบียนงาน "{event?.title}"?
+              การกระทำนี้ไม่สามารถย้อนกลับได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCancelConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              ยืนยันการยกเลิก
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
