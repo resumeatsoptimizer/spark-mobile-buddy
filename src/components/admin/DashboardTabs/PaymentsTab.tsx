@@ -27,7 +27,7 @@ export function PaymentsTab() {
         *,
         registration:registrations(
           event:events(title),
-          user_id!inner(email, name)
+          profiles!registrations_user_id_fkey(email, name)
         )
       `)
       .order("created_at", { ascending: false })
@@ -38,7 +38,7 @@ export function PaymentsTab() {
 
   const filteredPayments = payments.filter((p) => {
     const matchesSearch =
-      p.registration?.user_id?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.registration?.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.registration?.event?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.omise_charge_id?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === "all" || p.status === filterStatus;
@@ -157,8 +157,8 @@ export function PaymentsTab() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium text-sm">{payment.registration?.user_id?.name}</p>
-                        <p className="text-xs text-muted-foreground">{payment.registration?.user_id?.email}</p>
+                        <p className="font-medium text-sm">{payment.registration?.profiles?.name || '-'}</p>
+                        <p className="text-xs text-muted-foreground">{payment.registration?.profiles?.email || '-'}</p>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{payment.registration?.event?.title}</TableCell>

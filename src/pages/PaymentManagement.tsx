@@ -26,10 +26,11 @@ interface Payment {
   refund_amount: number;
   registration: {
     id: string;
+    user_id: string;
     event: {
       title: string;
     };
-    user_id: {
+    profiles: {
       email: string;
       name: string;
     };
@@ -82,7 +83,8 @@ const PaymentManagement = () => {
         *,
         registration:registrations(
           id,
-          user_id!inner(email, name),
+          user_id,
+          profiles!registrations_user_id_fkey(email, name),
           event:events(title)
         )
       `)
@@ -178,8 +180,8 @@ const PaymentManagement = () => {
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch = 
       payment.registration?.event?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.registration?.user_id?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.registration?.user_id?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.registration?.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.registration?.profiles?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       payment.omise_charge_id?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = filterStatus === "all" || payment.status === filterStatus;
@@ -348,8 +350,8 @@ const PaymentManagement = () => {
                       <TableCell>{payment.registration?.event?.title}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{payment.registration?.user_id?.name}</p>
-                          <p className="text-xs text-muted-foreground">{payment.registration?.user_id?.email}</p>
+                          <p className="font-medium">{payment.registration?.profiles?.name || '-'}</p>
+                          <p className="text-xs text-muted-foreground">{payment.registration?.profiles?.email || '-'}</p>
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">
