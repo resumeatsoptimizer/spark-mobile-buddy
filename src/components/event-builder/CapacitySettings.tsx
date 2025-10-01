@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Trash2, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export interface TicketType {
   id: string;
@@ -34,40 +35,116 @@ export const CapacitySettings = ({
   overbookingPercentage,
   onOverbookingPercentageChange,
 }: CapacitySettingsProps) => {
+  const { toast } = useToast();
   const [showTicketTypes, setShowTicketTypes] = useState(ticketTypes.length > 0);
   const [editingTicket, setEditingTicket] = useState<TicketType | null>(null);
 
-  const addTicketType = () => {
-    const newTicket: TicketType = {
-      id: crypto.randomUUID(),
-      name: "",
-      seats_allocated: 0,
-      price: 0,
-    };
-    setEditingTicket(newTicket);
-  };
-
-  const saveTicketType = () => {
-    if (!editingTicket || !editingTicket.name || editingTicket.seats_allocated <= 0) return;
-
-    const existingIndex = ticketTypes.findIndex((t) => t.id === editingTicket.id);
-    if (existingIndex >= 0) {
-      const updated = [...ticketTypes];
-      updated[existingIndex] = editingTicket;
-      onTicketTypesChange(updated);
-    } else {
-      onTicketTypesChange([...ticketTypes, editingTicket]);
+  // Sync showTicketTypes with ticketTypes changes
+  useEffect(() => {
+    if (ticketTypes.length > 0 && !showTicketTypes) {
+      setShowTicketTypes(true);
     }
+  }, [ticketTypes.length, showTicketTypes]);
+
+  const addTicketType = useCallback(() => {
+    try {
+      console.log("🎫 Adding new ticket type");
+      const newTicket: TicketType = {
+        id: crypto.randomUUID(),
+        name: "",
+        seats_allocated: 0,
+        price: 0,
+      };
+      setEditingTicket(newTicket);
+    } catch (error) {
+      console.error("❌ Error adding ticket type:", error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถเพิ่มประเภทตั๋วได้",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const saveTicketType = useCallback(() => {
+    try {
+      if (!editingTicket || !editingTicket.name || editingTicket.seats_allocated <= 0) {
+        toast({
+          title: "ข้อมูลไม่ครบถ้วน",
+          description: "กรุณากรอกชื่อและจำนวนที่นั่ง",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("💾 Saving ticket type:", editingTicket);
+      
+      const existingIndex = ticketTypes.findIndex((t) => t.id === editingTicket.id);
+      if (existingIndex >= 0) {
+        console.log("✏️ Updating existing ticket at index:", existingIndex);
+        const updated = [...ticketTypes];
+        updated[existingIndex] = editingTicket;
+        onTicketTypesChange(updated);
+        toast({
+          title: "สำเร็จ",
+          description: "แก้ไขประเภทตั๋วเรียบร้อยแล้ว",
+        });
+      } else {
+        console.log("➕ Adding new ticket");
+        onTicketTypesChange([...ticketTypes, editingTicket]);
+        toast({
+          title: "สำเร็จ",
+          description: "เพิ่มประเภทตั๋วเรียบร้อยแล้ว",
+        });
+      }
+      setEditingTicket(null);
+    } catch (error) {
+      console.error("❌ Error saving ticket type:", error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถบันทึกประเภทตั๋วได้",
+        variant: "destructive",
+      });
+    }
+  }, [editingTicket, ticketTypes, onTicketTypesChange, toast]);
+
+  const removeTicketType = useCallback((id: string) => {
+    try {
+      console.log("🗑️ Removing ticket type:", id);
+      onTicketTypesChange(ticketTypes.filter((t) => t.id !== id));
+      toast({
+        title: "สำเร็จ",
+        description: "ลบประเภทตั๋วเรียบร้อยแล้ว",
+      });
+    } catch (error) {
+      console.error("❌ Error removing ticket type:", error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถลบประเภทตั๋วได้",
+        variant: "destructive",
+      });
+    }
+  }, [ticketTypes, onTicketTypesChange, toast]);
+
+  const editTicketType = useCallback((ticket: TicketType) => {
+    try {
+      console.log("✏️ Editing ticket type:", ticket);
+      // Create a deep copy to prevent reference issues
+      setEditingTicket({ ...ticket });
+    } catch (error) {
+      console.error("❌ Error editing ticket type:", error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถแก้ไขประเภทตั๋วได้",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const cancelEdit = useCallback(() => {
+    console.log("❌ Cancelling ticket edit");
     setEditingTicket(null);
-  };
-
-  const removeTicketType = (id: string) => {
-    onTicketTypesChange(ticketTypes.filter((t) => t.id !== id));
-  };
-
-  const editTicketType = (ticket: TicketType) => {
-    setEditingTicket({ ...ticket });
-  };
+  }, []);
 
   const totalAllocated = ticketTypes.reduce((sum, t) => sum + t.seats_allocated, 0);
 
@@ -175,7 +252,7 @@ export const CapacitySettings = ({
                   >
                     บันทึกประเภทตั๋ว
                   </Button>
-                  <Button variant="outline" onClick={() => setEditingTicket(null)}>
+                  <Button variant="outline" onClick={cancelEdit}>
                     ยกเลิก
                   </Button>
                 </div>
