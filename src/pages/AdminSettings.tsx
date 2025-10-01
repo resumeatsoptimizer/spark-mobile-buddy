@@ -1,48 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Settings, Users, Shield, Mail } from "lucide-react";
+import { Settings, Shield } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-
-type AppRole = "admin" | "staff" | "participant";
-
-interface UserRole {
-  id: string;
-  user_id: string;
-  role: AppRole;
-  profiles: {
-    email: string;
-    name: string | null;
-  } | null;
-}
 
 const AdminSettings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
-  const [searchEmail, setSearchEmail] = useState("");
 
   useEffect(() => {
     checkAuth();
@@ -73,76 +40,8 @@ const AdminSettings = () => {
       return;
     }
 
-    fetchUserRoles();
-  };
-
-  const fetchUserRoles = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("user_roles")
-      .select(`
-        id,
-        user_id,
-        role,
-        profiles (
-          email,
-          name
-        )
-      `)
-      .order("profiles(email)", { ascending: true });
-
-    if (error) {
-      toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถโหลดข้อมูลผู้ใช้ได้",
-        variant: "destructive",
-      });
-    } else {
-      setUserRoles(data || []);
-    }
     setLoading(false);
   };
-
-  const handleRoleChange = async (userRoleId: string, newRole: AppRole) => {
-    const { error } = await supabase
-      .from("user_roles")
-      .update({ role: newRole })
-      .eq("id", userRoleId);
-
-    if (error) {
-      toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถอัปเดตสิทธิ์ได้",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "สำเร็จ",
-        description: "อัปเดตสิทธิ์เรียบร้อยแล้ว",
-      });
-      fetchUserRoles();
-    }
-  };
-
-  const getRoleBadge = (role: AppRole) => {
-    switch (role) {
-      case "admin":
-        return <Badge className="bg-red-500"><Shield className="mr-1 h-3 w-3" />Admin</Badge>;
-      case "staff":
-        return <Badge className="bg-blue-500"><Users className="mr-1 h-3 w-3" />Staff</Badge>;
-      case "participant":
-        return <Badge variant="outline"><Users className="mr-1 h-3 w-3" />Participant</Badge>;
-      default:
-        return <Badge>{role}</Badge>;
-    }
-  };
-
-  const filteredUsers = userRoles.filter(ur => 
-    ur.profiles && (
-      ur.profiles.email.toLowerCase().includes(searchEmail.toLowerCase()) ||
-      ur.profiles.name?.toLowerCase().includes(searchEmail.toLowerCase())
-    )
-  );
 
   if (loading) {
     return (
@@ -169,7 +68,7 @@ const AdminSettings = () => {
             <h1 className="text-3xl font-bold">ตั้งค่าระบบ</h1>
           </div>
           <p className="text-muted-foreground">
-            จัดการผู้ใช้และสิทธิ์การเข้าถึงระบบ
+            จัดการการตั้งค่าระบบและการเข้าถึงต่างๆ
           </p>
         </div>
 
@@ -220,82 +119,6 @@ const AdminSettings = () => {
             </CardHeader>
           </Card>
         </div>
-
-        {/* User Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              จัดการผู้ใช้และสิทธิ์
-            </CardTitle>
-            <CardDescription>
-              กำหนดสิทธิ์การเข้าถึงสำหรับผู้ใช้ในระบบ
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* Search */}
-            <div className="mb-6">
-              <Label htmlFor="search">ค้นหาผู้ใช้</Label>
-              <div className="flex items-center gap-2 mt-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder="ค้นหาด้วยอีเมลหรือชื่อ..."
-                  value={searchEmail}
-                  onChange={(e) => setSearchEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Users Table */}
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ผู้ใช้</TableHead>
-                    <TableHead>อีเมล</TableHead>
-                    <TableHead>สิทธิ์ปัจจุบัน</TableHead>
-                    <TableHead>เปลี่ยนสิทธิ์</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        ไม่พบผู้ใช้
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredUsers.map((userRole) => (
-                      <TableRow key={userRole.id}>
-                        <TableCell className="font-medium">
-                          {userRole.profiles?.name || "ไม่ระบุ"}
-                        </TableCell>
-                        <TableCell>{userRole.profiles?.email || "ไม่มีอีเมล"}</TableCell>
-                        <TableCell>{getRoleBadge(userRole.role)}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={userRole.role}
-                            onValueChange={(value) => handleRoleChange(userRole.id, value as AppRole)}
-                          >
-                            <SelectTrigger className="w-[150px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="staff">Staff</SelectItem>
-                              <SelectItem value="participant">Participant</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );
