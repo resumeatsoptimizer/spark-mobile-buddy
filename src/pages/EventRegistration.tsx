@@ -332,14 +332,16 @@ const EventRegistration = () => {
       return;
     }
 
-    // Update seats
-    if (status === "pending") {
+    // Seats will be automatically decremented by database trigger when payment is completed
+    const isFreeTicket = selectedTicket && selectedTicket.price === 0;
+    
+    // For free tickets, manually decrement seats since there's no payment process
+    if (isFreeTicket && status === "pending") {
       await supabase
         .from("events")
         .update({ seats_remaining: event.seats_remaining - 1 })
         .eq("id", event.id);
 
-      // Update ticket type seats if selected
       if (selectedTicket) {
         await supabase
           .from("ticket_types")
@@ -347,8 +349,6 @@ const EventRegistration = () => {
           .eq("id", selectedTicketTypeId);
       }
     }
-
-    const isFreeTicket = selectedTicket && selectedTicket.price === 0;
 
     // Send registration confirmation email
     try {

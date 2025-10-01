@@ -2177,6 +2177,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalculate_event_seats: {
+        Args: { event_id_param: string }
+        Returns: undefined
+      }
       refresh_member_statistics: {
         Args: Record<PropertyKey, never>
         Returns: undefined
