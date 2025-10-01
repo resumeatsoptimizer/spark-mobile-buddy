@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Lock, QrCode, ScanLine, ChevronDown, CreditCard, Users, Shield } from "lucide-react";
+import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Lock, QrCode, ScanLine, ChevronDown, CreditCard, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -189,15 +189,6 @@ const Navbar = () => {
                     </Button>
                   </>
                 )}
-                {!isAdmin && (
-                  <Button
-                    variant={isActive("/data-privacy") ? "default" : "ghost"}
-                    onClick={() => navigate("/data-privacy")}
-                  >
-                    <Shield className="mr-2 h-4 w-4" />
-                    ข้อมูลและความเป็นส่วนตัว
-                  </Button>
-                )}
               </>
             )}
 
@@ -380,19 +371,6 @@ const Navbar = () => {
                       My QR Code
                     </Button>
                   </>
-                )}
-                {!isAdmin && (
-                  <Button
-                    variant={isActive("/data-privacy") ? "default" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => {
-                      navigate("/data-privacy");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <Shield className="mr-2 h-4 w-4" />
-                    ข้อมูลและความเป็นส่วนตัว
-                  </Button>
                 )}
               </>
             )}
