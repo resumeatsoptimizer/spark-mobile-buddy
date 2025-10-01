@@ -98,7 +98,7 @@ serve(async (req) => {
       .from('payments')
       .select('id, status')
       .eq('registration_id', registrationId)
-      .in('status', ['success', 'completed', 'pending', 'processing', 'pending_scan'])
+      .in('status', ['success', 'pending'])
       .single();
 
     if (existingPayment) {
@@ -210,14 +210,14 @@ serve(async (req) => {
     // Determine payment status
     const requireAction = !!charge.authorize_uri && charge.status !== 'successful';
     const require3ds = requireAction;
-    let paymentStatus = 'processing';
+    let paymentStatus = 'pending';
     
     if (paymentMethod === 'promptpay') {
-      paymentStatus = 'pending_scan';
+      paymentStatus = 'pending';
     } else if (charge.paid) {
-      paymentStatus = 'completed';
+      paymentStatus = 'success';
     } else if (require3ds) {
-      paymentStatus = 'pending_3ds';
+      paymentStatus = 'pending';
     } else if (charge.failure_code || charge.failure_message) {
       paymentStatus = 'failed';
     }
@@ -261,7 +261,7 @@ serve(async (req) => {
     }
 
     // Update registration if payment successful
-    if (paymentStatus === 'completed') {
+    if (paymentStatus === 'success') {
       const { error: updateError } = await supabase
         .from('registrations')
         .update({
