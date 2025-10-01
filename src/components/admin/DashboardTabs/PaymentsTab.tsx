@@ -27,7 +27,7 @@ export function PaymentsTab() {
         *,
         registration:registrations(
           event:events(title),
-          profiles:user_id(email, name)
+          profiles(email, name)
         )
       `)
       .order("created_at", { ascending: false })

@@ -85,7 +85,7 @@ const PaymentManagement = () => {
           id,
           user_id,
           event:events(title),
-          profiles:user_id(email, name)
+          profiles(email, name)
         )
       `)
       .order("created_at", { ascending: false });

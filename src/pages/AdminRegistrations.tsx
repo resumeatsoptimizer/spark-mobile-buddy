@@ -128,7 +128,7 @@ const AdminRegistrations = () => {
         *,
         events(id, title, start_date, location),
         ticket_types(name, price),
-        profiles:user_id(email, name)
+        profiles(email, name)
       `)
       .order("created_at", { ascending: false });
 

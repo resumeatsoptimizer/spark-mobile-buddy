@@ -27,7 +27,7 @@ export function RegistrationsTab() {
       .select(`
         *,
         events(title, start_date),
-        profiles:user_id(email, name)
+        profiles(email, name)
       `)
       .order("created_at", { ascending: false })
       .limit(100);
