@@ -25,7 +25,6 @@ import {
   Users,
   Search,
   RefreshCw,
-  UserPlus,
   Download,
   Filter,
   MoreVertical,
@@ -36,6 +35,8 @@ import {
   XCircle,
   AlertCircle,
   DollarSign,
+  Shield,
+  Trash2,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import {
@@ -45,7 +46,21 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { AddUserDialog } from "@/components/admin/AddUserDialog";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 
@@ -62,6 +77,7 @@ interface MemberStats {
   total_amount_paid: number;
   activity_level: ActivityLevel;
   last_registration_at?: string;
+  roles?: string[];
 }
 
 interface Statistics {
@@ -80,6 +96,7 @@ const MemberManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [activityFilter, setActivityFilter] = useState<string>("all");
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -132,9 +149,25 @@ const MemberManagement = () => {
         description: "ไม่สามารถโหลดข้อมูลสมาชิกได้",
         variant: "destructive",
       });
-    } else {
-      setMembers((data || []) as MemberStats[]);
+      return;
     }
+
+    // Fetch roles for each member
+    const membersWithRoles = await Promise.all(
+      (data || []).map(async (member) => {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", member.user_id);
+        
+        return {
+          ...member,
+          roles: roles?.map((r) => r.role) || [],
+        };
+      })
+    );
+
+    setMembers(membersWithRoles as MemberStats[]);
   };
 
   const fetchStatistics = async () => {
@@ -232,13 +265,93 @@ const MemberManagement = () => {
     }
   };
 
+  const handleUpdateRoles = async (userId: string, roles: string[]) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/user-management?action=update-roles`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId, roles }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to update roles");
+      }
+
+      toast({
+        title: "สำเร็จ",
+        description: "อัปเดตสิทธิ์เรียบร้อยแล้ว",
+      });
+
+      fetchMembers();
+    } catch (error: any) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUserId) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/user-management?action=delete`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId: deleteUserId }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to delete user");
+      }
+
+      toast({
+        title: "สำเร็จ",
+        description: "ลบผู้ใช้เรียบร้อยแล้ว",
+      });
+
+      setDeleteUserId(null);
+      fetchMembers();
+    } catch (error: any) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleExportData = () => {
     const csv = [
-      ["Email", "Name", "Status", "Activity", "Registrations", "Revenue", "Created"],
+      ["Email", "Name", "Status", "Roles", "Activity", "Registrations", "Revenue", "Created"],
       ...filteredMembers.map(m => [
         m.email,
         m.name || "",
         m.status,
+        m.roles?.join(", ") || "",
         m.activity_level,
         m.total_registrations.toString(),
         `฿${m.total_amount_paid.toLocaleString()}`,
@@ -252,6 +365,25 @@ const MemberManagement = () => {
     a.href = url;
     a.download = `members_${format(new Date(), "yyyy-MM-dd")}.csv`;
     a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const getRoleBadges = (roles?: string[]) => {
+    if (!roles || roles.length === 0) return <Badge variant="outline">No Role</Badge>;
+    
+    return (
+      <div className="flex gap-1 flex-wrap">
+        {roles.map((role) => (
+          <Badge 
+            key={role} 
+            variant={role === "admin" ? "default" : role === "staff" ? "secondary" : "outline"}
+            className="text-xs"
+          >
+            {role}
+          </Badge>
+        ))}
+      </div>
+    );
   };
 
   const filteredMembers = members.filter(member => {
@@ -295,6 +427,7 @@ const MemberManagement = () => {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 รีเฟรช
               </Button>
+              <AddUserDialog onUserAdded={fetchData} />
               <Button onClick={handleExportData} variant="outline">
                 <Download className="mr-2 h-4 w-4" />
                 Export
@@ -426,6 +559,7 @@ const MemberManagement = () => {
                   <TableRow>
                     <TableHead>สมาชิก</TableHead>
                     <TableHead>สถานะ</TableHead>
+                    <TableHead>สิทธิ์</TableHead>
                     <TableHead>กิจกรรม</TableHead>
                     <TableHead className="text-right">ลงทะเบียน</TableHead>
                     <TableHead className="text-right">รายได้</TableHead>
@@ -437,7 +571,7 @@ const MemberManagement = () => {
                 <TableBody>
                   {filteredMembers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         ไม่พบข้อมูลสมาชิก
                       </TableCell>
                     </TableRow>
@@ -451,6 +585,7 @@ const MemberManagement = () => {
                           </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(member.status)}</TableCell>
+                        <TableCell>{getRoleBadges(member.roles)}</TableCell>
                         <TableCell>{getActivityBadge(member.activity_level)}</TableCell>
                         <TableCell className="text-right">
                           {member.total_registrations}
@@ -485,6 +620,36 @@ const MemberManagement = () => {
                                 ส่งอีเมล
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                  <Shield className="mr-2 h-4 w-4" />
+                                  จัดการสิทธิ์
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                  <DropdownMenuItem
+                                    onClick={() => handleUpdateRoles(member.user_id, ["admin"])}
+                                  >
+                                    Admin
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleUpdateRoles(member.user_id, ["staff"])}
+                                  >
+                                    Staff
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleUpdateRoles(member.user_id, ["participant"])}
+                                  >
+                                    Participant
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleUpdateRoles(member.user_id, [])}
+                                  >
+                                    ลบสิทธิ์ทั้งหมด
+                                  </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                              </DropdownMenuSub>
+                              <DropdownMenuSeparator />
                               {member.status !== "active" && (
                                 <DropdownMenuItem onClick={() => handleUpdateStatus(member.user_id, "active")}>
                                   <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
@@ -503,6 +668,14 @@ const MemberManagement = () => {
                                   Block
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => setDeleteUserId(member.user_id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                ลบผู้ใช้
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -515,6 +688,23 @@ const MemberManagement = () => {
           </CardContent>
         </Card>
       </main>
+
+      <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ยืนยันการลบผู้ใช้</AlertDialogTitle>
+            <AlertDialogDescription>
+              การลบผู้ใช้จะทำให้ข้อมูลทั้งหมดของผู้ใช้ถูกลบออกจากระบบอย่างถาวร การดำเนินการนี้ไม่สามารถย้อนกลับได้
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              ลบผู้ใช้
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
