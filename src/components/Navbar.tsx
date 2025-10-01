@@ -80,7 +80,7 @@ const Navbar = () => {
               <>
                 {isAdmin && (
                   <>
-                    {/* Core Management */}
+                    {/* Dashboard */}
                     <Button
                       variant={isActive("/admin/dashboard") ? "default" : "ghost"}
                       onClick={() => navigate("/admin/dashboard")}
@@ -88,51 +88,53 @@ const Navbar = () => {
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
                     </Button>
-                    <Button
-                      variant={isActive("/events") ? "default" : "ghost"}
-                      onClick={() => navigate("/events")}
-                    >
-                      <FolderTree className="mr-2 h-4 w-4" />
-                      จัดการงานอีเว้นท์
-                    </Button>
 
-                    {/* 3. จัดการการชำระเงิน */}
-                    <Button
-                      variant={isActive("/admin/payments") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/payments")}
-                    >
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      จัดการการชำระเงิน
-                    </Button>
+                    {/* Management Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant={
+                            isActive("/events") ||
+                            isActive("/admin/payments") ||
+                            isActive("/admin/registrations") ||
+                            isActive("/admin/members") ||
+                            isActive("/check-in")
+                              ? "default"
+                              : "ghost"
+                          }
+                        >
+                          <Workflow className="mr-2 h-4 w-4" />
+                          Management
+                          <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56 bg-popover z-50" align="start">
+                        <DropdownMenuLabel>จัดการระบบ</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate("/events")}>
+                          <FolderTree className="mr-2 h-4 w-4" />
+                          จัดการงานอีเว้นท์
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/admin/payments")}>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          จัดการการชำระเงิน
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/admin/registrations")}>
+                          <Users className="mr-2 h-4 w-4" />
+                          จัดการการลงทะเบียน
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/admin/members")}>
+                          <Users className="mr-2 h-4 w-4" />
+                          จัดการสมาชิก
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/check-in")}>
+                          <ScanLine className="mr-2 h-4 w-4" />
+                          Check-in
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
 
-                    {/* 4. จัดการการลงทะเบียน */}
-                    <Button
-                      variant={isActive("/admin/registrations") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/registrations")}
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      จัดการการลงทะเบียน
-                    </Button>
-
-                    {/* 4.5 จัดการสมาชิก */}
-                    <Button
-                      variant={isActive("/admin/members") ? "default" : "ghost"}
-                      onClick={() => navigate("/admin/members")}
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      จัดการสมาชิก
-                    </Button>
-
-                    {/* 5. Check-in */}
-                    <Button
-                      variant={isActive("/check-in") ? "default" : "ghost"}
-                      onClick={() => navigate("/check-in")}
-                    >
-                      <ScanLine className="mr-2 h-4 w-4" />
-                      Check-in
-                    </Button>
-
-                    {/* 6. Settings */}
+                    {/* Settings */}
                     <Button
                       variant={isActive("/admin/settings") ? "default" : "ghost"}
                       onClick={() => navigate("/admin/settings")}
@@ -228,6 +230,10 @@ const Navbar = () => {
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
                     </Button>
+
+                    <div className="px-4 py-2 text-xs font-semibold text-muted-foreground">
+                      Management
+                    </div>
                     <Button
                       variant={isActive("/events") ? "default" : "ghost"}
                       className="w-full justify-start"
@@ -260,6 +266,17 @@ const Navbar = () => {
                     >
                       <Users className="mr-2 h-4 w-4" />
                       จัดการการลงทะเบียน
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/members") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/members");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      จัดการสมาชิก
                     </Button>
                     <Button
                       variant={isActive("/check-in") ? "default" : "ghost"}
