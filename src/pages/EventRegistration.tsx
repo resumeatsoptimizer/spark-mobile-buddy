@@ -677,17 +677,6 @@ const EventRegistration = () => {
                     {basicFields.map(renderField)}
                   </div>
 
-                  {/* Work Information */}
-                  {workFields.length > 0 && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b">
-                        <Icons.Briefcase className="h-4 w-4 text-primary" />
-                        <h3 className="font-semibold">ข้อมูลการทำงาน</h3>
-                      </div>
-                      {workFields.map(renderField)}
-                    </div>
-                  )}
-
                   {/* Ticket Type Selection */}
                   {ticketTypes.length > 0 && (
                     <div className="space-y-2">
@@ -720,6 +709,17 @@ const EventRegistration = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                  )}
+
+                  {/* Work Information */}
+                  {workFields.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <Icons.Briefcase className="h-4 w-4 text-primary" />
+                        <h3 className="font-semibold">ข้อมูลการทำงาน</h3>
+                      </div>
+                      {workFields.map(renderField)}
                     </div>
                   )}
 
