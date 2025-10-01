@@ -860,6 +860,13 @@ export type Database = {
             foreignKeyName: "events_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "mv_member_statistics"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1028,6 +1035,84 @@ export type Database = {
           refresh_token?: string | null
           token_expires_at?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      member_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          note: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          note: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      member_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: string
+          new_status: string
+          old_status: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          id?: string
+          new_status: string
+          old_status?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      member_tags: {
+        Row: {
+          created_at: string
+          id: string
+          tag: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tag: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tag?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1395,6 +1480,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ticket_types"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "mv_member_statistics"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "registrations_user_id_fkey"
@@ -1861,6 +1953,13 @@ export type Database = {
             foreignKeyName: "user_roles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "mv_member_statistics"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1906,6 +2005,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "registration_health"
             referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "waitlist_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "mv_member_statistics"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "waitlist_user_id_fkey"
@@ -1968,6 +2074,20 @@ export type Database = {
       }
     }
     Views: {
+      mv_member_statistics: {
+        Row: {
+          activity_level: string | null
+          created_at: string | null
+          email: string | null
+          last_registration_at: string | null
+          name: string | null
+          status: string | null
+          total_amount_paid: number | null
+          total_registrations: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       payment_analytics: {
         Row: {
           avg_payment_amount: number | null
@@ -2007,10 +2127,36 @@ export type Database = {
         Args: { event_id: string }
         Returns: number
       }
+      get_member_details: {
+        Args: { member_id: string }
+        Returns: Json
+      }
+      get_member_statistics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active_members: number
+          inactive_members: number
+          total_members: number
+          total_revenue: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      refresh_member_statistics: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_member_status: {
+        Args: {
+          changed_by_id: string
+          member_id: string
+          new_status: string
+          reason_text?: string
         }
         Returns: boolean
       }
