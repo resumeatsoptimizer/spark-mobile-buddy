@@ -73,7 +73,7 @@ const AdminSettings = () => {
         </div>
 
         {/* Quick Access Features */}
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 mb-8">
           <Card
             className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-800"
             onClick={() => navigate('/admin/sso')}
@@ -100,21 +100,6 @@ const AdminSettings = () => {
               <CardTitle className="text-xl font-bold">API Documentation</CardTitle>
               <CardDescription className="mt-2">
                 REST API integration guide
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-200 dark:border-green-800"
-            onClick={() => navigate('/data-privacy')}
-          >
-            <CardHeader className="text-center pb-2">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
-                <Shield className="h-8 w-8 text-white" />
-              </div>
-              <CardTitle className="text-xl font-bold">Data & Privacy</CardTitle>
-              <CardDescription className="mt-2">
-                Manage your data and privacy settings
               </CardDescription>
             </CardHeader>
           </Card>

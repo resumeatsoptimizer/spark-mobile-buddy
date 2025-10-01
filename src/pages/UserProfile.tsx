@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, Phone, Save, Camera, Upload, Instagram, Facebook, MessageCircle } from "lucide-react";
+import { User, Mail, Phone, Save, Camera, Upload, Instagram, Facebook, MessageCircle, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface Profile {
@@ -608,6 +608,31 @@ const UserProfile = () => {
                     เพิ่ม
                   </Button>
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Data & Privacy Card */}
+        <Card className="border-border shadow-lg hover:shadow-xl transition-shadow duration-300 mt-6">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center flex-shrink-0">
+                <Shield className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-foreground mb-2">ข้อมูลและความเป็นส่วนตัว</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  จัดการข้อมูลส่วนตัวของคุณ ดาวน์โหลดข้อมูลทั้งหมด หรือขอลบข้อมูลตามนโยบายความเป็นส่วนตัว
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/data-privacy")}
+                  className="gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <Shield className="h-4 w-4" />
+                  จัดการข้อมูลและความเป็นส่วนตัว
+                </Button>
               </div>
             </div>
           </CardContent>
