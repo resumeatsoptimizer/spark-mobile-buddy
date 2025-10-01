@@ -173,7 +173,8 @@ const MemberManagement = () => {
       inactive: { color: "bg-gray-500", label: "Inactive" },
     };
 
-    const { color, label } = config[level];
+    const badgeConfig = config[level] || { color: "bg-gray-500", label: "Unknown" };
+    const { color, label } = badgeConfig;
 
     return <Badge className={color}>{label}</Badge>;
   };
