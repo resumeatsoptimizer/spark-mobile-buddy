@@ -31,18 +31,33 @@ serve(async (req) => {
       );
     }
 
-    // Decode QR data
+    // Decode QR data - support both base64 encoded and plain JSON
     let qrInfo;
     try {
-      qrInfo = JSON.parse(atob(qr_data));
+      // First, try to parse as base64 encoded data (from QR code)
+      try {
+        qrInfo = JSON.parse(atob(qr_data));
+        console.log('Successfully decoded base64 QR data');
+      } catch (e) {
+        // If base64 decode fails, try parsing as plain JSON (manual input)
+        qrInfo = JSON.parse(qr_data);
+        console.log('Successfully parsed plain JSON QR data');
+      }
     } catch (e) {
+      console.error('Failed to parse QR data:', e);
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
       return new Response(
-        JSON.stringify({ error: 'Invalid QR code data' }),
+        JSON.stringify({ 
+          error: 'Invalid QR code data format. Please provide valid base64 encoded or JSON data.',
+          details: errorMessage 
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const { registration_id, event_id } = qrInfo;
+    
+    console.log('Processing check-in for:', { registration_id, event_id });
 
     // Get current user
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();

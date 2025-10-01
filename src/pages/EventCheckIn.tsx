@@ -231,34 +231,41 @@ export default function EventCheckIn() {
               QR Code Scanner
             </CardTitle>
             <CardDescription>
-              กรอกหรือสแกน QR Code จากตั๋วของผู้เข้าร่วม
+              สแกน QR Code จากตั๋วของผู้เข้าร่วมงาน หรือวางข้อมูล JSON ด้านล่าง
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="กรอกข้อมูล QR Code หรือสแกน..."
-                value={qrData}
-                onChange={(e) => setQrData(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleManualInput();
-                  }
-                }}
-                disabled={scanning}
-                className="font-mono"
-              />
-              <Button
-                onClick={handleManualInput}
-                disabled={!qrData.trim() || scanning}
-                size="lg"
-              >
-                {scanning ? 'กำลังดำเนินการ...' : 'Check In'}
-              </Button>
-            </div>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder='วางข้อมูล JSON (เช่น {"registration_id":"...","event_id":"..."})'
+                  value={qrData}
+                  onChange={(e) => setQrData(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleManualInput();
+                    }
+                  }}
+                  disabled={scanning}
+                  className="font-mono text-sm"
+                />
+                <Button
+                  onClick={handleManualInput}
+                  disabled={!qrData.trim() || scanning}
+                  size="lg"
+                >
+                  {scanning ? 'กำลังดำเนินการ...' : 'Check In'}
+                </Button>
+              </div>
 
-            <div className="text-sm text-muted-foreground">
-              คำแนะนำ: ใช้เครื่องสแกนบาร์โค้ดหรืออุปกรณ์มือถือเพื่อสแกน QR Code โดยตรงในช่องกรอกข้อมูล
+              <div className="text-sm text-muted-foreground space-y-1">
+                <p className="font-medium">💡 วิธีใช้งาน:</p>
+                <ul className="list-disc list-inside space-y-1 pl-4">
+                  <li>สแกน QR Code ด้วยกล้องมือถือ แล้ววางข้อมูลที่ได้ในช่องด้านบน</li>
+                  <li>หรือคัดลอกข้อมูล JSON จากตั๋วโดยตรง</li>
+                  <li>กด Enter หรือคลิกปุ่ม Check In</li>
+                </ul>
+              </div>
             </div>
           </CardContent>
         </Card>
