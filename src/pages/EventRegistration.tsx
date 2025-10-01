@@ -7,17 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, ArrowLeft, Clock } from "lucide-react";
+import { Calendar, Users, ArrowLeft, Clock, MapPin, Mail, Phone, MessageCircle, Building2, Briefcase, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CustomField } from "@/components/event-builder/FieldBuilder";
 import { PaymentDialog } from "@/components/PaymentDialog";
+import { REGISTRATION_FIELDS, DEFAULT_ENABLED_FIELDS, RegistrationField } from "@/lib/registrationFields";
+import { Progress } from "@/components/ui/progress";
+import * as Icons from "lucide-react";
 
 interface TicketType {
   id: string;
@@ -65,6 +65,8 @@ const EventRegistration = () => {
   const [newRegistrationId, setNewRegistrationId] = useState<string | null>(null);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [selectedTicketTypeId, setSelectedTicketTypeId] = useState<string>("");
+  const [enabledFields, setEnabledFields] = useState<string[]>(DEFAULT_ENABLED_FIELDS);
+  const [currentStep, setCurrentStep] = useState(1);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -84,6 +86,10 @@ const EventRegistration = () => {
     }
 
     setUserId(session.user.id);
+    
+    // Pre-fill email from user session
+    setFormData(prev => ({ ...prev, email: session.user.email || "" }));
+    
     fetchEvent();
   };
 
@@ -118,6 +124,10 @@ const EventRegistration = () => {
       }
       setCodeVerified(true);
     }
+
+    // Extract enabled fields from custom_fields
+    const customFieldsData = data.custom_fields as { enabled_fields?: string[] } | null;
+    setEnabledFields(customFieldsData?.enabled_fields || DEFAULT_ENABLED_FIELDS);
 
     // Count waitlist
     const { count } = await supabase
@@ -163,6 +173,22 @@ const EventRegistration = () => {
     e.preventDefault();
     
     if (!userId || !event) return;
+
+    // Validate required fields
+    const requiredFields = REGISTRATION_FIELDS.filter(
+      f => f.required && enabledFields.includes(f.id)
+    );
+
+    for (const field of requiredFields) {
+      if (!formData[field.id] || formData[field.id].trim() === "") {
+        toast({
+          title: "กรุณากรอกข้อมูลให้ครบ",
+          description: `${field.label}เป็นข้อมูลที่จำเป็น`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     // Validate ticket type selection
     if (ticketTypes.length > 0 && !selectedTicketTypeId) {
@@ -286,66 +312,139 @@ const EventRegistration = () => {
         description: "ไม่สามารถลงทะเบียนได้",
         variant: "destructive",
       });
-    } else {
-      // Update seats
-      if (status === "pending") {
+      setSubmitting(false);
+      return;
+    }
+
+    // Update seats
+    if (status === "pending") {
+      await supabase
+        .from("events")
+        .update({ seats_remaining: event.seats_remaining - 1 })
+        .eq("id", event.id);
+
+      // Update ticket type seats if selected
+      if (selectedTicket) {
         await supabase
-          .from("events")
-          .update({ seats_remaining: event.seats_remaining - 1 })
-          .eq("id", event.id);
-
-        // Update ticket type seats if selected
-        if (selectedTicket) {
-          await supabase
-            .from("ticket_types")
-            .update({ seats_remaining: selectedTicket.seats_remaining - 1 })
-            .eq("id", selectedTicketTypeId);
-        }
-      }
-
-      const isFreeTicket = selectedTicket && selectedTicket.price === 0;
-
-      // Send registration confirmation email
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user?.email) {
-          await supabase.functions.invoke('send-registration-email', {
-            body: {
-              type: 'registration',
-              recipientEmail: session.user.email,
-              recipientName: formData.name,
-              eventTitle: event.title,
-              eventDate: event.start_date,
-              eventLocation: event.location,
-              registrationId: registration.id,
-              ticketType: selectedTicket?.name,
-            }
-          });
-        }
-      } catch (emailError) {
-        console.error('Failed to send email:', emailError);
-        // Don't block the registration flow if email fails
-      }
-
-      toast({
-        title: "สำเร็จ!",
-        description: status === "pending" 
-          ? isFreeTicket 
-            ? "ลงทะเบียนเรียบร้อยแล้ว ตรวจสอบอีเมลของคุณ" 
-            : "ลงทะเบียนเรียบร้อยแล้ว คุณสามารถชำระเงินได้เลย"
-          : "เพิ่มเข้ารายการรอเรียบร้อยแล้ว ตรวจสอบอีเมลของคุณ",
-      });
-
-      if (status === "pending" && !isFreeTicket) {
-        // Show payment dialog for paid registrations only
-        setNewRegistrationId(registration.id);
-        setShowPayment(true);
-      } else {
-        navigate("/registrations");
+          .from("ticket_types")
+          .update({ seats_remaining: selectedTicket.seats_remaining - 1 })
+          .eq("id", selectedTicketTypeId);
       }
     }
 
+    const isFreeTicket = selectedTicket && selectedTicket.price === 0;
+
+    // Send registration confirmation email
+    try {
+      await supabase.functions.invoke('send-registration-email', {
+        body: {
+          type: 'registration',
+          recipientEmail: formData.email,
+          recipientName: formData.full_name,
+          eventTitle: event.title,
+          eventDate: event.start_date,
+          eventLocation: event.location,
+          registrationId: registration.id,
+          ticketType: selectedTicket?.name,
+        }
+      });
+    } catch (emailError) {
+      console.error('Failed to send email:', emailError);
+    }
+
+    toast({
+      title: "สำเร็จ!",
+      description: status === "pending" 
+        ? isFreeTicket 
+          ? "ลงทะเบียนเรียบร้อยแล้ว ตรวจสอบอีเมลของคุณ" 
+          : "ลงทะเบียนเรียบร้อยแล้ว คุณสามารถชำระเงินได้เลย"
+        : "เพิ่มเข้ารายการรอเรียบร้อยแล้ว ตรวจสอบอีเมลของคุณ",
+    });
+
+    if (status === "pending" && !isFreeTicket) {
+      setNewRegistrationId(registration.id);
+      setShowPayment(true);
+    } else {
+      navigate("/registrations");
+    }
+
     setSubmitting(false);
+  };
+
+  const getIcon = (iconName?: string) => {
+    if (!iconName) return null;
+    const Icon = Icons[iconName as keyof typeof Icons] as any;
+    return Icon ? <Icon className="h-4 w-4" /> : null;
+  };
+
+  const renderField = (field: RegistrationField) => {
+    const icon = getIcon(field.icon);
+    
+    const commonProps = {
+      id: field.id,
+      required: field.required,
+      placeholder: field.placeholder,
+    };
+
+    const inputElement = (() => {
+      switch (field.type) {
+        case "textarea":
+          return (
+            <Textarea
+              {...commonProps}
+              value={formData[field.id] || ""}
+              onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+              rows={3}
+            />
+          );
+        case "select":
+          return (
+            <Select
+              value={formData[field.id] || ""}
+              onValueChange={(value) => setFormData({ ...formData, [field.id]: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={field.placeholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {field.options?.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        default:
+          return (
+            <Input
+              {...commonProps}
+              type={field.type}
+              value={formData[field.id] || ""}
+              onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+            />
+          );
+      }
+    })();
+
+    return (
+      <div key={field.id} className="space-y-2">
+        <Label htmlFor={field.id} className="flex items-center gap-2">
+          {icon}
+          <span>
+            {field.label} {field.required && <span className="text-destructive">*</span>}
+          </span>
+        </Label>
+        {inputElement}
+        {field.labelEn && (
+          <p className="text-xs text-muted-foreground">{field.labelEn}</p>
+        )}
+      </div>
+    );
+  };
+
+  const handlePaymentSuccess = () => {
+    navigate("/registrations");
   };
 
   if (loading) {
@@ -407,85 +506,20 @@ const EventRegistration = () => {
 
   const isFull = event.seats_remaining === 0 || event.seats_remaining >= maxSeats;
   const seatsPercentage = (event.seats_remaining / event.seats_total) * 100;
-  const customFields = Array.isArray(event.custom_fields) ? (event.custom_fields as CustomField[]) : [];
   
   const now = new Date();
   const isRegistrationOpen = !event.registration_open_date || new Date(event.registration_open_date) <= now;
   const isRegistrationClosed = event.registration_close_date && new Date(event.registration_close_date) < now;
   const canRegister = isRegistrationOpen && !isRegistrationClosed;
 
-  const renderCustomField = (field: CustomField) => {
-    const commonProps = {
-      id: field.id,
-      required: field.required,
-      placeholder: field.placeholder,
-    };
+  // Group fields by category
+  const basicFields = REGISTRATION_FIELDS.filter(f => f.category === "basic" && enabledFields.includes(f.id));
+  const workFields = REGISTRATION_FIELDS.filter(f => f.category === "work" && enabledFields.includes(f.id));
+  const eventFields = REGISTRATION_FIELDS.filter(f => f.category === "event" && enabledFields.includes(f.id));
+  const emergencyFields = REGISTRATION_FIELDS.filter(f => f.category === "emergency" && enabledFields.includes(f.id));
 
-    switch (field.type) {
-      case "textarea":
-        return (
-          <Textarea
-            {...commonProps}
-            value={formData[field.id] || ""}
-            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
-          />
-        );
-      case "select":
-        return (
-          <Select
-            value={formData[field.id] || ""}
-            onValueChange={(value) => setFormData({ ...formData, [field.id]: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={field.placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {field.options?.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      case "checkbox":
-        return (
-          <Checkbox
-            checked={formData[field.id] === "true"}
-            onCheckedChange={(checked) =>
-              setFormData({ ...formData, [field.id]: checked.toString() })
-            }
-          />
-        );
-      case "radio":
-        return (
-          <RadioGroup
-            value={formData[field.id] || ""}
-            onValueChange={(value) => setFormData({ ...formData, [field.id]: value })}
-          >
-            {field.options?.map((option) => (
-              <div key={option} className="flex items-center space-x-2">
-                <RadioGroupItem value={option} id={`${field.id}-${option}`} />
-                <Label htmlFor={`${field.id}-${option}`}>{option}</Label>
-              </div>
-            ))}
-          </RadioGroup>
-        );
-      default:
-        return (
-          <Input
-            {...commonProps}
-            type={field.type}
-            value={formData[field.id] || ""}
-            onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
-          />
-        );
-    }
-  };
-
-  const handlePaymentSuccess = () => {
-    navigate("/registrations");
-  };
+  const totalSteps = 3;
+  const progressPercentage = (currentStep / totalSteps) * 100;
 
   return (
     <div className="min-h-screen bg-background">
@@ -513,7 +547,7 @@ const EventRegistration = () => {
           กลับ
         </Button>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {/* Event Details */}
           <div className="lg:col-span-2">
             <Card>
@@ -542,29 +576,44 @@ const EventRegistration = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Event Info */}
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="flex items-center gap-3 p-4 border rounded-lg">
-                    <Calendar className="h-5 w-5 text-primary" />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex items-start gap-3 p-4 border rounded-lg bg-card">
+                    <Calendar className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="text-sm text-muted-foreground">เวลาเริ่มต้น</p>
                       <p className="font-medium">
-                        {format(new Date(event.start_date), "d MMM yyyy, HH:mm", { locale: th })} น.
+                        {format(new Date(event.start_date), "d MMM yyyy", { locale: th })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(event.start_date), "HH:mm", { locale: th })} น.
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-4 border rounded-lg">
-                    <Clock className="h-5 w-5 text-primary" />
+                  <div className="flex items-start gap-3 p-4 border rounded-lg bg-card">
+                    <Clock className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="text-sm text-muted-foreground">เวลาสิ้นสุด</p>
                       <p className="font-medium">
-                        {format(new Date(event.end_date), "d MMM yyyy, HH:mm", { locale: th })} น.
+                        {format(new Date(event.end_date), "d MMM yyyy", { locale: th })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(event.end_date), "HH:mm", { locale: th })} น.
                       </p>
                     </div>
                   </div>
+                  {event.location && (
+                    <div className="flex items-start gap-3 p-4 border rounded-lg bg-card sm:col-span-2">
+                      <MapPin className="h-5 w-5 text-primary mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">สถานที่</p>
+                        <p className="font-medium">{event.location}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Seats Info */}
-                <div className="p-4 border rounded-lg space-y-3">
+                <div className="p-4 border rounded-lg space-y-3 bg-card">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Users className="h-5 w-5 text-primary" />
@@ -574,22 +623,12 @@ const EventRegistration = () => {
                       {event.seats_remaining} / {event.seats_total}
                     </span>
                   </div>
-                  <div className="w-full bg-secondary rounded-full h-3">
-                    <div
-                      className={`h-3 rounded-full transition-all ${
-                        seatsPercentage > 50
-                          ? "bg-primary"
-                          : seatsPercentage > 20
-                          ? "bg-yellow-500"
-                          : "bg-red-500"
-                      }`}
-                      style={{ width: `${seatsPercentage}%` }}
-                    />
-                  </div>
+                  <Progress value={seatsPercentage} className="h-3" />
                 </div>
 
                 {isFull && event.waitlist_enabled && (
                   <Alert>
+                    <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       ที่นั่งเต็มแล้ว คุณสามารถลงทะเบียนเข้ารายการรอได้
                       {event.max_waitlist_size && ` (${waitlistCount}/${event.max_waitlist_size})`}
@@ -599,6 +638,7 @@ const EventRegistration = () => {
                 
                 {!canRegister && (
                   <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       {!isRegistrationOpen && `การลงทะเบียนจะเปิดวันที่ ${format(new Date(event.registration_open_date!), "d MMM yyyy HH:mm", { locale: th })}`}
                       {isRegistrationClosed && "ปิดลงทะเบียนแล้ว"}
@@ -619,35 +659,34 @@ const EventRegistration = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Basic Fields */}
-                  <div className="space-y-2">
-                    <Label htmlFor="name">ชื่อ-นามสกุล *</Label>
-                    <Input
-                      id="name"
-                      required
-                      placeholder="กรอกชื่อของคุณ"
-                      value={formData.name || ""}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b">
+                      <Icons.UserCircle className="h-4 w-4 text-primary" />
+                      <h3 className="font-semibold">ข้อมูลพื้นฐาน</h3>
+                    </div>
+                    {basicFields.map(renderField)}
                   </div>
 
-                   <div className="space-y-2">
-                    <Label htmlFor="phone">เบอร์โทรศัพท์ *</Label>
-                    <Input
-                      id="phone"
-                      required
-                      type="tel"
-                      placeholder="0812345678"
-                      value={formData.phone || ""}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    />
-                  </div>
+                  {/* Work Information */}
+                  {workFields.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <Icons.Briefcase className="h-4 w-4 text-primary" />
+                        <h3 className="font-semibold">ข้อมูลการทำงาน</h3>
+                      </div>
+                      {workFields.map(renderField)}
+                    </div>
+                  )}
 
                   {/* Ticket Type Selection */}
                   {ticketTypes.length > 0 && (
                     <div className="space-y-2">
-                      <Label htmlFor="ticketType">ประเภทตั๋ว *</Label>
+                      <Label htmlFor="ticketType" className="flex items-center gap-2">
+                        <Icons.Ticket className="h-4 w-4" />
+                        <span>ประเภทตั๋ว <span className="text-destructive">*</span></span>
+                      </Label>
                       <Select
                         value={selectedTicketTypeId}
                         onValueChange={setSelectedTicketTypeId}
@@ -655,10 +694,20 @@ const EventRegistration = () => {
                         <SelectTrigger>
                           <SelectValue placeholder="เลือกประเภทตั๋ว" />
                         </SelectTrigger>
-                        <SelectContent className="bg-background z-50">
+                        <SelectContent>
                           {ticketTypes.map((ticket) => (
                             <SelectItem key={ticket.id} value={ticket.id}>
-                              {ticket.name} - ฿{ticket.price.toLocaleString()} ({ticket.seats_remaining} ที่นั่งคงเหลือ)
+                              <div className="flex items-center justify-between gap-4">
+                                <span>{ticket.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="secondary">
+                                    ฿{ticket.price.toLocaleString()}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">
+                                    ({ticket.seats_remaining} ที่นั่ง)
+                                  </span>
+                                </div>
+                              </div>
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -666,17 +715,29 @@ const EventRegistration = () => {
                     </div>
                   )}
 
-                  {/* Custom Fields */}
-                  {customFields.map((field) => (
-                    <div key={field.id} className="space-y-2">
-                      <Label htmlFor={field.id}>
-                        {field.label} {field.required && "*"}
-                      </Label>
-                      {renderCustomField(field)}
+                  {/* Event Preferences */}
+                  {eventFields.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <Icons.Calendar className="h-4 w-4 text-primary" />
+                        <h3 className="font-semibold">ข้อมูลเกี่ยวกับงาน</h3>
+                      </div>
+                      {eventFields.map(renderField)}
                     </div>
-                  ))}
+                  )}
 
-                   <div className="pt-4 space-y-3">
+                  {/* Emergency Contact */}
+                  {emergencyFields.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <Icons.AlertCircle className="h-4 w-4 text-primary" />
+                        <h3 className="font-semibold">ผู้ติดต่อฉุกเฉิน</h3>
+                      </div>
+                      {emergencyFields.map(renderField)}
+                    </div>
+                  )}
+
+                  <div className="pt-4 space-y-3">
                     <Button 
                       type="submit" 
                       className="w-full" 
@@ -691,12 +752,18 @@ const EventRegistration = () => {
                       }
                     </Button>
                     {ticketTypes.length > 0 && selectedTicketTypeId && (
-                      <p className="text-xs text-muted-foreground text-center">
-                        {ticketTypes.find(t => t.id === selectedTicketTypeId)?.price === 0 
-                          ? "การลงทะเบียนไม่มีค่าใช้จ่าย" 
-                          : `ค่าลงทะเบียน ฿${ticketTypes.find(t => t.id === selectedTicketTypeId)?.price.toLocaleString()}`
-                        }
-                      </p>
+                      <div className="text-center">
+                        {ticketTypes.find(t => t.id === selectedTicketTypeId)?.price === 0 ? (
+                          <Badge variant="secondary">การลงทะเบียนฟรี</Badge>
+                        ) : (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">ค่าลงทะเบียน: </span>
+                            <span className="font-bold text-primary">
+                              ฿{ticketTypes.find(t => t.id === selectedTicketTypeId)?.price.toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </form>

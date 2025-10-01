@@ -7,7 +7,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Button } from "@/components/ui/button";
 import { ChevronDown, MapPin, Video, Calendar, ListChecks, Ticket } from "lucide-react";
 import { EventFormData, TicketType } from "../hooks/useEventFormState";
-import { InlineFieldBuilder } from "../fields/InlineFieldBuilder";
+import { StaticFieldsConfiguration } from "@/components/event-builder/StaticFieldsConfiguration";
+import { DEFAULT_ENABLED_FIELDS } from "@/lib/registrationFields";
 import { useState } from "react";
 
 interface AdvancedSettingsStepProps {
@@ -59,10 +60,9 @@ export const AdvancedSettingsStep = ({ formData, onChange }: AdvancedSettingsSte
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="p-4 pt-0">
-            <InlineFieldBuilder
-              fields={formData.custom_fields}
-              onChange={(fields) => onChange({ custom_fields: fields })}
-            />
+            <div className="text-sm text-muted-foreground p-4 text-center">
+              Registration fields are now configured in the main event form
+            </div>
           </CollapsibleContent>
         </Card>
       </Collapsible>

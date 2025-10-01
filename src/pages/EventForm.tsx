@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Sparkles } from "lucide-react";
-import { FieldBuilder, CustomField } from "@/components/event-builder/FieldBuilder";
+import { StaticFieldsConfiguration } from "@/components/event-builder/StaticFieldsConfiguration";
+import { DEFAULT_ENABLED_FIELDS } from "@/lib/registrationFields";
 import { CapacitySettings, TicketType } from "@/components/event-builder/CapacitySettings";
 import { TimeWindowSettings } from "@/components/event-builder/TimeWindowSettings";
 import { WaitlistSettings } from "@/components/event-builder/WaitlistSettings";
@@ -33,7 +34,7 @@ const EventForm = () => {
   const [seatsTotal, setSeatsTotal] = useState(0);
   
   // Advanced features
-  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [enabledFields, setEnabledFields] = useState<string[]>(DEFAULT_ENABLED_FIELDS);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [allowOverbooking, setAllowOverbooking] = useState(false);
   const [overbookingPercentage, setOverbookingPercentage] = useState(0);
@@ -65,8 +66,9 @@ const EventForm = () => {
     setEndDate(endDateTime.toISOString().slice(0, 16));
     setSeatsTotal(eventData.suggestedCapacity);
     
-    if (eventData.customFields) {
-      setCustomFields(eventData.customFields);
+    // AI can suggest enabled fields if needed
+    if (eventData.enabledFields) {
+      setEnabledFields(eventData.enabledFields);
     }
     
     setShowAICreator(false);
@@ -133,7 +135,8 @@ const EventForm = () => {
       setStartDate(data.start_date.substring(0, 16));
       setEndDate(data.end_date.substring(0, 16));
       setSeatsTotal(data.seats_total);
-      setCustomFields((data.custom_fields as any as CustomField[]) || []);
+      const customFieldsData = data.custom_fields as { enabled_fields?: string[] } | null;
+      setEnabledFields(customFieldsData?.enabled_fields || DEFAULT_ENABLED_FIELDS);
       setAllowOverbooking(data.allow_overbooking || false);
       setOverbookingPercentage(data.overbooking_percentage || 0);
       setRegistrationOpenDate(data.registration_open_date ? data.registration_open_date.substring(0, 16) : "");
@@ -204,9 +207,9 @@ const EventForm = () => {
         return;
       }
 
-      // Log custom fields for debugging
-      console.log("📝 Custom fields being saved:", customFields);
-      console.log("📊 Number of custom fields:", customFields.length);
+      // Log enabled fields for debugging
+      console.log("💾 Saving event with enabled fields:", enabledFields);
+      console.log("📋 Enabled fields count:", enabledFields.length);
 
       const eventData = {
         title,
@@ -220,7 +223,7 @@ const EventForm = () => {
         seats_total: seatsTotal,
         seats_remaining: seatsTotal,
         created_by: session.user.id,
-        custom_fields: customFields as any,
+        custom_fields: { enabled_fields: enabledFields },
         allow_overbooking: allowOverbooking,
         overbooking_percentage: overbookingPercentage,
         registration_open_date: registrationOpenDate ? new Date(registrationOpenDate).toISOString() : null,
@@ -289,14 +292,11 @@ const EventForm = () => {
           variant: "destructive",
         });
       } else {
-        console.log("✅ Event saved successfully!");
-        const successMessage = customFields.length > 0 
-          ? `${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์เรียบร้อยแล้ว (รวมฟิลด์เพิ่มเติม ${customFields.length} ฟิลด์)`
-          : `${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์เรียบร้อยแล้ว`;
+        console.log(`✅ Event ${isEditMode ? 'updated' : 'created'} successfully with enabled fields:`, enabledFields.length);
         
         toast({
           title: "สำเร็จ",
-          description: successMessage,
+          description: `${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์เรียบร้อยแล้ว พร้อมฟิลด์ลงทะเบียน ${enabledFields.length} ฟิลด์`,
         });
         navigate("/events");
       }
@@ -506,8 +506,11 @@ const EventForm = () => {
             onPromoteWindowHoursChange={setPromoteWindowHours}
           />
 
-          {/* Custom Fields */}
-          <FieldBuilder fields={customFields} onChange={setCustomFields} />
+          {/* Registration Fields Configuration */}
+          <StaticFieldsConfiguration
+            enabledFields={enabledFields}
+            onChange={setEnabledFields}
+          />
 
           {/* Visibility */}
           <VisibilitySettings
