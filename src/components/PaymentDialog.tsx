@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, Loader2 } from "lucide-react";
+import { validateCard, formatCardNumber } from "@/lib/payment-validation";
 
 interface PaymentDialogProps {
   open: boolean;
@@ -51,15 +52,38 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate card data first
+    const validation = validateCard(cardData);
+    if (!validation.valid) {
+      const firstError = Object.values(validation.errors)[0];
+      toast({
+        title: "ข้อมูลบัตรไม่ถูกต้อง",
+        description: firstError,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Load Omise script
       await loadOmiseScript();
 
-      // Get public key from env
-      const publicKey = import.meta.env.VITE_OMISE_PUBLIC_KEY || "pkey_test_657kcvgmba7l8iiya2i";
-      
+      // Get public key from env (NEVER hardcode API keys!)
+      const publicKey = import.meta.env.VITE_OMISE_PUBLIC_KEY;
+
+      if (!publicKey) {
+        toast({
+          title: "Configuration Error",
+          description: "Payment gateway not configured. Please contact support.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       window.Omise.setPublicKey(publicKey);
 
       // Create token
@@ -74,64 +98,67 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
           // Token created successfully
           const token = response.id;
 
-          // Call edge function to create charge
-          const { data, error } = await supabase.functions.invoke('create-omise-charge', {
-            body: {
-              amount,
-              currency: 'THB',
-              description: `Payment for ${eventTitle}`,
-              token,
-              registrationId,
-            },
-          });
-
-          if (error) {
-            console.error('Payment error:', error);
-            toast({
-              title: "การชำระเงินล้มเหลว",
-              description: "กรุณาลองใหม่อีกครั้ง",
-              variant: "destructive",
+          try {
+            // Call edge function to create charge (secure server-side processing)
+            const { data, error } = await supabase.functions.invoke('create-omise-charge', {
+              body: {
+                amount,
+                currency: 'THB',
+                description: `Payment for ${eventTitle}`,
+                token,
+                registrationId,
+                return_uri: window.location.origin + '/registrations', // For 3D Secure
+              },
             });
-          } else {
-            // Send payment success email
-            try {
-              const { data: registration } = await supabase
-                .from('registrations')
-                .select(`
-                  *,
-                  events (title, start_date, location),
-                  profiles (name, email),
-                  ticket_types (name)
-                `)
-                .eq('id', registrationId)
-                .single();
 
-              if (registration) {
-                await supabase.functions.invoke('send-registration-email', {
-                  body: {
-                    type: 'payment_success',
-                    recipientEmail: registration.profiles.email,
-                    recipientName: registration.profiles.name,
-                    eventTitle: registration.events.title,
-                    eventDate: registration.events.start_date,
-                    eventLocation: registration.events.location,
-                    registrationId: registrationId,
-                    amount: amount,
-                    ticketType: registration.ticket_types?.name,
-                  }
-                });
-              }
-            } catch (emailError) {
-              console.error('Failed to send payment success email:', emailError);
+            if (error) {
+              console.error('Payment error:', error);
+              toast({
+                title: "การชำระเงินล้มเหลว",
+                description: error.message || "กรุณาลองใหม่อีกครั้ง",
+                variant: "destructive",
+              });
+              setLoading(false);
+              return;
             }
 
+            // Check if 3D Secure required
+            if (data?.require_3ds && data?.authorize_uri) {
+              // Redirect to 3DS page
+              window.location.href = data.authorize_uri;
+              return;
+            }
+
+            // Check payment status
+            if (data?.status === 'success') {
+              toast({
+                title: "ชำระเงินสำเร็จ",
+                description: "ระบบได้รับการชำระเงินของคุณแล้ว และส่งอีเมลยืนยันไปแล้ว",
+              });
+              onSuccess();
+              onOpenChange(false);
+            } else if (data?.status === 'processing') {
+              toast({
+                title: "กำลังดำเนินการ",
+                description: "กรุณารอสักครู่ ระบบกำลังยืนยันการชำระเงิน",
+              });
+              onOpenChange(false);
+            } else {
+              toast({
+                title: "การชำระเงินล้มเหลว",
+                description: data?.failure_message || "กรุณาลองใหม่อีกครั้ง",
+                variant: "destructive",
+              });
+            }
+          } catch (invokeError) {
+            console.error('Error invoking payment function:', invokeError);
             toast({
-              title: "ชำระเงินสำเร็จ",
-              description: "ระบบได้รับการชำระเงินของคุณแล้ว และส่งอีเมลยืนยันไปแล้ว",
+              title: "เกิดข้อผิดพลาด",
+              description: "ไม่สามารถดำเนินการชำระเงินได้ กรุณาลองใหม่",
+              variant: "destructive",
             });
-            onSuccess();
-            onOpenChange(false);
           }
+          setLoading(false);
         } else {
           console.error('Omise token error:', response);
           toast({

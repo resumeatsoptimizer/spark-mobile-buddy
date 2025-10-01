@@ -105,27 +105,69 @@ const PaymentManagement = () => {
   };
 
   const handleRefund = async (paymentId: string, amount: number) => {
-    if (!confirm(`คุณต้องการคืนเงินจำนวน ฿${amount.toLocaleString()} ใช่หรือไม่?`)) {
+    const reason = prompt(`คุณต้องการคืนเงินจำนวน ฿${amount.toLocaleString()} ใช่หรือไม่?\n\nกรุณาระบุเหตุผล:`);
+
+    if (!reason) {
       return;
     }
 
-    toast({
-      title: "กำลังดำเนินการ",
-      description: "ฟีเจอร์คืนเงินจะเปิดใช้งานในเร็วๆ นี้",
-    });
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('refund-omise-charge', {
+        body: {
+          paymentId,
+          amount,
+          reason,
+        },
+      });
+
+      if (error) {
+        console.error('Refund error:', error);
+        toast({
+          title: "การคืนเงินล้มเหลว",
+          description: error.message || "กรุณาลองใหม่อีกครั้ง",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      toast({
+        title: "คืนเงินสำเร็จ",
+        description: `คืนเงินจำนวน ฿${data.amount.toLocaleString()} เรียบร้อยแล้ว`,
+      });
+
+      // Refresh payments list
+      await fetchPayments();
+    } catch (error) {
+      console.error('Error processing refund:', error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถดำเนินการคืนเงินได้",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      success: "default",
       successful: "default",
       pending: "secondary",
+      processing: "secondary",
       failed: "destructive",
+      refunded: "outline",
     };
 
     const labels: Record<string, string> = {
+      success: "สำเร็จ",
       successful: "สำเร็จ",
       pending: "รอดำเนินการ",
+      processing: "กำลังดำเนินการ",
       failed: "ล้มเหลว",
+      refunded: "คืนเงินแล้ว",
     };
 
     return (
@@ -148,8 +190,8 @@ const PaymentManagement = () => {
   });
 
   const totalRevenue = payments
-    .filter(p => p.status === "successful")
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+    .filter(p => p.status === "successful" || p.status === "success")
+    .reduce((sum, p) => sum + Number(p.amount) - Number(p.refund_amount || 0), 0);
 
   if (loading) {
     return (
@@ -199,7 +241,7 @@ const PaymentManagement = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {payments.filter(p => p.status === "successful").length}
+                {payments.filter(p => p.status === "successful" || p.status === "success").length}
               </div>
             </CardContent>
           </Card>
@@ -333,13 +375,14 @@ const PaymentManagement = () => {
                               <ExternalLink className="h-4 w-4" />
                             </Button>
                           )}
-                          {payment.status === "successful" && !payment.refund_amount && (
+                          {(payment.status === "successful" || payment.status === "success") &&
+                           Number(payment.refund_amount || 0) < Number(payment.amount) && (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleRefund(payment.id, Number(payment.amount))}
+                              onClick={() => handleRefund(payment.id, Number(payment.amount) - Number(payment.refund_amount || 0))}
                             >
-                              คืนเงิน
+                              {payment.refund_amount > 0 ? "คืนเงินเพิ่ม" : "คืนเงิน"}
                             </Button>
                           )}
                         </div>

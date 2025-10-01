@@ -15,12 +15,41 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const omiseSecretKey = Deno.env.get('OMISE_SECRET_KEY')!;
-    
+
+    // Check if Omise key is configured
+    if (!omiseSecretKey) {
+      console.error('OMISE_SECRET_KEY not configured');
+      return new Response(
+        JSON.stringify({ error: 'Payment gateway not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { amount, currency, description, token, registrationId } = await req.json();
+    // Get user from JWT
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
 
-    console.log('Creating Omise charge:', { amount, currency, description, registrationId });
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { amount, currency, description, token, registrationId, return_uri } = await req.json();
+
+    console.log('Creating Omise charge:', { amount, currency, description, registrationId, userId: user.id });
 
     // Validate required fields
     if (!amount || !token || !registrationId) {
@@ -30,19 +59,50 @@ serve(async (req) => {
       );
     }
 
-    // Get registration details
+    // Validate amount
+    if (amount <= 0 || amount > 10000000) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid amount' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get registration details and verify ownership
     const { data: registration, error: regError } = await supabase
       .from('registrations')
-      .select('*, events(*)')
+      .select('*, events(title)')
       .eq('id', registrationId)
+      .eq('user_id', user.id) // Verify user owns this registration
       .single();
 
     if (regError || !registration) {
       return new Response(
-        JSON.stringify({ error: 'Registration not found' }),
+        JSON.stringify({ error: 'Registration not found or unauthorized' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Check if payment already exists for this registration
+    const { data: existingPayment } = await supabase
+      .from('payments')
+      .select('id, status')
+      .eq('registration_id', registrationId)
+      .in('status', ['success', 'pending', 'processing'])
+      .single();
+
+    if (existingPayment) {
+      return new Response(
+        JSON.stringify({
+          error: 'Payment already exists for this registration',
+          paymentId: existingPayment.id,
+          status: existingPayment.status,
+        }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generate idempotency key
+    const idempotencyKey = `charge_${registrationId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     // Create charge with Omise
     const omiseResponse = await fetch('https://api.omise.co/charges', {
@@ -50,42 +110,54 @@ serve(async (req) => {
       headers: {
         'Authorization': `Basic ${btoa(omiseSecretKey + ':')}`,
         'Content-Type': 'application/json',
+        'Idempotency-Key': idempotencyKey,
       },
       body: JSON.stringify({
         amount: Math.round(amount * 100), // Convert to satang
         currency: currency || 'THB',
         description: description || `Payment for ${registration.events.title}`,
         card: token,
+        capture: true,
+        return_uri: return_uri,
         metadata: {
           registration_id: registrationId,
-          event_id: registration.event_id,
+          user_id: user.id,
+          event_title: registration.events?.title,
         },
       }),
     });
 
     const charge = await omiseResponse.json();
-    console.log('Omise charge response:', charge);
+    console.log('Omise charge response:', { id: charge.id, status: charge.status, paid: charge.paid });
 
-    if (!omiseResponse.ok) {
-      console.error('Omise charge failed:', charge);
-      return new Response(
-        JSON.stringify({ error: charge.message || 'Payment failed' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Determine payment status
+    let paymentStatus = 'pending';
+    if (charge.paid) {
+      paymentStatus = 'success';
+    } else if (charge.failure_code) {
+      paymentStatus = 'failed';
+    } else if (charge.authorize_uri) {
+      paymentStatus = 'processing'; // Requires 3DS
     }
 
-    // Create payment record in database
+    // Create payment record in database (even if failed, for audit trail)
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .insert({
         registration_id: registrationId,
         amount: amount,
         currency: currency || 'THB',
-        status: charge.status === 'successful' ? 'completed' : 'pending',
+        status: paymentStatus,
         omise_charge_id: charge.id,
+        card_brand: charge.card?.brand,
         card_last4: charge.card?.last_digits,
         receipt_url: charge.receipt_url,
-        webhook_data: charge,
+        failure_code: charge.failure_code,
+        failure_message: charge.failure_message,
+        require_3ds: !!charge.authorize_uri,
+        authorize_uri: charge.authorize_uri,
+        payment_metadata: charge,
+        idempotency_key: idempotencyKey,
       })
       .select()
       .single();
@@ -99,21 +171,51 @@ serve(async (req) => {
     }
 
     // If charge is immediately successful, update registration
-    if (charge.status === 'successful') {
-      await supabase
+    if (paymentStatus === 'success') {
+      const { error: updateError } = await supabase
         .from('registrations')
-        .update({ 
+        .update({
           payment_status: 'paid',
           status: 'confirmed'
         })
         .eq('id', registrationId);
+
+      if (updateError) {
+        console.error('Failed to update registration:', updateError);
+      }
+    }
+
+    // Return appropriate response based on status
+    if (paymentStatus === 'failed') {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Payment failed',
+          paymentId: payment.id,
+          failure_code: charge.failure_code,
+          failure_message: charge.failure_message,
+        }),
+        {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        charge,
-        payment 
+      JSON.stringify({
+        success: true,
+        paymentId: payment.id,
+        chargeId: charge.id,
+        status: paymentStatus,
+        amount: charge.amount / 100,
+        currency: charge.currency,
+        require_3ds: !!charge.authorize_uri,
+        authorize_uri: charge.authorize_uri,
+        card: {
+          brand: charge.card?.brand,
+          last4: charge.card?.last_digits,
+        },
       }),
       {
         status: 200,
