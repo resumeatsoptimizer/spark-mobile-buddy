@@ -1,12 +1,13 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Save, ChevronDown, Sparkles, Users, Calendar, MapPin, Settings } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { StaticFieldsConfiguration } from "@/components/event-builder/StaticFieldsConfiguration";
 import { DEFAULT_ENABLED_FIELDS } from "@/lib/registrationFields";
 import { CapacitySettings, TicketType } from "@/components/event-builder/CapacitySettings";
@@ -14,10 +15,8 @@ import { TimeWindowSettings } from "@/components/event-builder/TimeWindowSetting
 import { WaitlistSettings } from "@/components/event-builder/WaitlistSettings";
 import { VisibilitySettings } from "@/components/event-builder/VisibilitySettings";
 import AIEventCreator from "@/components/AIEventCreator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/Navbar";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useAutoSave } from "@/components/event-form/hooks/useAutoSave";
-import { cn } from "@/lib/utils";
 
 const EventForm = () => {
   const { id } = useParams();
@@ -47,11 +46,7 @@ const EventForm = () => {
   const [promoteWindowHours, setPromoteWindowHours] = useState(24);
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [invitationCode, setInvitationCode] = useState("");
-  const [showAICreator, setShowAICreator] = useState(!id);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showFields, setShowFields] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [showAICreator, setShowAICreator] = useState(!id); // Show AI creator for new events
 
   const isEditMode = !!id;
 
@@ -164,59 +159,6 @@ const EventForm = () => {
       }
     }
   };
-
-  const handleAutoSave = useCallback(async () => {
-    if (!isEditMode || !id) return;
-    
-    setIsSaving(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const eventData = {
-        title,
-        description: description || null,
-        cover_image_url: coverImageUrl || null,
-        location: location || null,
-        google_map_url: googleMapUrl || null,
-        google_map_embed_code: googleMapEmbedCode || null,
-        start_date: startDate ? new Date(startDate).toISOString() : null,
-        end_date: endDate ? new Date(endDate).toISOString() : null,
-        seats_total: seatsTotal,
-        custom_fields: { enabled_fields: enabledFields },
-        allow_overbooking: allowOverbooking,
-        overbooking_percentage: overbookingPercentage,
-        registration_open_date: registrationOpenDate ? new Date(registrationOpenDate).toISOString() : null,
-        registration_close_date: registrationCloseDate ? new Date(registrationCloseDate).toISOString() : null,
-        waitlist_enabled: waitlistEnabled,
-        max_waitlist_size: maxWaitlistSize > 0 ? maxWaitlistSize : null,
-        auto_promote_rule: autoPromoteRule,
-        promote_window_hours: promoteWindowHours,
-        visibility,
-        invitation_code: visibility === "private" ? invitationCode : null,
-      };
-
-      await supabase.from("events").update(eventData).eq("id", id);
-      setLastSaved(new Date());
-    } catch (error) {
-      console.error("Auto-save error:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [id, isEditMode, title, description, coverImageUrl, location, googleMapUrl, googleMapEmbedCode, 
-      startDate, endDate, seatsTotal, enabledFields, allowOverbooking, overbookingPercentage,
-      registrationOpenDate, registrationCloseDate, waitlistEnabled, maxWaitlistSize, 
-      autoPromoteRule, promoteWindowHours, visibility, invitationCode]);
-
-  useAutoSave(
-    {
-      title, description, coverImageUrl, location, startDate, endDate, seatsTotal,
-      enabledFields, allowOverbooking, overbookingPercentage, waitlistEnabled
-    },
-    handleAutoSave,
-    30000,
-    isEditMode
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -373,115 +315,94 @@ const EventForm = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      {/* Minimal Header */}
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate("/events")}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-xl font-semibold">
-                  {isEditMode ? "แก้ไขงาน" : "สร้างงานใหม่"}
-                </h1>
-                {isEditMode && lastSaved && (
-                  <p className="text-xs text-muted-foreground">
-                    {isSaving ? "กำลังบันทึก..." : `บันทึกล่าสุด ${lastSaved.toLocaleTimeString('th-TH')}`}
-                  </p>
-                )}
-              </div>
-            </div>
-            <Button type="submit" onClick={handleSubmit} disabled={loading}>
-              <Save className="mr-2 h-4 w-4" />
-              {loading ? "กำลังบันทึก..." : isEditMode ? "บันทึก" : "สร้างงาน"}
+      {/* Header */}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/events")}>
+              <ArrowLeft className="h-5 w-5" />
             </Button>
+            <div>
+              <h1 className="text-2xl font-bold">
+                {isEditMode ? "แก้ไขงานอีเว้นท์" : "สร้างงานอีเว้นท์ใหม่"}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                กรอกข้อมูลงานอีเว้นท์
+              </p>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Form */}
-      <main className="container mx-auto px-4 py-6">
-        <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
-          {/* AI Event Creator */}
+      <main className="container mx-auto px-4 py-8">
+        <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-6">
+          {/* AI Event Creator (for new events only) */}
           {!isEditMode && showAICreator && (
-            <div className="rounded-lg border bg-card p-6">
+            <div className="mb-6">
               <AIEventCreator onEventGenerated={handleAIEventGenerated} />
               <div className="text-center mt-4">
-                <Button type="button" variant="ghost" size="sm" onClick={() => setShowAICreator(false)}>
-                  ข้ามขั้นตอนนี้
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowAICreator(false)}
+                >
+                  Skip AI Assistant
                 </Button>
               </div>
             </div>
           )}
 
           {!isEditMode && !showAICreator && (
-            <Button type="button" variant="outline" size="sm" onClick={() => setShowAICreator(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowAICreator(true)}
+              className="mb-4"
+            >
               <Sparkles className="mr-2 h-4 w-4" />
-              ใช้ AI ช่วยสร้างงาน
+              Use AI Event Creator
             </Button>
           )}
           
-          {/* Core Information */}
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                ข้อมูลหลัก
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title" className="text-sm font-medium">ชื่องานอีเว้นท์ *</Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="เช่น Yoga Workshop 2024"
-                    className="mt-1.5"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="description" className="text-sm font-medium">รายละเอียด</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="รายละเอียดของงานอีเว้นท์..."
-                    rows={3}
-                    className="mt-1.5 resize-none"
-                  />
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="coverImageUrl" className="text-sm font-medium">URL ภาพปก</Label>
-                    <Input
-                      id="coverImageUrl"
-                      type="url"
-                      value={coverImageUrl}
-                      onChange={(e) => setCoverImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="mt-1.5"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="location" className="text-sm font-medium">สถานที่</Label>
-                    <div className="flex gap-2 mt-1.5">
-                      <MapPin className="h-4 w-4 text-muted-foreground mt-2.5" />
-                      <Input
-                        id="location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="โรงแรม ABC กรุงเทพฯ"
-                      />
-                    </div>
-                  </div>
-                </div>
-
+          {/* Basic Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>ข้อมูลพื้นฐาน</CardTitle>
+              <CardDescription>ข้อมูลหลักของงานอีเว้นท์</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">ชื่องานอีเว้นท์ *</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="เช่น Yoga Workshop 2024"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">รายละเอียด</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="รายละเอียดของงานอีเว้นท์..."
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coverImageUrl">URL ภาพปกงาน</Label>
+                <Input
+                  id="coverImageUrl"
+                  type="url"
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                />
                 {coverImageUrl && (
-                  <div className="relative aspect-video w-full max-w-sm rounded-lg overflow-hidden border">
+                  <div className="mt-2 relative aspect-video w-full max-w-md rounded-lg overflow-hidden border">
                     <img
                       src={coverImageUrl}
                       alt="ตัวอย่างภาพปก"
@@ -493,249 +414,124 @@ const EventForm = () => {
                     />
                   </div>
                 )}
-                <div>
-                  <Label htmlFor="googleMapUrl" className="text-sm font-medium">ลิงค์ Google Map</Label>
-                  <Input
-                    id="googleMapUrl"
-                    type="url"
-                    value={googleMapUrl}
-                    onChange={(e) => setGoogleMapUrl(e.target.value)}
-                    placeholder="https://maps.google.com/..."
-                    className="mt-1.5"
-                  />
-                </div>
               </div>
-            </div>
-
-            {/* Time & Capacity */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                วันเวลาและที่นั่ง
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title" className="text-sm font-medium">ชื่องานอีเว้นท์ *</Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="เช่น Yoga Workshop 2024"
-                    className="mt-1.5"
-                    required
-                  />
+              <div className="space-y-2">
+                <Label htmlFor="location">สถานที่จัดงาน</Label>
+                <Input
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="เช่น โรงแรม ABC กรุงเทพฯ หรือ Central World"
+                />
+                <p className="text-xs text-muted-foreground">
+                  💡 ระบุชื่อสถานที่หรือที่อยู่เพื่อแสดงแผนที่แบบ Embed ในหน้ารายละเอียด
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="googleMapUrl">ลิงค์ Google Map (ทางเลือก)</Label>
+                <Input
+                  id="googleMapUrl"
+                  type="url"
+                  value={googleMapUrl}
+                  onChange={(e) => setGoogleMapUrl(e.target.value)}
+                  placeholder="https://maps.google.com/... หรือ https://goo.gl/maps/..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  🔗 ลิงค์สำหรับปุ่ม "เปิดใน Google Maps" (ใช้ลิงค์ใดก็ได้จาก Google Maps)
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code (แนะนำ - แม่นยำที่สุด)</Label>
+                <Textarea
+                  id="googleMapEmbedCode"
+                  value={googleMapEmbedCode}
+                  onChange={(e) => setGoogleMapEmbedCode(e.target.value)}
+                  placeholder='<iframe src="https://www.google.com/maps/embed?pb=..." width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+                  rows={4}
+                  className="font-mono text-xs"
+                />
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>📍 <strong>วิธีใช้:</strong></p>
+                  <ol className="list-decimal list-inside space-y-0.5 ml-2">
+                    <li>เปิด Google Maps แล้วค้นหาสถานที่</li>
+                    <li>กดปุ่ม "แชร์" (Share)</li>
+                    <li>เลือกแท็บ "ฝังแผนที่" (Embed a map)</li>
+                    <li>คัดลอกโค้ด iframe ทั้งหมดมาวางที่นี่</li>
+                  </ol>
+                  <p className="mt-2 text-primary">✨ ถ้ามีโค้ดนี้ จะใช้แผนที่จาก Embed Code ก่อนเสมอ</p>
                 </div>
-                
-                <div>
-                  <Label htmlFor="description" className="text-sm font-medium">รายละเอียด</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="รายละเอียดของงานอีเว้นท์..."
-                    rows={3}
-                    className="mt-1.5 resize-none"
-                  />
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="coverImageUrl" className="text-sm font-medium">URL ภาพปก</Label>
-                    <Input
-                      id="coverImageUrl"
-                      type="url"
-                      value={coverImageUrl}
-                      onChange={(e) => setCoverImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="mt-1.5"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="location" className="text-sm font-medium">สถานที่</Label>
-                    <div className="flex gap-2 mt-1.5">
-                      <MapPin className="h-4 w-4 text-muted-foreground mt-2.5" />
-                      <Input
-                        id="location"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        placeholder="โรงแรม ABC กรุงเทพฯ"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {coverImageUrl && (
-                  <div className="relative aspect-video w-full max-w-sm rounded-lg overflow-hidden border">
-                    <img
-                      src={coverImageUrl}
-                      alt="ตัวอย่างภาพปก"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = "";
-                        e.currentTarget.alt = "ไม่สามารถโหลดรูปภาพได้";
-                      }}
-                    />
+                {googleMapEmbedCode && (
+                  <div className="mt-2 p-3 bg-muted/50 rounded-lg border">
+                    <p className="text-xs font-medium mb-1">ตัวอย่างแผนที่ที่จะแสดง:</p>
+                    <div className="w-full h-[200px] rounded overflow-hidden" dangerouslySetInnerHTML={{ __html: googleMapEmbedCode }} />
                   </div>
                 )}
-
-                <div>
-                  <Label htmlFor="googleMapUrl" className="text-sm font-medium">ลิงค์ Google Map</Label>
-                  <Input
-                    id="googleMapUrl"
-                    type="url"
-                    value={googleMapUrl}
-                    onChange={(e) => setGoogleMapUrl(e.target.value)}
-                    placeholder="https://maps.google.com/..."
-                    className="mt-1.5"
-                  />
-                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Time & Capacity */}
-            <div>
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                วันเวลาและที่นั่ง
-              </h2>
-              <div className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startDate" className="text-sm font-medium">วันเริ่มต้น *</Label>
-                    <Input
-                      id="startDate"
-                      type="datetime-local"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="mt-1.5"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="endDate" className="text-sm font-medium">วันสิ้นสุด *</Label>
-                    <Input
-                      id="endDate"
-                      type="datetime-local"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="mt-1.5"
-                      required
-                    />
-                  </div>
-                </div>
+          {/* Time Window */}
+          <TimeWindowSettings
+            startDate={startDate}
+            endDate={endDate}
+            registrationOpenDate={registrationOpenDate}
+            registrationCloseDate={registrationCloseDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            onRegistrationOpenDateChange={setRegistrationOpenDate}
+            onRegistrationCloseDateChange={setRegistrationCloseDate}
+          />
 
-                <div>
-                  <Label htmlFor="seatsTotal" className="text-sm font-medium">จำนวนที่นั่งทั้งหมด *</Label>
-                  <Input
-                    id="seatsTotal"
-                    type="number"
-                    value={seatsTotal}
-                    onChange={(e) => setSeatsTotal(parseInt(e.target.value) || 0)}
-                    min="1"
-                    className="mt-1.5"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Capacity */}
+          <CapacitySettings
+            totalSeats={seatsTotal}
+            onTotalSeatsChange={setSeatsTotal}
+            ticketTypes={ticketTypes}
+            onTicketTypesChange={setTicketTypes}
+            allowOverbooking={allowOverbooking}
+            onAllowOverbookingChange={setAllowOverbooking}
+            overbookingPercentage={overbookingPercentage}
+            onOverbookingPercentageChange={setOverbookingPercentage}
+          />
 
-          {/* Advanced Settings - Collapsible */}
-          <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between" type="button">
-                <span className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  ตั้งค่าขั้นสูง
-                </span>
-                <ChevronDown className={cn("h-4 w-4 transition-transform", showAdvanced && "rotate-180")} />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-6 mt-4">
-              <div className="space-y-4 rounded-lg border p-4">
-                <h3 className="font-medium">ช่วงเวลาลงทะเบียน</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="registrationOpenDate" className="text-sm">เปิดรับลงทะเบียน</Label>
-                    <Input
-                      id="registrationOpenDate"
-                      type="datetime-local"
-                      value={registrationOpenDate}
-                      onChange={(e) => setRegistrationOpenDate(e.target.value)}
-                      className="mt-1.5"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="registrationCloseDate" className="text-sm">ปิดรับลงทะเบียน</Label>
-                    <Input
-                      id="registrationCloseDate"
-                      type="datetime-local"
-                      value={registrationCloseDate}
-                      onChange={(e) => setRegistrationCloseDate(e.target.value)}
-                      className="mt-1.5"
-                    />
-                  </div>
-                </div>
-              </div>
+          {/* Waitlist */}
+          <WaitlistSettings
+            waitlistEnabled={waitlistEnabled}
+            onWaitlistEnabledChange={setWaitlistEnabled}
+            maxWaitlistSize={maxWaitlistSize}
+            onMaxWaitlistSizeChange={setMaxWaitlistSize}
+            autoPromoteRule={autoPromoteRule}
+            onAutoPromoteRuleChange={setAutoPromoteRule}
+            promoteWindowHours={promoteWindowHours}
+            onPromoteWindowHoursChange={setPromoteWindowHours}
+          />
 
-              <CapacitySettings
-                totalSeats={seatsTotal}
-                onTotalSeatsChange={setSeatsTotal}
-                ticketTypes={ticketTypes}
-                onTicketTypesChange={setTicketTypes}
-                allowOverbooking={allowOverbooking}
-                onAllowOverbookingChange={setAllowOverbooking}
-                overbookingPercentage={overbookingPercentage}
-                onOverbookingPercentageChange={setOverbookingPercentage}
-              />
+          {/* Registration Fields Configuration */}
+          <StaticFieldsConfiguration
+            enabledFields={enabledFields}
+            onChange={setEnabledFields}
+          />
 
-              <WaitlistSettings
-                waitlistEnabled={waitlistEnabled}
-                onWaitlistEnabledChange={setWaitlistEnabled}
-                maxWaitlistSize={maxWaitlistSize}
-                onMaxWaitlistSizeChange={setMaxWaitlistSize}
-                autoPromoteRule={autoPromoteRule}
-                onAutoPromoteRuleChange={setAutoPromoteRule}
-                promoteWindowHours={promoteWindowHours}
-                onPromoteWindowHoursChange={setPromoteWindowHours}
-              />
-
-              <VisibilitySettings
-                visibility={visibility}
-                onVisibilityChange={setVisibility}
-                invitationCode={invitationCode}
-                onInvitationCodeChange={setInvitationCode}
-              />
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Registration Fields - Collapsible */}
-          <Collapsible open={showFields} onOpenChange={setShowFields}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between" type="button">
-                <span className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  ฟิลด์ลงทะเบียน ({enabledFields.length} ฟิลด์)
-                </span>
-                <ChevronDown className={cn("h-4 w-4 transition-transform", showFields && "rotate-180")} />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-4">
-              <StaticFieldsConfiguration
-                enabledFields={enabledFields}
-                onChange={setEnabledFields}
-              />
-            </CollapsibleContent>
-          </Collapsible>
+          {/* Visibility */}
+          <VisibilitySettings
+            visibility={visibility}
+            onVisibilityChange={setVisibility}
+            invitationCode={invitationCode}
+            onInvitationCodeChange={setInvitationCode}
+          />
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-4 pt-4">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={() => navigate("/events")}
+              className="flex-1"
             >
               ยกเลิก
+            </Button>
+            <Button type="submit" disabled={loading} className="flex-1">
+              {loading ? "กำลังบันทึก..." : isEditMode ? "บันทึกการแก้ไข" : "สร้างงานอีเว้นท์"}
             </Button>
           </div>
         </form>
