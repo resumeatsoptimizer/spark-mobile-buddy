@@ -133,6 +133,17 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
               return;
             }
 
+            // Handle failed payments
+            if (data?.success === false || data?.error) {
+              toast({
+                title: "การชำระเงินล้มเหลว",
+                description: data?.failure_message || data?.error || "กรุณาตรวจสอบข้อมูลบัตรและลองใหม่อีกครั้ง",
+                variant: "destructive",
+              });
+              setLoading(false);
+              return;
+            }
+
             // Check if 3D Secure required
             if (data?.require_3ds && data?.authorize_uri) {
               // Redirect to 3DS page
@@ -141,23 +152,24 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
             }
 
             // Check payment status
-            if (data?.status === 'success') {
+            if (data?.success && data?.status === 'success') {
               toast({
                 title: "ชำระเงินสำเร็จ",
-                description: "ระบบได้รับการชำระเงินของคุณแล้ว และส่งอีเมลยืนยันไปแล้ว",
+                description: "ระบบได้รับการชำระเงินของคุณแล้ว คุณจะได้รับ QR Code เข้างานทางอีเมล",
               });
               onSuccess();
               onOpenChange(false);
             } else if (data?.status === 'processing') {
               toast({
                 title: "กำลังดำเนินการ",
-                description: "กรุณารอสักครู่ ระบบกำลังยืนยันการชำระเงิน",
+                description: "กรุณารอสักครู่ ระบบกำลังยืนยันการชำระเงิน คุณจะได้รับ QR Code เมื่อการชำระเงินสำเร็จ",
               });
+              onSuccess();
               onOpenChange(false);
             } else {
               toast({
                 title: "การชำระเงินล้มเหลว",
-                description: data?.failure_message || "กรุณาลองใหม่อีกครั้ง",
+                description: data?.failure_message || "กรุณาตรวจสอบข้อมูลบัตรและลองใหม่อีกครั้ง",
                 variant: "destructive",
               });
             }
@@ -172,13 +184,27 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
           setLoading(false);
         } else {
           console.error('Omise token error:', response);
+          
+          // Provide user-friendly error messages
+          let errorMessage = response.message || "ไม่สามารถสร้าง token ได้";
+          
+          if (response.code === 'invalid_card') {
+            errorMessage = "หมายเลขบัตรไม่ถูกต้อง กรุณาตรวจสอบและลองใหม่";
+          } else if (response.code === 'invalid_expiration_date') {
+            errorMessage = "วันหมดอายุของบัตรไม่ถูกต้อง";
+          } else if (response.code === 'invalid_security_code') {
+            errorMessage = "รหัส CVV ไม่ถูกต้อง";
+          } else if (response.code === 'insufficient_fund') {
+            errorMessage = "ยอดเงินในบัตรไม่เพียงพอ";
+          }
+          
           toast({
-            title: "เกิดข้อผิดพลาด",
-            description: response.message || "ไม่สามารถสร้าง token ได้",
+            title: "ข้อมูลบัตรไม่ถูกต้อง",
+            description: errorMessage,
             variant: "destructive",
           });
+          setLoading(false);
         }
-        setLoading(false);
       });
     } catch (error) {
       console.error('Payment error:', error);

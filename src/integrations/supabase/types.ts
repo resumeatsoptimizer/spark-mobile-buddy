@@ -1236,45 +1236,66 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          authorize_uri: string | null
+          card_brand: string | null
           card_last4: string | null
           created_at: string
           currency: string
+          failure_code: string | null
+          failure_message: string | null
           id: string
+          idempotency_key: string | null
           omise_charge_id: string | null
+          payment_metadata: Json | null
           receipt_url: string | null
           refund_amount: number | null
           refunded_at: string | null
           registration_id: string
+          require_3ds: boolean | null
           status: string
           updated_at: string
           webhook_data: Json | null
         }
         Insert: {
           amount: number
+          authorize_uri?: string | null
+          card_brand?: string | null
           card_last4?: string | null
           created_at?: string
           currency?: string
+          failure_code?: string | null
+          failure_message?: string | null
           id?: string
+          idempotency_key?: string | null
           omise_charge_id?: string | null
+          payment_metadata?: Json | null
           receipt_url?: string | null
           refund_amount?: number | null
           refunded_at?: string | null
           registration_id: string
+          require_3ds?: boolean | null
           status?: string
           updated_at?: string
           webhook_data?: Json | null
         }
         Update: {
           amount?: number
+          authorize_uri?: string | null
+          card_brand?: string | null
           card_last4?: string | null
           created_at?: string
           currency?: string
+          failure_code?: string | null
+          failure_message?: string | null
           id?: string
+          idempotency_key?: string | null
           omise_charge_id?: string | null
+          payment_metadata?: Json | null
           receipt_url?: string | null
           refund_amount?: number | null
           refunded_at?: string | null
           registration_id?: string
+          require_3ds?: boolean | null
           status?: string
           updated_at?: string
           webhook_data?: Json | null
