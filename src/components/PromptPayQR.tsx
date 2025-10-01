@@ -63,7 +63,7 @@ export function PromptPayQR({ qrCodeData, chargeId, onSuccess, onExpired }: Prom
 
       if (error) throw error;
 
-      if (data.status === 'completed') {
+      if (data.status === 'success') {
         if (showToast) {
           toast({
             title: "ชำระเงินสำเร็จ",
@@ -79,15 +79,10 @@ export function PromptPayQR({ qrCodeData, chargeId, onSuccess, onExpired }: Prom
             variant: "destructive",
           });
         }
-      } else if (showToast && data.status === 'pending_scan') {
+      } else if (showToast && data.status === 'pending') {
         toast({
-          title: "รอการสแกน QR Code",
-          description: "กรุณาสแกน QR Code เพื่อชำระเงิน",
-        });
-      } else if (showToast && data.status === 'processing') {
-        toast({
-          title: "กำลังประมวลผล",
-          description: "ระบบกำลังตรวจสอบการชำระเงิน",
+          title: "รอการชำระเงิน",
+          description: "กรุณาสแกน QR Code และยืนยันการชำระเงิน",
         });
       }
     } catch (error) {

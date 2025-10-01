@@ -75,7 +75,7 @@ async function handleChargeComplete(data: any, supabase: any) {
   const { error: paymentError } = await supabase
     .from('payments')
     .update({
-      status: 'completed',
+      status: 'success',
       card_last4: data.card?.last_digits,
       receipt_url: data.receipt_url,
       webhook_data: data,
@@ -174,7 +174,7 @@ async function handleSourceChargeable(data: any, supabase: any) {
   const { error } = await supabase
     .from('payments')
     .update({ 
-      status: 'processing',
+      status: 'pending',
       payment_metadata: {
         source_status: data.status,
         updated_at: new Date().toISOString()
@@ -193,7 +193,7 @@ async function handleChargePending(data: any, supabase: any) {
   const { error } = await supabase
     .from('payments')
     .update({ 
-      status: 'processing',
+      status: 'pending',
       payment_metadata: {
         charge_status: data.status,
         updated_at: new Date().toISOString()
