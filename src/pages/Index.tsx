@@ -55,10 +55,10 @@ const Index = () => {
               <span className="text-sm font-medium">Iwelty Wellness Community</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              ค้นพบกิจกรรม
+              ค้นพบกิจกรรม Wellness
               <br />
-              ที่เหมาะกับคุณ
-            </h1><br />
+              ที่เหมาะกับตนเอง
+            </h1>
             <p className="text-xl text-muted-foreground mb-8">
               เข้าร่วมกิจกรรมด้านสุขภาพและความเป็นอยู่ที่ดี
               <br />
@@ -67,7 +67,7 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" onClick={() => navigate("/events")}>
                 <Calendar className="mr-2 h-5 w-5" />
-                ดูงานอีเว้นท์ทั้งหมด
+                ดูกิจกรรมทั้งหมด
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
                 เข้าสู่ระบบ
@@ -95,7 +95,7 @@ const Index = () => {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">ยังไม่มีงานอีเว้นท์</h3>
+              <h3 className="text-xl font-semibold mb-2">ยังไม่มีกิจกรรม</h3>
               <p className="text-muted-foreground">กลับมาตรวจสอบอีกครั้งในภายหลัง</p>
             </CardContent>
           </Card>
@@ -190,7 +190,7 @@ const Index = () => {
             
             <div className="text-center">
               <Button variant="outline" size="lg" onClick={() => navigate("/events")}>
-                ดูงานอีเว้นท์ทั้งหมด
+                ดูกิจกรรมทั้งหมด
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
