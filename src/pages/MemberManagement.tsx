@@ -1,0 +1,522 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Users,
+  Search,
+  RefreshCw,
+  UserPlus,
+  Download,
+  Filter,
+  MoreVertical,
+  Eye,
+  Mail,
+  Ban,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
+import Navbar from "@/components/Navbar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
+
+type MemberStatus = "active" | "inactive" | "suspended" | "blocked";
+type ActivityLevel = "highly_active" | "active" | "moderate" | "inactive";
+
+interface MemberStats {
+  user_id: string;
+  email: string;
+  name: string | null;
+  status: MemberStatus;
+  created_at: string;
+  last_login_at: string | null;
+  total_registrations: number;
+  confirmed_registrations: number;
+  total_payments: number;
+  total_amount_paid: number;
+  activity_level: ActivityLevel;
+  tags_count: number;
+}
+
+interface Statistics {
+  total_members: number;
+  active_members: number;
+  inactive_members: number;
+  suspended_members: number;
+  blocked_members: number;
+  new_members_this_month: number;
+  verified_accounts: number;
+}
+
+const MemberManagement = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [members, setMembers] = useState<MemberStats[]>([]);
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [activityFilter, setActivityFilter] = useState<string>("all");
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id);
+
+    const hasAccess = roles?.some(r => r.role === "admin" || r.role === "staff");
+
+    if (!hasAccess) {
+      toast({
+        title: "ไม่มีสิทธิ์เข้าถึง",
+        description: "คุณไม่มีสิทธิ์เข้าถึงหน้านี้",
+        variant: "destructive",
+      });
+      navigate("/");
+      return;
+    }
+
+    fetchData();
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    await Promise.all([fetchMembers(), fetchStatistics()]);
+    setLoading(false);
+  };
+
+  const fetchMembers = async () => {
+    const { data, error } = await supabase
+      .from("mv_member_statistics")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching members:", error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดข้อมูลสมาชิกได้",
+        variant: "destructive",
+      });
+    } else {
+      setMembers(data || []);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    const { data, error } = await supabase.rpc('get_member_statistics');
+
+    if (error) {
+      console.error("Error fetching statistics:", error);
+    } else if (data && data.length > 0) {
+      setStatistics(data[0]);
+    }
+  };
+
+  const getStatusBadge = (status: MemberStatus) => {
+    const config = {
+      active: { icon: CheckCircle, color: "bg-green-500", label: "Active" },
+      inactive: { icon: AlertCircle, color: "bg-gray-500", label: "Inactive" },
+      suspended: { icon: XCircle, color: "bg-yellow-500", label: "Suspended" },
+      blocked: { icon: Ban, color: "bg-red-500", label: "Blocked" },
+    };
+
+    const { icon: Icon, color, label } = config[status];
+
+    return (
+      <Badge className={color}>
+        <Icon className="mr-1 h-3 w-3" />
+        {label}
+      </Badge>
+    );
+  };
+
+  const getActivityBadge = (level: ActivityLevel) => {
+    const config = {
+      highly_active: { color: "bg-blue-500", label: "Very Active" },
+      active: { color: "bg-green-500", label: "Active" },
+      moderate: { color: "bg-yellow-500", label: "Moderate" },
+      inactive: { color: "bg-gray-500", label: "Inactive" },
+    };
+
+    const { color, label } = config[level];
+
+    return <Badge className={color}>{label}</Badge>;
+  };
+
+  const handleRefreshView = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.rpc('refresh_member_statistics');
+      if (error) throw error;
+
+      await fetchData();
+      toast({
+        title: "รีเฟรชสำเร็จ",
+        description: "ข้อมูลถูกอัปเดตแล้ว",
+      });
+    } catch (error: any) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async (userId: string, newStatus: MemberStatus) => {
+    const reason = prompt("กรุณาระบุเหตุผล (optional):");
+
+    try {
+      const { error } = await supabase.rpc('update_member_status', {
+        p_user_id: userId,
+        p_new_status: newStatus,
+        p_reason: reason || null,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "อัปเดตสำเร็จ",
+        description: "เปลี่ยนสถานะสมาชิกเรียบร้อยแล้ว",
+      });
+
+      fetchMembers();
+    } catch (error: any) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportData = () => {
+    const csv = [
+      ["Email", "Name", "Status", "Activity", "Registrations", "Revenue", "Created"],
+      ...filteredMembers.map(m => [
+        m.email,
+        m.name || "",
+        m.status,
+        m.activity_level,
+        m.total_registrations.toString(),
+        `฿${m.total_amount_paid.toLocaleString()}`,
+        format(new Date(m.created_at), "yyyy-MM-dd"),
+      ])
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `members_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+  };
+
+  const filteredMembers = members.filter(member => {
+    const matchesSearch =
+      member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.name?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus = statusFilter === "all" || member.status === statusFilter;
+    const matchesActivity = activityFilter === "all" || member.activity_level === activityFilter;
+
+    return matchesSearch && matchesStatus && matchesActivity;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Users className="h-8 w-8 text-primary" />
+                <h1 className="text-3xl font-bold">จัดการสมาชิก</h1>
+              </div>
+              <p className="text-muted-foreground">จัดการข้อมูลและสถานะสมาชิกทั้งหมด</p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleRefreshView} variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                รีเฟรช
+              </Button>
+              <Button onClick={handleExportData} variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        {/* Statistics Cards */}
+        {statistics && (
+          <div className="grid gap-4 md:grid-cols-4 mb-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  สมาชิกทั้งหมด
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{statistics.total_members}</div>
+                <p className="text-xs text-muted-foreground">
+                  +{statistics.new_members_this_month} เดือนนี้
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  Active
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{statistics.active_members}</div>
+                <p className="text-xs text-muted-foreground">
+                  {Math.round((statistics.active_members / statistics.total_members) * 100)}% ของทั้งหมด
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <XCircle className="h-4 w-4 text-yellow-500" />
+                  Suspended
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{statistics.suspended_members}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Ban className="h-4 w-4 text-red-500" />
+                  Blocked
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">{statistics.blocked_members}</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              ค้นหาและกรองข้อมูล
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="ค้นหาด้วยอีเมลหรือชื่อ..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="สถานะ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">สถานะทั้งหมด</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectItem value="blocked">Blocked</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={activityFilter} onValueChange={setActivityFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="ระดับกิจกรรม" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">ทั้งหมด</SelectItem>
+                  <SelectItem value="highly_active">Very Active</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="moderate">Moderate</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Members Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>รายการสมาชิก</CardTitle>
+            <CardDescription>ทั้งหมด {filteredMembers.length} คน</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>สมาชิก</TableHead>
+                    <TableHead>สถานะ</TableHead>
+                    <TableHead>กิจกรรม</TableHead>
+                    <TableHead className="text-right">ลงทะเบียน</TableHead>
+                    <TableHead className="text-right">รายได้</TableHead>
+                    <TableHead>สมัครเมื่อ</TableHead>
+                    <TableHead>Login ล่าสุด</TableHead>
+                    <TableHead className="text-right">จัดการ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMembers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        ไม่พบข้อมูลสมาชิก
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredMembers.map((member) => (
+                      <TableRow key={member.user_id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{member.name || "ไม่ระบุ"}</p>
+                            <p className="text-xs text-muted-foreground">{member.email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(member.status)}</TableCell>
+                        <TableCell>{getActivityBadge(member.activity_level)}</TableCell>
+                        <TableCell className="text-right">
+                          {member.total_registrations} ({member.confirmed_registrations})
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          ฿{member.total_amount_paid.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {format(new Date(member.created_at), "d MMM yyyy", { locale: th })}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {member.last_login_at
+                            ? format(new Date(member.last_login_at), "d MMM yyyy", { locale: th })
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>จัดการสมาชิก</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => navigate(`/admin/members/${member.user_id}`)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                ดูรายละเอียด
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Mail className="mr-2 h-4 w-4" />
+                                ส่งอีเมล
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              {member.status !== "active" && (
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(member.user_id, "active")}>
+                                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                                  Activate
+                                </DropdownMenuItem>
+                              )}
+                              {member.status !== "suspended" && (
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(member.user_id, "suspended")}>
+                                  <XCircle className="mr-2 h-4 w-4 text-yellow-500" />
+                                  Suspend
+                                </DropdownMenuItem>
+                              )}
+                              {member.status !== "blocked" && (
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(member.user_id, "blocked")}>
+                                  <Ban className="mr-2 h-4 w-4 text-red-500" />
+                                  Block
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+};
+
+export default MemberManagement;
