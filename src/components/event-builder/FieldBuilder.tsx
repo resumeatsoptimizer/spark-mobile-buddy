@@ -37,15 +37,19 @@ export const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
   };
 
   const saveField = () => {
-    if (!editingField || !editingField.label) return;
+    if (!editingField || !editingField.label.trim()) {
+      return;
+    }
 
     const existingIndex = fields.findIndex((f) => f.id === editingField.id);
     if (existingIndex >= 0) {
       const updated = [...fields];
       updated[existingIndex] = editingField;
       onChange(updated);
+      console.log("✏️ Field updated:", editingField);
     } else {
       onChange([...fields, editingField]);
+      console.log("➕ Field added:", editingField);
     }
     setEditingField(null);
   };
@@ -61,7 +65,14 @@ export const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>ฟิลด์ลงทะเบียน</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <span>ฟิลด์ลงทะเบียน</span>
+          {fields.length > 0 && (
+            <span className="text-sm font-normal text-muted-foreground">
+              ({fields.length} ฟิลด์เพิ่มเติม)
+            </span>
+          )}
+        </CardTitle>
         <CardDescription>กำหนดฟิลด์ที่ต้องการให้ผู้เข้าร่วมกรอก</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -165,13 +176,16 @@ export const FieldBuilder = ({ fields, onChange }: FieldBuilderProps) => {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={saveField} disabled={!editingField.label}>
+              <Button onClick={saveField} disabled={!editingField.label.trim()}>
                 บันทึกฟิลด์
               </Button>
               <Button variant="outline" onClick={() => setEditingField(null)}>
                 ยกเลิก
               </Button>
             </div>
+            {!editingField.label.trim() && (
+              <p className="text-sm text-destructive">กรุณากรอกชื่อฟิลด์</p>
+            )}
           </div>
         ) : (
           <Button onClick={addField} variant="outline" className="w-full">

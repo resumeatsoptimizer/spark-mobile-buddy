@@ -196,56 +196,65 @@ const EventForm = () => {
     }
 
     setLoading(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth");
+        return;
+      }
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate("/auth");
-      return;
-    }
+      // Log custom fields for debugging
+      console.log("📝 Custom fields being saved:", customFields);
+      console.log("📊 Number of custom fields:", customFields.length);
 
-    const eventData = {
-      title,
-      description: description || null,
-      cover_image_url: coverImageUrl || null,
-      location: location || null,
-      google_map_url: googleMapUrl || null,
-      google_map_embed_code: googleMapEmbedCode || null,
-      start_date: new Date(startDate).toISOString(),
-      end_date: new Date(endDate).toISOString(),
-      seats_total: seatsTotal,
-      seats_remaining: seatsTotal,
-      created_by: session.user.id,
-      custom_fields: customFields as any,
-      allow_overbooking: allowOverbooking,
-      overbooking_percentage: overbookingPercentage,
-      registration_open_date: registrationOpenDate ? new Date(registrationOpenDate).toISOString() : null,
-      registration_close_date: registrationCloseDate ? new Date(registrationCloseDate).toISOString() : null,
-      waitlist_enabled: waitlistEnabled,
-      max_waitlist_size: maxWaitlistSize > 0 ? maxWaitlistSize : null,
-      auto_promote_rule: autoPromoteRule,
-      promote_window_hours: promoteWindowHours,
-      visibility,
-      invitation_code: visibility === "private" ? invitationCode : null,
-    };
+      const eventData = {
+        title,
+        description: description || null,
+        cover_image_url: coverImageUrl || null,
+        location: location || null,
+        google_map_url: googleMapUrl || null,
+        google_map_embed_code: googleMapEmbedCode || null,
+        start_date: new Date(startDate).toISOString(),
+        end_date: new Date(endDate).toISOString(),
+        seats_total: seatsTotal,
+        seats_remaining: seatsTotal,
+        created_by: session.user.id,
+        custom_fields: customFields as any,
+        allow_overbooking: allowOverbooking,
+        overbooking_percentage: overbookingPercentage,
+        registration_open_date: registrationOpenDate ? new Date(registrationOpenDate).toISOString() : null,
+        registration_close_date: registrationCloseDate ? new Date(registrationCloseDate).toISOString() : null,
+        waitlist_enabled: waitlistEnabled,
+        max_waitlist_size: maxWaitlistSize > 0 ? maxWaitlistSize : null,
+        auto_promote_rule: autoPromoteRule,
+        promote_window_hours: promoteWindowHours,
+        visibility,
+        invitation_code: visibility === "private" ? invitationCode : null,
+      };
 
-    let error;
-    let eventId = id;
+      console.log("💾 Saving event data:", eventData);
 
-    if (isEditMode) {
-      const result = await supabase
-        .from("events")
-        .update(eventData)
-        .eq("id", id);
-      error = result.error;
-    } else {
-      const result = await supabase
-        .from("events")
-        .insert([eventData])
-        .select()
-        .single();
-      error = result.error;
-      eventId = result.data?.id;
-    }
+      let error;
+      let eventId = id;
+
+      if (isEditMode) {
+        const result = await supabase
+          .from("events")
+          .update(eventData)
+          .eq("id", id);
+        error = result.error;
+        console.log("✏️ Update result:", { error, id });
+      } else {
+        const result = await supabase
+          .from("events")
+          .insert([eventData])
+          .select()
+          .single();
+        error = result.error;
+        eventId = result.data?.id;
+        console.log("➕ Insert result:", { error, eventId });
+      }
 
     // Handle ticket types
     if (!error && eventId && ticketTypes.length > 0) {
@@ -272,20 +281,34 @@ const EventForm = () => {
       }
     }
 
-    setLoading(false);
-
-    if (error) {
+      if (error) {
+        console.error("❌ Error saving event:", error);
+        toast({
+          title: "เกิดข้อผิดพลาด",
+          description: error.message || `ไม่สามารถ${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์ได้`,
+          variant: "destructive",
+        });
+      } else {
+        console.log("✅ Event saved successfully!");
+        const successMessage = customFields.length > 0 
+          ? `${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์เรียบร้อยแล้ว (รวมฟิลด์เพิ่มเติม ${customFields.length} ฟิลด์)`
+          : `${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์เรียบร้อยแล้ว`;
+        
+        toast({
+          title: "สำเร็จ",
+          description: successMessage,
+        });
+        navigate("/events");
+      }
+    } catch (error: any) {
+      console.error("❌ Unexpected error:", error);
       toast({
-        title: "เกิดข้อผิดพลาด",
-        description: `ไม่สามารถ${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์ได้`,
+        title: "เกิดข้อผิดพลาดที่ไม่คาดคิด",
+        description: error.message || "กรุณาลองใหม่อีกครั้ง",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "สำเร็จ",
-        description: `${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์เรียบร้อยแล้ว`,
-      });
-      navigate("/events");
+    } finally {
+      setLoading(false);
     }
   };
 
