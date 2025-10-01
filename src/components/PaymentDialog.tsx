@@ -74,10 +74,16 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
       // Get public key from env (NEVER hardcode API keys!)
       const publicKey = import.meta.env.VITE_OMISE_PUBLIC_KEY;
 
-      if (!publicKey) {
+      console.log('Omise configuration check:', {
+        hasPublicKey: !!publicKey,
+        publicKeyLength: publicKey?.length || 0,
+      });
+
+      if (!publicKey || publicKey.trim() === '') {
+        console.error('VITE_OMISE_PUBLIC_KEY not configured');
         toast({
-          title: "Configuration Error",
-          description: "Payment gateway not configured. Please contact support.",
+          title: "การตั้งค่าไม่ถูกต้อง",
+          description: "ระบบชำระเงินยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ",
           variant: "destructive",
         });
         setLoading(false);
@@ -113,9 +119,14 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
 
             if (error) {
               console.error('Payment error:', error);
+              const errorMessage = error.message || "กรุณาลองใหม่อีกครั้ง";
+              const isConfigError = errorMessage.includes('not configured') || errorMessage.includes('gateway');
+              
               toast({
-                title: "การชำระเงินล้มเหลว",
-                description: error.message || "กรุณาลองใหม่อีกครั้ง",
+                title: isConfigError ? "การตั้งค่าไม่ถูกต้อง" : "การชำระเงินล้มเหลว",
+                description: isConfigError 
+                  ? "ระบบชำระเงินยังไม่ได้ตั้งค่าที่ฝั่ง backend กรุณาติดต่อผู้ดูแลระบบ"
+                  : errorMessage,
                 variant: "destructive",
               });
               setLoading(false);

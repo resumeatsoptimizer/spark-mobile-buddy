@@ -14,13 +14,23 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const omiseSecretKey = Deno.env.get('OMISE_SECRET_KEY')!;
+    const omiseSecretKey = Deno.env.get('OMISE_SECRET_KEY');
+
+    console.log('Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey,
+      hasOmiseKey: !!omiseSecretKey,
+      omiseKeyLength: omiseSecretKey?.length || 0,
+    });
 
     // Check if Omise key is configured
-    if (!omiseSecretKey) {
-      console.error('OMISE_SECRET_KEY not configured');
+    if (!omiseSecretKey || omiseSecretKey.trim() === '') {
+      console.error('OMISE_SECRET_KEY not configured or empty');
       return new Response(
-        JSON.stringify({ error: 'Payment gateway not configured' }),
+        JSON.stringify({ 
+          error: 'Payment gateway not configured',
+          details: 'OMISE_SECRET_KEY is missing or empty. Please configure it in your backend secrets.'
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
