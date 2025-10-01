@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MetricsWidget } from "@/components/admin/DashboardWidgets/MetricsWidget";
+import { ChartWidget } from "@/components/admin/DashboardWidgets/ChartWidget";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import Navbar from "@/components/Navbar";
 import { Calendar, Users, DollarSign, TrendingUp } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 
 interface DashboardStats {
   totalEvents: number;
@@ -24,6 +27,8 @@ export default function AdminDashboard() {
     totalRevenue: 0,
     successRate: 0,
   });
+  const [monthlyRevenue, setMonthlyRevenue] = useState<any[]>([]);
+  const [registrationTrends, setRegistrationTrends] = useState<any[]>([]);
 
   useEffect(() => {
     checkAuth();
@@ -100,6 +105,30 @@ export default function AdminDashboard() {
         totalRevenue,
         successRate,
       });
+
+      // Monthly revenue data
+      const revenueByMonth = payments?.reduce((acc: any, payment) => {
+        if (payment.status === "successful" || payment.status === "success") {
+          const month = new Date(payment.created_at).toLocaleDateString("en-US", { month: "short" });
+          acc[month] = (acc[month] || 0) + Number(payment.amount);
+        }
+        return acc;
+      }, {});
+
+      setMonthlyRevenue(
+        Object.entries(revenueByMonth || {}).map(([month, amount]) => ({ month, amount }))
+      );
+
+      // Registration trends
+      const regByDay = registrations?.reduce((acc: any, reg) => {
+        const date = new Date(reg.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        acc[date] = (acc[date] || 0) + 1;
+        return acc;
+      }, {});
+
+      setRegistrationTrends(
+        Object.entries(regByDay || {}).map(([date, count]) => ({ date, count }))
+      );
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     }
@@ -118,6 +147,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
       <main className="container mx-auto p-6 max-w-7xl">
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -159,6 +189,50 @@ export default function AdminDashboard() {
               value={`${stats.successRate.toFixed(1)}%`}
               icon={TrendingUp}
             />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <ChartWidget title="Monthly Revenue" description="Revenue trends over time">
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={monthlyRevenue}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                  />
+                  <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartWidget>
+
+            <ChartWidget title="Registration Trends" description="Daily registration activity">
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={registrationTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="hsl(var(--accent))"
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(var(--accent))", r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartWidget>
           </div>
         </div>
       </main>
