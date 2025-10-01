@@ -56,6 +56,20 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_insights_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "ai_insights_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
+          },
         ]
       }
       alert_rules: {
@@ -134,6 +148,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "analytics_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "analytics_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
+          },
+          {
             foreignKeyName: "analytics_events_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
@@ -194,6 +222,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_trail: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          id: string
+          ip_address: string | null
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string
+          table_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id: string
+          table_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string
+          table_name?: string
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       custom_reports: {
         Row: {
@@ -312,6 +379,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "email_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "email_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
+          },
+          {
             foreignKeyName: "email_logs_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: false
@@ -384,6 +465,20 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "event_category_mapping_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_category_mapping_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
+          },
         ]
       }
       event_check_ins: {
@@ -430,6 +525,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_check_ins_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_check_ins_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
           },
           {
             foreignKeyName: "event_check_ins_registration_id_fkey"
@@ -481,6 +590,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_messages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_messages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
           },
         ]
       }
@@ -546,6 +669,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_tag_mapping_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "event_tag_mapping_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
           },
           {
             foreignKeyName: "event_tag_mapping_tag_id_fkey"
@@ -781,6 +918,20 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "google_sheets_sync_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "google_sheets_sync_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
+          },
         ]
       }
       integration_logs: {
@@ -827,6 +978,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "integration_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
           },
         ]
       }
@@ -901,6 +1066,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_settings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "notification_settings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
           },
         ]
       }
@@ -1197,6 +1376,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
+          },
+          {
             foreignKeyName: "registrations_ticket_type_id_fkey"
             columns: ["ticket_type_id"]
             isOneToOne: false
@@ -1259,6 +1452,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_tasks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "scheduled_tasks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
           },
           {
             foreignKeyName: "scheduled_tasks_registration_id_fkey"
@@ -1358,6 +1565,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_media_posts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "social_media_posts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
           },
         ]
       }
@@ -1494,6 +1715,20 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ticket_types_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "ticket_types_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
+          },
         ]
       }
       user_2fa: {
@@ -1564,6 +1799,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_behavior_analytics_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "user_behavior_analytics_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
           },
         ]
       }
@@ -1645,6 +1894,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "waitlist_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_analytics"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "waitlist_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "registration_health"
+            referencedColumns: ["event_id"]
+          },
+          {
             foreignKeyName: "waitlist_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -1705,9 +1968,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      payment_analytics: {
+        Row: {
+          avg_payment_amount: number | null
+          event_id: string | null
+          event_title: string | null
+          failed_payments: number | null
+          successful_payments: number | null
+          total_payments: number | null
+          total_refunds: number | null
+          total_revenue: number | null
+        }
+        Relationships: []
+      }
+      registration_health: {
+        Row: {
+          capacity_utilization_pct: number | null
+          confirmed_count: number | null
+          event_id: string | null
+          event_title: string | null
+          paid_count: number | null
+          pending_count: number | null
+          seats_remaining: number | null
+          seats_total: number | null
+          start_date: string | null
+          total_registrations: number | null
+          waitlist_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      archive_old_events: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      calculate_event_popularity: {
+        Args: { event_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
