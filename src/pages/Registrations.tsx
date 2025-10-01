@@ -324,7 +324,7 @@ const Registrations = () => {
                     ดูรายละเอียด
                   </Button>
                   
-                  {registration.payment_status === "unpaid" && registration.status === "confirmed" && registration.ticket_types && (
+                  {registration.payment_status === "unpaid" && (registration.status === "confirmed" || registration.status === "pending") && registration.ticket_types && (
                     <Button
                       variant="default"
                       size="sm"
