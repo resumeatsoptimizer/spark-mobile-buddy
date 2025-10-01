@@ -38,7 +38,7 @@ interface Registration {
     name: string;
     price: number;
   } | null;
-  profiles: {
+  user_id: {
     email: string;
     name: string;
   };
@@ -128,7 +128,7 @@ const AdminRegistrations = () => {
         *,
         events(id, title, start_date, location),
         ticket_types(name, price),
-        profiles(email, name)
+        user_id!inner(email, name)
       `)
       .order("created_at", { ascending: false });
 
@@ -171,7 +171,7 @@ const AdminRegistrations = () => {
     try {
       // Find the registration for this email and event
       const registration = registrations.find(r => 
-        r.profiles.email === email && r.events.title === eventTitle
+        r.user_id.email === email && r.events.title === eventTitle
       );
       
       if (!registration) {
@@ -186,8 +186,8 @@ const AdminRegistrations = () => {
       const { error } = await supabase.functions.invoke('send-registration-email', {
         body: {
           type: 'status_update',
-          recipientEmail: registration.profiles.email,
-          recipientName: registration.profiles.name,
+          recipientEmail: registration.user_id.email,
+          recipientName: registration.user_id.name,
           eventTitle: registration.events.title,
           eventDate: registration.events.start_date,
           eventLocation: registration.events.location,
@@ -373,8 +373,8 @@ const AdminRegistrations = () => {
         const { error } = await supabase.functions.invoke('send-registration-email', {
           body: {
             type: 'status_update',
-            recipientEmail: reg.profiles.email,
-            recipientName: reg.profiles.name,
+            recipientEmail: reg.user_id.email,
+            recipientName: reg.user_id.name,
             eventTitle: reg.events.title,
             eventDate: reg.events.start_date,
             eventLocation: reg.events.location,
@@ -570,8 +570,8 @@ const AdminRegistrations = () => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const searchFields = [
-        reg.profiles?.name,
-        reg.profiles?.email,
+        reg.user_id?.name,
+        reg.user_id?.email,
         reg.events?.title,
         ...(reg.form_data && typeof reg.form_data === 'object' 
           ? Object.values(reg.form_data).map(v => String(v)) 
@@ -1093,8 +1093,8 @@ const AdminRegistrations = () => {
                       <TableCell>{reg.events?.title}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{reg.profiles?.name}</p>
-                          <p className="text-xs text-muted-foreground">{reg.profiles?.email}</p>
+                          <p className="font-medium">{reg.user_id?.name}</p>
+                          <p className="text-xs text-muted-foreground">{reg.user_id?.email}</p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -1130,7 +1130,7 @@ const AdminRegistrations = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => sendConfirmationEmail(reg.profiles?.email, reg.events?.title)}
+                            onClick={() => sendConfirmationEmail(reg.user_id?.email, reg.events?.title)}
                           >
                             <Mail className="h-4 w-4" />
                           </Button>

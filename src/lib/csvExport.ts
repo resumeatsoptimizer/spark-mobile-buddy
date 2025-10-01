@@ -16,7 +16,7 @@ interface Registration {
     name: string;
     price: number;
   } | null;
-  profiles: {
+  user_id: {
     email: string;
     name: string;
   };
@@ -80,7 +80,7 @@ export const exportRegistrationsToCSV = (registrations: Registration[], filename
     index + 1,
     escapeCSVField(reg.events.title),
     escapeCSVField(reg.form_data?.name || "-"),
-    escapeCSVField(reg.profiles.email),
+    escapeCSVField(reg.user_id.email),
     escapeCSVField(reg.form_data?.phone || "-"),
     escapeCSVField(reg.ticket_types?.name || "-"),
     escapeCSVField(reg.ticket_types?.price || 0),

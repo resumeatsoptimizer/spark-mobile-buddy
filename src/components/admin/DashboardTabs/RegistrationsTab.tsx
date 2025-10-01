@@ -27,7 +27,7 @@ export function RegistrationsTab() {
       .select(`
         *,
         events(title, start_date),
-        profiles(email, name)
+        user_id!inner(email, name)
       `)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -37,8 +37,8 @@ export function RegistrationsTab() {
 
   const filteredRegistrations = registrations.filter((r) => {
     const matchesSearch =
-      r.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.profiles?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.user_id?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.user_id?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.events?.title?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === "all" || r.status === filterStatus;
     return matchesSearch && matchesStatus;
@@ -140,8 +140,8 @@ export function RegistrationsTab() {
                   <TableRow key={reg.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium text-sm">{reg.profiles?.name}</p>
-                        <p className="text-xs text-muted-foreground">{reg.profiles?.email}</p>
+                        <p className="font-medium text-sm">{reg.user_id?.name}</p>
+                        <p className="text-xs text-muted-foreground">{reg.user_id?.email}</p>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{reg.events?.title}</TableCell>
