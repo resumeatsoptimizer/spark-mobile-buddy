@@ -7,8 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, ArrowLeft, Clock, MapPin, Mail, Phone, MessageCircle, Building2, Briefcase, AlertCircle } from "lucide-react";
+import { Calendar, Users, ArrowLeft, Clock, MapPin, Mail, Phone, MessageCircle, Building2, Briefcase, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
@@ -67,6 +72,9 @@ const EventRegistration = () => {
   const [selectedTicketTypeId, setSelectedTicketTypeId] = useState<string>("");
   const [enabledFields, setEnabledFields] = useState<string[]>(DEFAULT_ENABLED_FIELDS);
   const [currentStep, setCurrentStep] = useState(1);
+  const [workInfoOpen, setWorkInfoOpen] = useState(false);
+  const [eventInfoOpen, setEventInfoOpen] = useState(false);
+  const [emergencyInfoOpen, setEmergencyInfoOpen] = useState(false);
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -361,11 +369,11 @@ const EventRegistration = () => {
     }
 
     toast({
-      title: "สำเร็จ!",
+      title: "✅ ลงทะเบียนสำเร็จ!",
       description: status === "pending" 
         ? isFreeTicket 
           ? "ลงทะเบียนเรียบร้อยแล้ว ตรวจสอบอีเมลของคุณ" 
-          : "ลงทะเบียนเรียบร้อยแล้ว คุณสามารถชำระเงินได้เลย"
+          : "กรุณาชำระเงินเพื่อยืนยันการลงทะเบียน"
         : "เพิ่มเข้ารายการรอเรียบร้อยแล้ว ตรวจสอบอีเมลของคุณ",
     });
 
@@ -373,7 +381,12 @@ const EventRegistration = () => {
       setNewRegistrationId(registration.id);
       setShowPayment(true);
     } else {
-      navigate("/registrations");
+      navigate(`/events/${event.id}`, { 
+        state: { 
+          registrationSuccess: true,
+          needsPayment: false 
+        } 
+      });
     }
 
     setSubmitting(false);
@@ -452,7 +465,12 @@ const EventRegistration = () => {
   };
 
   const handlePaymentSuccess = () => {
-    navigate("/registrations");
+    navigate(`/events/${id}`, { 
+      state: { 
+        registrationSuccess: true,
+        paymentSuccess: true 
+      } 
+    });
   };
 
   if (loading) {
@@ -712,37 +730,85 @@ const EventRegistration = () => {
                     </div>
                   )}
 
-                  {/* Work Information */}
+                  {/* Work Information - Collapsible */}
                   {workFields.length > 0 && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b">
-                        <Icons.Briefcase className="h-4 w-4 text-primary" />
-                        <h3 className="font-semibold">ข้อมูลการทำงาน</h3>
-                      </div>
-                      {workFields.map(renderField)}
-                    </div>
+                    <Collapsible open={workInfoOpen} onOpenChange={setWorkInfoOpen}>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between hover:bg-muted/50"
+                          type="button"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Icons.Briefcase className="h-4 w-4" />
+                            <span className="font-semibold">ข้อมูลการทำงาน</span>
+                            <Badge variant="secondary" className="text-xs">ไม่บังคับ</Badge>
+                          </span>
+                          {workInfoOpen ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-4 pt-4">
+                        {workFields.map(renderField)}
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
 
-                  {/* Event Preferences */}
+                  {/* Event Preferences - Collapsible */}
                   {eventFields.length > 0 && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b">
-                        <Icons.Calendar className="h-4 w-4 text-primary" />
-                        <h3 className="font-semibold">ข้อมูลเกี่ยวกับงาน</h3>
-                      </div>
-                      {eventFields.map(renderField)}
-                    </div>
+                    <Collapsible open={eventInfoOpen} onOpenChange={setEventInfoOpen}>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between hover:bg-muted/50"
+                          type="button"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Icons.Calendar className="h-4 w-4" />
+                            <span className="font-semibold">ข้อมูลเกี่ยวกับงาน</span>
+                            <Badge variant="secondary" className="text-xs">ไม่บังคับ</Badge>
+                          </span>
+                          {eventInfoOpen ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-4 pt-4">
+                        {eventFields.map(renderField)}
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
 
-                  {/* Emergency Contact */}
+                  {/* Emergency Contact - Collapsible */}
                   {emergencyFields.length > 0 && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b">
-                        <Icons.AlertCircle className="h-4 w-4 text-primary" />
-                        <h3 className="font-semibold">ผู้ติดต่อฉุกเฉิน</h3>
-                      </div>
-                      {emergencyFields.map(renderField)}
-                    </div>
+                    <Collapsible open={emergencyInfoOpen} onOpenChange={setEmergencyInfoOpen}>
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between hover:bg-muted/50"
+                          type="button"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Icons.AlertCircle className="h-4 w-4" />
+                            <span className="font-semibold">ผู้ติดต่อฉุกเฉิน</span>
+                            <Badge variant="secondary" className="text-xs">ไม่บังคับ</Badge>
+                          </span>
+                          {emergencyInfoOpen ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-4 pt-4">
+                        {emergencyFields.map(renderField)}
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
 
                   <div className="pt-4 space-y-3">

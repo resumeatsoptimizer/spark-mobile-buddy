@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +70,7 @@ interface UserRegistration {
 const EventDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState<Event | null>(null);
@@ -85,6 +86,33 @@ const EventDetails = () => {
     fetchEvent();
     fetchUserRegistration();
   }, [id]);
+
+  // Show payment/registration alert if coming from registration page
+  useEffect(() => {
+    if (location.state?.registrationSuccess) {
+      if (location.state?.paymentSuccess) {
+        toast({
+          title: "✅ ชำระเงินสำเร็จ!",
+          description: "คุณได้รับ QR Code สำหรับเข้างานแล้ว กรุณาเลื่อนลงด้านล่างเพื่อดู QR Code",
+          duration: 8000,
+        });
+      } else if (location.state?.needsPayment) {
+        toast({
+          title: "⚠️ กรุณาชำระเงิน",
+          description: "กรุณาชำระเงินเพื่อยืนยันการลงทะเบียน หลังชำระเงินเสร็จสิ้น ท่านจะได้รับ QR Code สำหรับเข้างาน",
+          duration: 10000,
+        });
+      } else {
+        toast({
+          title: "✅ ลงทะเบียนสำเร็จ!",
+          description: "คุณได้ลงทะเบียนเข้าร่วมงานเรียบร้อยแล้ว",
+          duration: 5000,
+        });
+      }
+      // Clear the state to prevent showing alert on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, toast]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -233,6 +261,12 @@ const EventDetails = () => {
   const handlePaymentSuccess = async () => {
     await fetchUserRegistration();
     await fetchEvent();
+    setPaymentDialogOpen(false);
+    toast({
+      title: "✅ ชำระเงินสำเร็จ!",
+      description: "คุณได้รับ QR Code สำหรับเข้างานแล้ว กรุณาเลื่อนลงด้านล่างเพื่อดู QR Code",
+      duration: 8000,
+    });
   };
 
   const getStatusBadge = (status: string) => {
