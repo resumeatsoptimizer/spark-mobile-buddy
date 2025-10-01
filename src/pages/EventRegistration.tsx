@@ -246,7 +246,15 @@ const EventRegistration = () => {
       ? Math.floor(event.seats_total * (1 + event.overbooking_percentage / 100))
       : event.seats_total;
     
-    const seatsAvailable = event.seats_remaining > 0 && event.seats_remaining <= maxSeats;
+    console.log('Seat check:', {
+      seats_remaining: event.seats_remaining,
+      seats_total: event.seats_total,
+      allow_overbooking: event.allow_overbooking,
+      overbooking_percentage: event.overbooking_percentage,
+      maxSeats
+    });
+    
+    const seatsAvailable = event.seats_remaining > 0;
     
     // Check if should go to waitlist
     let shouldWaitlist = !seatsAvailable;
@@ -504,7 +512,7 @@ const EventRegistration = () => {
     ? Math.floor(event.seats_total * (1 + event.overbooking_percentage / 100))
     : event.seats_total;
 
-  const isFull = event.seats_remaining === 0 || event.seats_remaining >= maxSeats;
+  const isFull = event.seats_remaining === 0;
   const seatsPercentage = (event.seats_remaining / event.seats_total) * 100;
   
   const now = new Date();
