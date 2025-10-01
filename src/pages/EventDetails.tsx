@@ -573,7 +573,7 @@ const EventDetails = () => {
                       {userRegistration.payment_status === "paid" && (
                         <Button
                           variant="outline"
-                          onClick={() => navigate("/participant/qr-code")}
+                          onClick={() => navigate("/my-qr-code")}
                           className="flex-1"
                           size="lg"
                         >
