@@ -55,9 +55,9 @@ const Index = () => {
               <span className="text-sm font-medium">Iwelty Wellness Community</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              ค้นพบงานอีเว้นท์
-              <br />
-              ที่เหมาะกับคุณ
+              ค้นพบกิจกรรม
+              <br /><br />
+              ที่เหมาะกับคุณ<br />
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               เข้าร่วมกิจกรรมด้านสุขภาพและความเป็นอยู่ที่ดี
@@ -81,7 +81,7 @@ const Index = () => {
       {/* Featured Events */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">งานอีเว้นท์ที่กำลังจะมาถึง</h2>
+          <h2 className="text-3xl font-bold mb-4">กิจกรรมที่กำลังจะมาถึง</h2>
           <p className="text-muted-foreground">
             เลือกกิจกรรมที่ท่านสนใจและลงทะเบียนได้ทันที
           </p>
