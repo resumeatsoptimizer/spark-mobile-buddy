@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@supabase/supabase-js";
+import { ArrowLeft } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -134,8 +135,16 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+      <Card className="w-full max-w-md relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute left-4 top-4"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <CardHeader className="space-y-1 pt-12">
           <CardTitle className="text-2xl font-bold text-center">Iwelty Event Dashboard</CardTitle>
           <CardDescription className="text-center">
             ระบบจัดการงานอีเว้นท์และการลงทะเบียน

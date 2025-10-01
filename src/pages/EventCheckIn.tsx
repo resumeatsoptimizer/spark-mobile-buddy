@@ -175,7 +175,7 @@ export default function EventCheckIn() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Event Check-In</h1>
-            <p className="text-muted-foreground mt-1">Scan QR codes to check in participants</p>
+            <p className="text-muted-foreground mt-1">สแกน QR Code เพื่อเช็คอินผู้เข้าร่วมงาน</p>
           </div>
           <Badge variant="outline" className="text-lg py-2 px-4">
             <Smartphone className="w-4 h-4 mr-2" />
@@ -189,7 +189,7 @@ export default function EventCheckIn() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Check-Ins</p>
+                  <p className="text-sm text-muted-foreground">เช็คอินทั้งหมด</p>
                   <p className="text-3xl font-bold">{stats.total}</p>
                 </div>
                 <Users className="w-8 h-8 text-primary" />
@@ -201,7 +201,7 @@ export default function EventCheckIn() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Today</p>
+                  <p className="text-sm text-muted-foreground">วันนี้</p>
                   <p className="text-3xl font-bold">{stats.today}</p>
                 </div>
                 <Activity className="w-8 h-8 text-green-500" />
@@ -213,7 +213,7 @@ export default function EventCheckIn() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Check-In Rate</p>
+                  <p className="text-sm text-muted-foreground">อัตราการเช็คอิน</p>
                   <p className="text-3xl font-bold">
                     {stats.total > 0 ? Math.round((stats.today / stats.total) * 100) : 0}%
                   </p>
@@ -231,13 +231,13 @@ export default function EventCheckIn() {
               QR Code Scanner
             </CardTitle>
             <CardDescription>
-              Enter or scan the QR code from the participant's ticket
+              กรอกหรือสแกน QR Code จากตั๋วของผู้เข้าร่วม
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
               <Input
-                placeholder="Enter QR code data or scan..."
+                placeholder="กรอกข้อมูล QR Code หรือสแกน..."
                 value={qrData}
                 onChange={(e) => setQrData(e.target.value)}
                 onKeyPress={(e) => {
@@ -253,12 +253,12 @@ export default function EventCheckIn() {
                 disabled={!qrData.trim() || scanning}
                 size="lg"
               >
-                {scanning ? 'Processing...' : 'Check In'}
+                {scanning ? 'กำลังดำเนินการ...' : 'Check In'}
               </Button>
             </div>
 
             <div className="text-sm text-muted-foreground">
-              Tip: Use a barcode scanner or mobile device to scan QR codes directly into the input field
+              คำแนะนำ: ใช้เครื่องสแกนบาร์โค้ดหรืออุปกรณ์มือถือเพื่อสแกน QR Code โดยตรงในช่องกรอกข้อมูล
             </div>
           </CardContent>
         </Card>
@@ -274,21 +274,21 @@ export default function EventCheckIn() {
             <CardContent>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Registration ID:</span>
+                  <span className="text-muted-foreground">รหัสการลงทะเบียน:</span>
                   <span className="font-mono text-sm">{lastCheckIn.registration_id}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Event ID:</span>
+                  <span className="text-muted-foreground">รหัสงาน:</span>
                   <span className="font-mono text-sm">{lastCheckIn.event_id}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Time:</span>
+                  <span className="text-muted-foreground">เวลา:</span>
                   <span className="text-sm">
-                    {new Date(lastCheckIn.checked_in_at).toLocaleString()}
+                    {new Date(lastCheckIn.checked_in_at).toLocaleString('th-TH')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Method:</span>
+                  <span className="text-muted-foreground">วิธีการ:</span>
                   <Badge>{lastCheckIn.check_in_method}</Badge>
                 </div>
               </div>
@@ -304,13 +304,13 @@ export default function EventCheckIn() {
               Recent Check-Ins
             </CardTitle>
             <CardDescription>
-              Live updates of participant check-ins
+              อัพเดทเรียลไทม์การเช็คอินของผู้เข้าร่วม
             </CardDescription>
           </CardHeader>
           <CardContent>
             {recentCheckIns.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No check-ins yet. Waiting for participants...
+                ยังไม่มีการเช็คอิน กำลังรอผู้เข้าร่วม...
               </p>
             ) : (
               <div className="space-y-3">
@@ -347,11 +347,11 @@ export default function EventCheckIn() {
           </CardHeader>
           <CardContent>
             <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-              <li>Ask the participant to show their ticket QR code</li>
-              <li>Scan the QR code using a barcode scanner or mobile device</li>
-              <li>Alternatively, manually enter the code from the ticket</li>
-              <li>Confirm the check-in was successful</li>
-              <li>Direct the participant to the event venue</li>
+              <li>ขอให้ผู้เข้าร่วมแสดง QR Code จากตั๋ว</li>
+              <li>สแกน QR Code โดยใช้เครื่องสแกนบาร์โค้ดหรืออุปกรณ์มือถือ</li>
+              <li>หรือกรอกโค้ดจากตั๋วด้วยตนเอง</li>
+              <li>ยืนยันว่าการเช็คอินสำเร็จ</li>
+              <li>นำทางผู้เข้าร่วมไปยังสถานที่จัดงาน</li>
             </ol>
           </CardContent>
         </Card>

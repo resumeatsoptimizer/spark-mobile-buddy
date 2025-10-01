@@ -173,73 +173,52 @@ const AdminSettings = () => {
           </p>
         </div>
 
-        {/* Enterprise Features */}
-        <div className="grid gap-4 md:grid-cols-2 mb-6">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/sso')}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Shield className="h-5 w-5" />
-                Single Sign-On
-              </CardTitle>
-              <CardDescription>
+        {/* Quick Access Features */}
+        <div className="grid gap-6 md:grid-cols-3 mb-8">
+          <Card
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-800"
+            onClick={() => navigate('/admin/sso')}
+          >
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                <Shield className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl font-bold">Single Sign-On</CardTitle>
+              <CardDescription className="mt-2">
                 Configure Google and Microsoft OAuth
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/api-docs')}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Settings className="h-5 w-5" />
-                API Documentation
-              </CardTitle>
-              <CardDescription>
+          <Card
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-200 dark:border-purple-800"
+            onClick={() => navigate('/admin/api-docs')}
+          >
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                <Settings className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl font-bold">API Documentation</CardTitle>
+              <CardDescription className="mt-2">
                 REST API integration guide
               </CardDescription>
             </CardHeader>
           </Card>
-        </div>
 
-        {/* Security Features */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Security & Privacy</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/security/2fa')}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Shield className="h-5 w-5" />
-                  Two-Factor Authentication
-                </CardTitle>
-                <CardDescription>
-                  Enable 2FA for enhanced security
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/data-privacy')}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Shield className="h-5 w-5" />
-                  Data & Privacy
-                </CardTitle>
-                <CardDescription>
-                  Manage your data and privacy settings
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/admin/security')}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Shield className="h-5 w-5" />
-                  Security Monitoring
-                </CardTitle>
-                <CardDescription>
-                  View security metrics and alerts
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
+          <Card
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-200 dark:border-green-800"
+            onClick={() => navigate('/data-privacy')}
+          >
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                <Shield className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl font-bold">Data & Privacy</CardTitle>
+              <CardDescription className="mt-2">
+                Manage your data and privacy settings
+              </CardDescription>
+            </CardHeader>
+          </Card>
         </div>
 
         {/* User Management */}

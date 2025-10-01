@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, DollarSign, TrendingUp, CreditCard, CheckCircle, XCircle, Clock, Download, RefreshCw } from "lucide-react";
+import { Calendar, Users, DollarSign, TrendingUp, CreditCard, CheckCircle, XCircle, Clock, Download, RefreshCw, FolderTree } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -313,6 +313,48 @@ const AdminDashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Quick Actions - Moved to Top */}
+        <div className="grid gap-6 md:grid-cols-3 mb-8">
+          <Card
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-200 dark:border-blue-800"
+            onClick={() => navigate("/events")}
+          >
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                <FolderTree className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl font-bold">จัดการงานอีเว้นท์</CardTitle>
+              <CardDescription className="mt-2">สร้าง แก้ไข หรือลบงานอีเว้นท์</CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-200 dark:border-green-800"
+            onClick={() => navigate("/admin/payments")}
+          >
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                <CreditCard className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl font-bold">จัดการการชำระเงิน</CardTitle>
+              <CardDescription className="mt-2">ตรวจสอบและจัดการการชำระเงิน</CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-200 dark:border-purple-800"
+            onClick={() => navigate("/admin/registrations")}
+          >
+            <CardHeader className="text-center pb-2">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <CardTitle className="text-xl font-bold">จัดการการลงทะเบียน</CardTitle>
+              <CardDescription className="mt-2">ดูและจัดการผู้ลงทะเบียน</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+
         {/* Stats Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           <Card>
@@ -565,30 +607,6 @@ const AdminDashboard = () => {
                 </PieChart>
               </ResponsiveContainer>
             </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-3 mb-8">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate("/events")}>
-            <CardHeader>
-              <CardTitle className="text-base">จัดการงานอีเว้นท์</CardTitle>
-              <CardDescription>สร้าง แก้ไข หรือลบงานอีเว้นท์</CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate("/admin/payments")}>
-            <CardHeader>
-              <CardTitle className="text-base">จัดการการชำระเงิน</CardTitle>
-              <CardDescription>ตรวจสอบและจัดการการชำระเงิน</CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate("/admin/registrations")}>
-            <CardHeader>
-              <CardTitle className="text-base">จัดการการลงทะเบียน</CardTitle>
-              <CardDescription>ดูและจัดการผู้ลงทะเบียน</CardDescription>
-            </CardHeader>
           </Card>
         </div>
 

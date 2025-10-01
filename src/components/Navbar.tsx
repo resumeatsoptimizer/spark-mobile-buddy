@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Lock, QrCode, ScanLine, ChevronDown } from "lucide-react";
+import { Calendar, LayoutDashboard, UserCircle, LogOut, Menu, X, Settings, Workflow, BarChart3, FolderTree, Plug, Lock, QrCode, ScanLine, ChevronDown, CreditCard, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -78,27 +78,6 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-6">
             {user && (
               <>
-                <Button
-                  variant={isActive("/events") ? "default" : "ghost"}
-                  onClick={() => navigate("/events")}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  งานอีเว้นท์ทั้งหมด
-                </Button>
-                <Button
-                  variant={isActive("/registrations") ? "default" : "ghost"}
-                  onClick={() => navigate("/registrations")}
-                >
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  การลงทะเบียน
-                </Button>
-                <Button
-                  variant={isActive("/profile") ? "default" : "ghost"}
-                  onClick={() => navigate("/profile")}
-                >
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  โปรไฟล์
-                </Button>
                 {isAdmin && (
                   <>
                     {/* Core Management */}
@@ -114,41 +93,37 @@ const Navbar = () => {
                       onClick={() => navigate("/events")}
                     >
                       <FolderTree className="mr-2 h-4 w-4" />
-                      งานอีเว้นท์
+                      จัดการงานอีเว้นท์
                     </Button>
 
-                    {/* System Management */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost">
-                          <Settings className="mr-2 h-4 w-4" />
-                          ระบบ
-                          <ChevronDown className="ml-2 h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>System Management</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate("/admin/security")}>
-                          <Lock className="mr-2 h-4 w-4" />
-                          Security
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/admin/automation")}>
-                          <Workflow className="mr-2 h-4 w-4" />
-                          Automation
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/admin/analytics")}>
-                          <BarChart3 className="mr-2 h-4 w-4" />
-                          Analytics
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/admin/integrations")}>
-                          <Plug className="mr-2 h-4 w-4" />
-                          Integrations
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* 3. จัดการการชำระเงิน */}
+                    <Button
+                      variant={isActive("/admin/payments") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/payments")}
+                    >
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      จัดการการชำระเงิน
+                    </Button>
 
-                    {/* Settings */}
+                    {/* 4. จัดการการลงทะเบียน */}
+                    <Button
+                      variant={isActive("/admin/registrations") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/registrations")}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      จัดการการลงทะเบียน
+                    </Button>
+
+                    {/* 5. Check-in */}
+                    <Button
+                      variant={isActive("/check-in") ? "default" : "ghost"}
+                      onClick={() => navigate("/check-in")}
+                    >
+                      <ScanLine className="mr-2 h-4 w-4" />
+                      Check-in
+                    </Button>
+
+                    {/* 6. Settings */}
                     <Button
                       variant={isActive("/admin/settings") ? "default" : "ghost"}
                       onClick={() => navigate("/admin/settings")}
@@ -158,7 +133,7 @@ const Navbar = () => {
                     </Button>
                 </>
                 )}
-                {isStaff && (
+                {isStaff && !isAdmin && (
                   <Button
                     variant={isActive("/check-in") ? "default" : "ghost"}
                     onClick={() => navigate("/check-in")}
@@ -167,14 +142,37 @@ const Navbar = () => {
                     Check-In
                   </Button>
                 )}
-                {userRole === "participant" && (
-                  <Button
-                    variant={isActive("/my-qr-code") ? "default" : "ghost"}
-                    onClick={() => navigate("/my-qr-code")}
-                  >
-                    <QrCode className="mr-2 h-4 w-4" />
-                    My QR Code
-                  </Button>
+                {!isAdmin && !isStaff && (
+                  <>
+                    <Button
+                      variant={isActive("/events") ? "default" : "ghost"}
+                      onClick={() => navigate("/events")}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      งานอีเว้นท์ทั้งหมด
+                    </Button>
+                    <Button
+                      variant={isActive("/registrations") ? "default" : "ghost"}
+                      onClick={() => navigate("/registrations")}
+                    >
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      การลงทะเบียน
+                    </Button>
+                    <Button
+                      variant={isActive("/profile") ? "default" : "ghost"}
+                      onClick={() => navigate("/profile")}
+                    >
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      โปรไฟล์
+                    </Button>
+                    <Button
+                      variant={isActive("/my-qr-code") ? "default" : "ghost"}
+                      onClick={() => navigate("/my-qr-code")}
+                    >
+                      <QrCode className="mr-2 h-4 w-4" />
+                      My QR Code
+                    </Button>
+                  </>
                 )}
               </>
             )}
@@ -205,43 +203,10 @@ const Navbar = () => {
           <div className="md:hidden py-4 space-y-2">
             {user && (
               <>
-                <Button
-                  variant={isActive("/events") ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate("/events");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  งานอีเว้นท์ทั้งหมด
-                </Button>
-                <Button
-                  variant={isActive("/registrations") ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate("/registrations");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  การลงทะเบียน
-                </Button>
-                <Button
-                  variant={isActive("/profile") ? "default" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => {
-                    navigate("/profile");
-                    setMobileMenuOpen(false);
-                  }}
-                >
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  โปรไฟล์
-                </Button>
                 {isAdmin && (
                   <>
                     <div className="px-4 py-2 text-sm font-semibold text-muted-foreground">
-                      Core Management
+                      Admin Menu
                     </div>
                     <Button
                       variant={isActive("/admin/dashboard") ? "default" : "ghost"}
@@ -263,60 +228,42 @@ const Navbar = () => {
                       }}
                     >
                       <FolderTree className="mr-2 h-4 w-4" />
-                      งานอีเว้นท์
+                      จัดการงานอีเว้นท์
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/payments") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/payments");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      จัดการการชำระเงิน
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/registrations") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/registrations");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      จัดการการลงทะเบียน
+                    </Button>
+                    <Button
+                      variant={isActive("/check-in") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/check-in");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <ScanLine className="mr-2 h-4 w-4" />
+                      Check-in
                     </Button>
 
-                    <div className="px-4 py-2 text-sm font-semibold text-muted-foreground mt-2">
-                      System Management
-                    </div>
-                    <Button
-                      variant={isActive("/admin/security") ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        navigate("/admin/security");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Lock className="mr-2 h-4 w-4" />
-                      Security
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/automation") ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        navigate("/admin/automation");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Workflow className="mr-2 h-4 w-4" />
-                      Automation
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/analytics") ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        navigate("/admin/analytics");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      Analytics
-                    </Button>
-                    <Button
-                      variant={isActive("/admin/integrations") ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        navigate("/admin/integrations");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Plug className="mr-2 h-4 w-4" />
-                      Integrations
-                    </Button>
-
-                    <div className="px-4 py-2 text-sm font-semibold text-muted-foreground mt-2">
-                      Settings
-                    </div>
                     <Button
                       variant={isActive("/admin/settings") ? "default" : "ghost"}
                       className="w-full justify-start"
@@ -330,7 +277,7 @@ const Navbar = () => {
                     </Button>
                 </>
                 )}
-                {isStaff && (
+                {isStaff && !isAdmin && (
                   <Button
                     variant={isActive("/check-in") ? "default" : "ghost"}
                     className="w-full justify-start"
@@ -343,18 +290,53 @@ const Navbar = () => {
                     Check-In
                   </Button>
                 )}
-                {userRole === "participant" && (
-                  <Button
-                    variant={isActive("/my-qr-code") ? "default" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => {
-                      navigate("/my-qr-code");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <QrCode className="mr-2 h-4 w-4" />
-                    My QR Code
-                  </Button>
+                {!isAdmin && !isStaff && (
+                  <>
+                    <Button
+                      variant={isActive("/events") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/events");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      งานอีเว้นท์ทั้งหมด
+                    </Button>
+                    <Button
+                      variant={isActive("/registrations") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/registrations");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      การลงทะเบียน
+                    </Button>
+                    <Button
+                      variant={isActive("/profile") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/profile");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      โปรไฟล์
+                    </Button>
+                    <Button
+                      variant={isActive("/my-qr-code") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/my-qr-code");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <QrCode className="mr-2 h-4 w-4" />
+                      My QR Code
+                    </Button>
+                  </>
                 )}
               </>
             )}
