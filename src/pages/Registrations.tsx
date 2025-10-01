@@ -128,18 +128,32 @@ const Registrations = () => {
 
     setCancelingId(selectedRegistration.id);
     
-    const { error } = await supabase
+    // Optimistic update - remove from UI immediately
+    const registrationToCancel = selectedRegistration;
+    setRegistrations(prev => prev.filter(r => r.id !== registrationToCancel.id));
+    
+    console.log('Attempting to cancel registration:', registrationToCancel.id);
+    
+    const { error, data } = await supabase
       .from("registrations")
       .update({ status: "cancelled" })
-      .eq("id", selectedRegistration.id);
+      .eq("id", registrationToCancel.id)
+      .select();
 
     if (error) {
+      console.error('Failed to cancel registration:', error);
+      
+      // Rollback optimistic update
+      setRegistrations(prev => [...prev, registrationToCancel]);
+      
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถยกเลิกการลงทะเบียนได้",
+        description: error.message || "ไม่สามารถยกเลิกการลงทะเบียนได้",
         variant: "destructive",
       });
     } else {
+      console.log('Registration cancelled successfully:', data);
+      
       // Send cancellation email
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -149,10 +163,10 @@ const Registrations = () => {
               type: 'cancellation',
               recipientEmail: session.user.email,
               recipientName: session.user.user_metadata?.name || session.user.email,
-              eventTitle: selectedRegistration.events.title,
-              eventDate: selectedRegistration.events.start_date,
-              eventLocation: selectedRegistration.events.location,
-              registrationId: selectedRegistration.id,
+              eventTitle: registrationToCancel.events.title,
+              eventDate: registrationToCancel.events.start_date,
+              eventLocation: registrationToCancel.events.location,
+              registrationId: registrationToCancel.id,
             }
           });
         }
@@ -164,12 +178,6 @@ const Registrations = () => {
         title: "ยกเลิกสำเร็จ",
         description: "ยกเลิกการลงทะเบียนเรียบร้อยแล้ว",
       });
-
-      // Refresh data
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        fetchRegistrations(session.user.id);
-      }
     }
 
     setCancelingId(null);
