@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CreditCard, Loader2 } from "lucide-react";
-import { validateCard, formatCardNumber } from "@/lib/payment-validation";
+import { CreditCard, Loader2, QrCode } from "lucide-react";
+import { validateCard } from "@/lib/payment-validation";
+import { PromptPayQR } from "./PromptPayQR";
 
 interface PaymentDialogProps {
   open: boolean;
@@ -26,6 +28,9 @@ declare global {
 export function PaymentDialog({ open, onOpenChange, registrationId, amount, eventTitle, onSuccess }: PaymentDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'promptpay'>('card');
+  const [qrCodeData, setQrCodeData] = useState<any>(null);
+  const [chargeId, setChargeId] = useState<string>("");
   const [cardData, setCardData] = useState({
     name: "",
     number: "",
@@ -50,10 +55,9 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate card data first
     const validation = validateCard(cardData);
     if (!validation.valid) {
       const firstError = Object.values(validation.errors)[0];
@@ -68,19 +72,10 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
     setLoading(true);
 
     try {
-      // Load Omise script
       await loadOmiseScript();
-
-      // Get public key from env (NEVER hardcode API keys!)
       const publicKey = import.meta.env.VITE_OMISE_PUBLIC_KEY;
 
-      console.log('Omise configuration check:', {
-        hasPublicKey: !!publicKey,
-        publicKeyLength: publicKey?.length || 0,
-      });
-
       if (!publicKey || publicKey.trim() === '') {
-        console.error('VITE_OMISE_PUBLIC_KEY not configured');
         toast({
           title: "การตั้งค่าไม่ถูกต้อง",
           description: "ระบบชำระเงินยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ",
@@ -92,7 +87,6 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
 
       window.Omise.setPublicKey(publicKey);
 
-      // Create token
       window.Omise.createToken("card", {
         name: cardData.name,
         number: cardData.number,
@@ -101,24 +95,18 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
         security_code: cardData.security_code,
       }, async (statusCode: number, response: any) => {
         if (statusCode === 200) {
-          // Token created successfully
-          const token = response.id;
-
           try {
-            // Call edge function to create charge (secure server-side processing)
             const { data, error } = await supabase.functions.invoke('create-omise-charge', {
               body: {
                 amount,
-                currency: 'THB',
-                description: `Payment for ${eventTitle}`,
-                token,
+                token: response.id,
                 registrationId,
-                return_uri: window.location.origin + '/registrations', // For 3D Secure
+                paymentMethod: 'card',
+                returnUri: `${window.location.origin}/registrations`,
               },
             });
 
             if (error) {
-              console.error('Payment error:', error);
               const errorMessage = error.message || "กรุณาลองใหม่อีกครั้ง";
               const isConfigError = errorMessage.includes('not configured') || errorMessage.includes('gateway');
               
@@ -133,7 +121,6 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
               return;
             }
 
-            // Handle failed payments
             if (data?.success === false || data?.error) {
               toast({
                 title: "การชำระเงินล้มเหลว",
@@ -144,15 +131,12 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
               return;
             }
 
-            // Check if 3D Secure required
             if (data?.require_3ds && data?.authorize_uri) {
-              // Redirect to 3DS page
               window.location.href = data.authorize_uri;
               return;
             }
 
-            // Check payment status
-            if (data?.success && data?.status === 'success') {
+            if (data?.success && (data?.status === 'success' || data?.status === 'completed')) {
               toast({
                 title: "ชำระเงินสำเร็จ",
                 description: "ระบบได้รับการชำระเงินของคุณแล้ว คุณจะได้รับ QR Code เข้างานทางอีเมล",
@@ -183,9 +167,6 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
           }
           setLoading(false);
         } else {
-          console.error('Omise token error:', response);
-          
-          // Provide user-friendly error messages
           let errorMessage = response.message || "ไม่สามารถสร้าง token ได้";
           
           if (response.code === 'invalid_card') {
@@ -217,97 +198,234 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
     }
   };
 
+  const handlePromptPaySubmit = async () => {
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-omise-charge', {
+        body: {
+          amount,
+          registrationId,
+          paymentMethod: 'promptpay',
+          returnUri: `${window.location.origin}/registrations`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.qr_code_data && data?.qr_code_data.qr_code_url) {
+        setQrCodeData(data.qr_code_data);
+        setChargeId(data.charge_id);
+        toast({
+          title: "สร้าง QR Code สำเร็จ",
+          description: "กรุณาสแกน QR Code เพื่อชำระเงิน",
+        });
+      } else {
+        throw new Error('ไม่สามารถสร้าง QR Code ได้');
+      }
+    } catch (error: any) {
+      console.error('PromptPay payment error:', error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error.message || "ไม่สามารถสร้าง QR Code สำหรับการชำระเงินได้",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQRSuccess = () => {
+    toast({
+      title: "ชำระเงินสำเร็จ",
+      description: "การชำระเงินผ่าน PromptPay สำเร็จแล้ว คุณจะได้รับ QR Code ทาง Email",
+    });
+    onOpenChange(false);
+    onSuccess();
+  };
+
+  const handleQRExpired = () => {
+    setQrCodeData(null);
+    setChargeId("");
+    toast({
+      title: "QR Code หมดอายุ",
+      description: "กรุณาสร้าง QR Code ใหม่",
+      variant: "destructive",
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            ชำระเงิน
-          </DialogTitle>
+          <DialogTitle>ชำระเงิน</DialogTitle>
           <DialogDescription>
-            จำนวนเงิน: ฿{amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+            เลือกวิธีการชำระเงินที่ต้องการ
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">ชื่อบนบัตร</Label>
-            <Input
-              id="name"
-              required
-              placeholder="JOHN DOE"
-              value={cardData.name}
-              onChange={(e) => setCardData({ ...cardData, name: e.target.value })}
-            />
-          </div>
+        {qrCodeData ? (
+          <PromptPayQR
+            qrCodeData={qrCodeData}
+            chargeId={chargeId}
+            onSuccess={handleQRSuccess}
+            onExpired={handleQRExpired}
+          />
+        ) : (
+          <Tabs value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'card' | 'promptpay')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="card" className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                บัตรเครดิต
+              </TabsTrigger>
+              <TabsTrigger value="promptpay" className="flex items-center gap-2">
+                <QrCode className="w-4 h-4" />
+                PromptPay QR
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="number">หมายเลขบัตร</Label>
-            <Input
-              id="number"
-              required
-              placeholder="4242424242424242"
-              maxLength={16}
-              value={cardData.number}
-              onChange={(e) => setCardData({ ...cardData, number: e.target.value.replace(/\D/g, '') })}
-            />
-          </div>
+            <TabsContent value="card" className="space-y-4">
+              <form onSubmit={handleCardSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">ชื่อบนบัตร</Label>
+                  <Input
+                    id="name"
+                    required
+                    placeholder="JOHN DOE"
+                    value={cardData.name}
+                    onChange={(e) => setCardData({ ...cardData, name: e.target.value })}
+                  />
+                </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="month">เดือน</Label>
-              <Input
-                id="month"
-                required
-                placeholder="MM"
-                maxLength={2}
-                value={cardData.expiration_month}
-                onChange={(e) => setCardData({ ...cardData, expiration_month: e.target.value.replace(/\D/g, '') })}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="number">หมายเลขบัตร</Label>
+                  <Input
+                    id="number"
+                    required
+                    placeholder="4242424242424242"
+                    maxLength={16}
+                    value={cardData.number}
+                    onChange={(e) => setCardData({ ...cardData, number: e.target.value.replace(/\D/g, '') })}
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="year">ปี</Label>
-              <Input
-                id="year"
-                required
-                placeholder="YYYY"
-                maxLength={4}
-                value={cardData.expiration_year}
-                onChange={(e) => setCardData({ ...cardData, expiration_year: e.target.value.replace(/\D/g, '') })}
-              />
-            </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="month">เดือน</Label>
+                    <Input
+                      id="month"
+                      required
+                      placeholder="MM"
+                      maxLength={2}
+                      value={cardData.expiration_month}
+                      onChange={(e) => setCardData({ ...cardData, expiration_month: e.target.value.replace(/\D/g, '') })}
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cvv">CVV</Label>
-              <Input
-                id="cvv"
-                required
-                placeholder="123"
-                maxLength={3}
-                value={cardData.security_code}
-                onChange={(e) => setCardData({ ...cardData, security_code: e.target.value.replace(/\D/g, '') })}
-              />
-            </div>
-          </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="year">ปี</Label>
+                    <Input
+                      id="year"
+                      required
+                      placeholder="YYYY"
+                      maxLength={4}
+                      value={cardData.expiration_year}
+                      onChange={(e) => setCardData({ ...cardData, expiration_year: e.target.value.replace(/\D/g, '') })}
+                    />
+                  </div>
 
-          <div className="pt-4 space-y-3">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  กำลังดำเนินการ...
-                </>
-              ) : (
-                `ชำระเงิน ฿${amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              ชำระเงินผ่าน Omise Payment Gateway อย่างปลอดภัย
-            </p>
-          </div>
-        </form>
+                  <div className="space-y-2">
+                    <Label htmlFor="cvv">CVV</Label>
+                    <Input
+                      id="cvv"
+                      required
+                      placeholder="123"
+                      maxLength={3}
+                      value={cardData.security_code}
+                      onChange={(e) => setCardData({ ...cardData, security_code: e.target.value.replace(/\D/g, '') })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="text-sm">
+                    <p className="text-muted-foreground">งาน</p>
+                    <p className="font-medium">{eventTitle}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-muted-foreground text-sm">ยอดชำระ</p>
+                    <p className="text-2xl font-bold">฿{amount.toLocaleString('th-TH')}</p>
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      กำลังประมวลผล...
+                    </>
+                  ) : (
+                    `ชำระเงิน ฿${amount.toLocaleString('th-TH')}`
+                  )}
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  การชำระเงินปลอดภัยด้วย Omise • ประมวลผลทันที
+                </p>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="promptpay" className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                  <div className="text-sm">
+                    <p className="text-muted-foreground">งาน</p>
+                    <p className="font-medium">{eventTitle}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-muted-foreground text-sm">ยอดชำระ</p>
+                    <p className="text-2xl font-bold">฿{amount.toLocaleString('th-TH')}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p className="flex items-center gap-2">
+                    <QrCode className="w-4 h-4" />
+                    ชำระเงินผ่าน PromptPay QR Code
+                  </p>
+                  <p className="text-xs">
+                    • รองรับทุกธนาคารที่มี PromptPay<br />
+                    • ไม่มีค่าธรรมเนียม<br />
+                    • QR Code หมดอายุใน 15 นาที<br />
+                    • รับยืนยันการชำระเงินทันที
+                  </p>
+                </div>
+
+                <Button 
+                  onClick={handlePromptPaySubmit} 
+                  className="w-full" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      กำลังสร้าง QR Code...
+                    </>
+                  ) : (
+                    <>
+                      <QrCode className="mr-2 h-4 w-4" />
+                      สร้าง QR Code
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  การชำระเงินปลอดภัยด้วย Omise PromptPay
+                </p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
       </DialogContent>
     </Dialog>
   );

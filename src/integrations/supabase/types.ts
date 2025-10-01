@@ -1247,11 +1247,14 @@ export type Database = {
           idempotency_key: string | null
           omise_charge_id: string | null
           payment_metadata: Json | null
+          payment_method: string | null
+          qr_code_data: Json | null
           receipt_url: string | null
           refund_amount: number | null
           refunded_at: string | null
           registration_id: string
           require_3ds: boolean | null
+          source_id: string | null
           status: string
           updated_at: string
           webhook_data: Json | null
@@ -1269,11 +1272,14 @@ export type Database = {
           idempotency_key?: string | null
           omise_charge_id?: string | null
           payment_metadata?: Json | null
+          payment_method?: string | null
+          qr_code_data?: Json | null
           receipt_url?: string | null
           refund_amount?: number | null
           refunded_at?: string | null
           registration_id: string
           require_3ds?: boolean | null
+          source_id?: string | null
           status?: string
           updated_at?: string
           webhook_data?: Json | null
@@ -1291,11 +1297,14 @@ export type Database = {
           idempotency_key?: string | null
           omise_charge_id?: string | null
           payment_metadata?: Json | null
+          payment_method?: string | null
+          qr_code_data?: Json | null
           receipt_url?: string | null
           refund_amount?: number | null
           refunded_at?: string | null
           registration_id?: string
           require_3ds?: boolean | null
+          source_id?: string | null
           status?: string
           updated_at?: string
           webhook_data?: Json | null

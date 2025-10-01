@@ -23,7 +23,6 @@ serve(async (req) => {
       omiseKeyLength: omiseSecretKey?.length || 0,
     });
 
-    // Check if Omise key is configured
     if (!omiseSecretKey || omiseSecretKey.trim() === '') {
       console.error('OMISE_SECRET_KEY not configured or empty');
       return new Response(
@@ -35,7 +34,6 @@ serve(async (req) => {
       );
     }
 
-    // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -46,7 +44,6 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from JWT
     const jwt = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
 
@@ -57,19 +54,25 @@ serve(async (req) => {
       );
     }
 
-    const { amount, currency, description, token, registrationId, return_uri } = await req.json();
+    const { amount, token, registrationId, paymentMethod = 'card', returnUri } = await req.json();
+    
+    console.log('Creating Omise payment:', { amount, registrationId, userId: user.id, paymentMethod });
 
-    console.log('Creating Omise charge:', { amount, currency, description, registrationId, userId: user.id });
-
-    // Validate required fields
-    if (!amount || !token || !registrationId) {
+    if (!amount || !registrationId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Validate amount
+    // Validate payment method requires token for card
+    if (paymentMethod === 'card' && !token) {
+      return new Response(
+        JSON.stringify({ error: 'Card token is required for card payments' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (amount <= 0 || amount > 10000000) {
       return new Response(
         JSON.stringify({ error: 'Invalid amount' }),
@@ -77,12 +80,11 @@ serve(async (req) => {
       );
     }
 
-    // Get registration details and verify ownership
     const { data: registration, error: regError } = await supabase
       .from('registrations')
       .select('*, events(title)')
       .eq('id', registrationId)
-      .eq('user_id', user.id) // Verify user owns this registration
+      .eq('user_id', user.id)
       .single();
 
     if (regError || !registration) {
@@ -92,12 +94,11 @@ serve(async (req) => {
       );
     }
 
-    // Check if payment already exists for this registration
     const { data: existingPayment } = await supabase
       .from('payments')
       .select('id, status')
       .eq('registration_id', registrationId)
-      .in('status', ['success', 'pending', 'processing'])
+      .in('status', ['success', 'completed', 'pending', 'processing', 'pending_scan'])
       .single();
 
     if (existingPayment) {
@@ -111,63 +112,142 @@ serve(async (req) => {
       );
     }
 
-    // Generate idempotency key
     const idempotencyKey = `charge_${registrationId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const eventTitle = registration.events?.title || 'Event';
 
-    // Create charge with Omise
-    const omiseResponse = await fetch('https://api.omise.co/charges', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(omiseSecretKey + ':')}`,
-        'Content-Type': 'application/json',
-        'Idempotency-Key': idempotencyKey,
-      },
-      body: JSON.stringify({
-        amount: Math.round(amount * 100), // Convert to satang
-        currency: currency || 'THB',
-        description: description || `Payment for ${registration.events.title}`,
-        card: token,
-        capture: true,
-        return_uri: return_uri,
-        metadata: {
-          registration_id: registrationId,
-          user_id: user.id,
-          event_title: registration.events?.title,
+    let sourceId = null;
+    let qrCodeData = null;
+    let charge;
+
+    // Handle PromptPay payment
+    if (paymentMethod === 'promptpay') {
+      // Create PromptPay source
+      const sourceResponse = await fetch('https://api.omise.co/sources', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(omiseSecretKey + ':')}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-      }),
-    });
+        body: new URLSearchParams({
+          amount: Math.round(amount * 100).toString(),
+          currency: 'THB',
+          type: 'promptpay'
+        }).toString()
+      });
 
-    const charge = await omiseResponse.json();
-    console.log('Omise charge response:', { id: charge.id, status: charge.status, paid: charge.paid });
+      if (!sourceResponse.ok) {
+        const errorData = await sourceResponse.json();
+        console.error('Omise source creation error:', errorData);
+        throw new Error(errorData.message || 'Failed to create PromptPay source');
+      }
 
-    // Determine payment status
-    let paymentStatus = 'pending';
-    if (charge.paid) {
-      paymentStatus = 'success';
-    } else if (charge.failure_code) {
-      paymentStatus = 'failed';
-    } else if (charge.authorize_uri) {
-      paymentStatus = 'processing'; // Requires 3DS
+      const source = await sourceResponse.json();
+      sourceId = source.id;
+      
+      qrCodeData = {
+        qr_code_url: source.scannable_code?.image?.download_uri || null,
+        expires_at: source.expires_at,
+        amount: source.amount / 100,
+        currency: source.currency
+      };
+
+      console.log('PromptPay source created:', { sourceId, qrCodeData });
+
+      // Create charge with source
+      const chargeResponse = await fetch('https://api.omise.co/charges', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(omiseSecretKey + ':')}`,
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify({
+          amount: Math.round(amount * 100),
+          currency: 'THB',
+          source: sourceId,
+          description: `Payment for ${eventTitle}`,
+          return_uri: returnUri || `${supabaseUrl}/registrations`,
+          metadata: {
+            registration_id: registrationId,
+            user_id: user.id,
+            event_title: eventTitle,
+            payment_method: 'promptpay'
+          },
+        }),
+      });
+
+      charge = await chargeResponse.json();
+    } else {
+      // Create card charge
+      const chargeResponse = await fetch('https://api.omise.co/charges', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(omiseSecretKey + ':')}`,
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify({
+          amount: Math.round(amount * 100),
+          currency: 'THB',
+          card: token,
+          description: `Payment for ${eventTitle}`,
+          capture: true,
+          return_uri: returnUri || `${supabaseUrl}/registrations`,
+          metadata: {
+            registration_id: registrationId,
+            user_id: user.id,
+            event_title: eventTitle,
+            payment_method: 'card'
+          },
+        }),
+      });
+
+      charge = await chargeResponse.json();
     }
 
-    // Create payment record in database (even if failed, for audit trail)
+    console.log('Omise charge response:', { id: charge.id, status: charge.status, paid: charge.paid, paymentMethod });
+
+    // Determine payment status
+    const requireAction = !!charge.authorize_uri && charge.status !== 'successful';
+    const require3ds = requireAction;
+    let paymentStatus = 'processing';
+    
+    if (paymentMethod === 'promptpay') {
+      paymentStatus = 'pending_scan';
+    } else if (charge.paid) {
+      paymentStatus = 'completed';
+    } else if (require3ds) {
+      paymentStatus = 'pending_3ds';
+    } else if (charge.failure_code || charge.failure_message) {
+      paymentStatus = 'failed';
+    }
+
+    // Create payment record
     const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .insert({
         registration_id: registrationId,
         amount: amount,
-        currency: currency || 'THB',
+        currency: 'THB',
         status: paymentStatus,
         omise_charge_id: charge.id,
-        card_brand: charge.card?.brand,
-        card_last4: charge.card?.last_digits,
-        receipt_url: charge.receipt_url,
-        failure_code: charge.failure_code,
-        failure_message: charge.failure_message,
-        require_3ds: !!charge.authorize_uri,
-        authorize_uri: charge.authorize_uri,
-        payment_metadata: charge,
+        payment_method: paymentMethod,
+        source_id: sourceId,
+        qr_code_data: qrCodeData || {},
+        card_brand: charge.card?.brand || null,
+        card_last4: charge.card?.last_digits || null,
+        receipt_url: charge.receipt_url || null,
+        authorize_uri: charge.authorize_uri || null,
+        require_3ds: require3ds,
+        failure_code: charge.failure_code || null,
+        failure_message: charge.failure_message || null,
         idempotency_key: idempotencyKey,
+        payment_metadata: {
+          charge_status: charge.status,
+          authorized: charge.authorized,
+          capturable: charge.capturable,
+          reversible: charge.reversible
+        }
       })
       .select()
       .single();
@@ -180,8 +260,8 @@ serve(async (req) => {
       );
     }
 
-    // If charge is immediately successful, update registration
-    if (paymentStatus === 'success') {
+    // Update registration if payment successful
+    if (paymentStatus === 'completed') {
       const { error: updateError } = await supabase
         .from('registrations')
         .update({
@@ -195,7 +275,7 @@ serve(async (req) => {
       }
     }
 
-    // Return appropriate response based on status
+    // Handle failed payments
     if (paymentStatus === 'failed') {
       return new Response(
         JSON.stringify({
@@ -216,16 +296,19 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         paymentId: payment.id,
-        chargeId: charge.id,
+        charge_id: charge.id,
         status: paymentStatus,
         amount: charge.amount / 100,
         currency: charge.currency,
-        require_3ds: !!charge.authorize_uri,
+        require_3ds: require3ds,
         authorize_uri: charge.authorize_uri,
-        card: {
-          brand: charge.card?.brand,
-          last4: charge.card?.last_digits,
-        },
+        payment_method: paymentMethod,
+        qr_code_data: qrCodeData,
+        source_id: sourceId,
+        card: charge.card ? {
+          brand: charge.card.brand,
+          last4: charge.card.last_digits,
+        } : null,
       }),
       {
         status: 200,
