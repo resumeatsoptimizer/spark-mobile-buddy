@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,7 +57,6 @@ const UserProfile = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // Explicitly select only columns that exist
     const { data, error } = await supabase
       .from("profiles")
       .select("id, email, name, phone, bio, avatar_url, social_links, timezone, preferences, created_at, updated_at")
@@ -72,7 +71,6 @@ const UserProfile = () => {
         variant: "destructive",
       });
     } else if (data) {
-      // Initialize social_links if null
       const profileData = {
         ...data,
         social_links: (data.social_links as any) || {},
@@ -102,7 +100,6 @@ const UserProfile = () => {
       const file = event.target.files?.[0];
       if (!file || !profile) return;
 
-      // Validate file size (1 MB)
       if (file.size > 1048576) {
         toast({
           title: "ไฟล์ใหญ่เกินไป",
@@ -112,7 +109,6 @@ const UserProfile = () => {
         return;
       }
 
-      // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
         toast({
@@ -126,29 +122,24 @@ const UserProfile = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Create file path
       const fileExt = file.name.split('.').pop();
       const fileName = `${session.user.id}/avatar.${fileExt}`;
 
-      // Delete old avatar if exists
       if (profile.avatar_url) {
         const oldPath = profile.avatar_url.split('/').slice(-2).join('/');
         await supabase.storage.from('avatars').remove([oldPath]);
       }
 
-      // Upload new avatar
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: urlData.publicUrl })
@@ -177,18 +168,14 @@ const UserProfile = () => {
     if (!profile) return;
 
     try {
-      // Only include fields that are safe to update
       const updateData: any = {
         name: profile.name || null,
       };
 
-      // Add optional fields only if they're defined and not causing errors
       if (profile.phone !== undefined) updateData.phone = profile.phone;
       if (profile.bio !== undefined) updateData.bio = profile.bio;
       if (profile.line_id !== undefined) updateData.line_id = profile.line_id;
       if (profile.social_links !== undefined) updateData.social_links = profile.social_links;
-
-      console.log("Updating profile with data:", updateData);
 
       const { error } = await supabase
         .from("profiles")
@@ -196,20 +183,13 @@ const UserProfile = () => {
         .eq("id", profile.id);
 
       if (error) {
-        console.error("Profile update error:", error);
-        console.error("Error code:", error.code);
-        console.error("Error details:", error.details);
-
-        // Provide specific error messages based on error type
         let errorMessage = "ไม่สามารถอัพเดทโปรไฟล์ได้";
         let errorTitle = "เกิดข้อผิดพลาด";
 
         if (error.code === "42703") {
-          // Column does not exist
           errorTitle = "ต้องอัพเดทฐานข้อมูล";
           errorMessage = "กรุณารัน SQL migrations ในฐานข้อมูล Supabase";
         } else if (error.code === "42501") {
-          // Permission denied
           errorMessage = "คุณไม่มีสิทธิ์แก้ไขข้อมูลนี้ กรุณาเข้าสู่ระบบใหม่";
         } else if (error.message.includes("policy")) {
           errorMessage = "ระบบรักษาความปลอดภัย กรุณาเข้าสู่ระบบใหม่";
@@ -231,7 +211,6 @@ const UserProfile = () => {
         description: "อัพเดทข้อมูลโปรไฟล์เรียบร้อยแล้ว",
       });
     } catch (err: any) {
-      console.error("Unexpected error:", err);
       toast({
         title: "เกิดข้อผิดพลาด",
         description: err.message || "เกิดข้อผิดพลาดที่ไม่คาดคิด",
@@ -294,8 +273,11 @@ const UserProfile = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto py-8 flex items-center justify-center">
-          <div className="text-center">กำลังโหลด...</div>
+        <div className="container mx-auto py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-sm text-muted-foreground">กำลังโหลดโปรไฟล์...</p>
+          </div>
         </div>
       </div>
     );
@@ -304,33 +286,44 @@ const UserProfile = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       <Navbar />
-      <div className="container mx-auto py-8 max-w-4xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground">โปรไฟล์ของฉัน</h1>
-          <p className="text-muted-foreground">จัดการข้อมูลส่วนตัวและความสนใจ</p>
+      
+      {/* Hero Header */}
+      <div className="bg-gradient-to-br from-primary/10 via-accent/5 to-background border-b border-border">
+        <div className="container mx-auto py-12 px-4 max-w-4xl">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-foreground mb-2">โปรไฟล์ของฉัน</h1>
+            <p className="text-muted-foreground">จัดการข้อมูลส่วนตัวและความสนใจของคุณ</p>
+          </div>
         </div>
+      </div>
 
-        <div className="grid gap-6">
-          {/* Profile Card */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center text-center space-y-4">
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
+        {/* Main Profile Card */}
+        <Card className="border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <CardContent className="p-0">
+            {/* Avatar Section */}
+            <div className="relative bg-gradient-to-br from-primary/5 via-accent/5 to-transparent p-8 rounded-t-lg">
+              <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+                {/* Avatar with Upload */}
                 <div className="relative group">
-                  <Avatar className="h-32 w-32">
+                  <Avatar className="h-32 w-32 border-4 border-background shadow-lg ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/40">
                     <AvatarImage src={profile.avatar_url || undefined} alt={profile.name || "User"} />
-                    <AvatarFallback className="text-4xl">
+                    <AvatarFallback className="text-4xl bg-gradient-to-br from-primary to-accent text-primary-foreground">
                       {profile.name?.charAt(0).toUpperCase() || profile.email.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300"
                   >
                     {uploading ? (
                       <Upload className="h-8 w-8 text-white animate-pulse" />
                     ) : (
-                      <Camera className="h-8 w-8 text-white" />
+                      <div className="text-center">
+                        <Camera className="h-8 w-8 text-white mx-auto mb-1" />
+                        <span className="text-xs text-white font-medium">เปลี่ยนรูป</span>
+                      </div>
                     )}
                   </button>
                   <input
@@ -340,256 +333,306 @@ const UserProfile = () => {
                     className="hidden"
                     onChange={handleAvatarUpload}
                   />
+                  <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-accent rounded-full border-4 border-background shadow-md" />
                 </div>
 
-                <div className="w-full">
-                  <h2 className="text-2xl font-bold">{profile.name || "ไม่ระบุชื่อ"}</h2>
-                  <p className="text-muted-foreground">{profile.email}</p>
-
-                  {/* Display profile info when not editing */}
-                  {!isEditing && (
-                    <div className="mt-6 space-y-3 text-left max-w-md mx-auto">
-                      {profile.bio && (
-                        <div className="p-3 bg-muted/30 rounded-lg">
-                          <p className="text-sm text-muted-foreground">เกี่ยวกับฉัน</p>
-                          <p className="text-sm mt-1">{profile.bio}</p>
-                        </div>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-3">
-                        {profile.phone && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span>{profile.phone}</span>
-                          </div>
-                        )}
-
-                        {profile.line_id && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                            <span>{profile.line_id}</span>
-                          </div>
-                        )}
+                {/* Profile Info */}
+                <div className="flex-1 text-center md:text-left">
+                  {isEditing ? (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div>
+                        <Label htmlFor="name" className="text-xs text-muted-foreground">ชื่อ-นามสกุล</Label>
+                        <Input
+                          id="name"
+                          value={profile.name || ""}
+                          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                          placeholder="ชื่อ-นามสกุล"
+                          className="mt-1 font-semibold text-lg"
+                        />
                       </div>
-
-                      {/* Social Links */}
-                      {(profile.social_links?.facebook || profile.social_links?.instagram) && (
-                        <div className="flex justify-center gap-3 pt-2">
-                          {profile.social_links?.facebook && (
-                            <a
-                              href={profile.social_links.facebook}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-2 hover:bg-muted rounded-full transition-colors"
-                            >
-                              <Facebook className="h-5 w-5" />
-                            </a>
-                          )}
-                          {profile.social_links?.instagram && (
-                            <a
-                              href={profile.social_links.instagram}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-2 hover:bg-muted rounded-full transition-colors"
-                            >
-                              <Instagram className="h-5 w-5" />
-                            </a>
-                          )}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        <span>{profile.email}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <h2 className="text-3xl font-bold text-foreground">{profile.name || "ไม่ระบุชื่อ"}</h2>
+                      <div className="flex items-center justify-center md:justify-start gap-2 text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        <span className="text-sm">{profile.email}</span>
+                      </div>
                     </div>
                   )}
                 </div>
 
+                {/* Edit Button */}
                 {!isEditing && (
-                  <Button onClick={() => setIsEditing(true)} variant="outline" className="mt-4">
+                  <Button 
+                    onClick={() => setIsEditing(true)} 
+                    variant="outline" 
+                    className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                  >
                     แก้ไขโปรไฟล์
                   </Button>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Edit Form - Show only when editing */}
-          {isEditing && (
-            <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>ข้อมูลส่วนตัว</CardTitle>
-                  <CardDescription>อัพเดทข้อมูลส่วนตัวของคุณ</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="name">ชื่อ-นามสกุล</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="name"
-                          className="pl-10"
-                          value={profile.name || ""}
-                          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                          placeholder="ชื่อ-นามสกุล"
-                        />
+            {/* Profile Content */}
+            <div className="p-8 space-y-6">
+              {isEditing ? (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* Personal Info Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <User className="h-5 w-5 text-primary" />
+                      ข้อมูลส่วนตัว
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="phone" className="text-xs text-muted-foreground">เบอร์โทรศัพท์</Label>
+                        <div className="relative mt-1">
+                          <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="phone"
+                            className="pl-10"
+                            value={profile.phone || ""}
+                            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                            placeholder="0812345678"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="line_id" className="text-xs text-muted-foreground">LINE ID</Label>
+                        <div className="relative mt-1">
+                          <MessageCircle className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="line_id"
+                            className="pl-10"
+                            value={profile.line_id || ""}
+                            onChange={(e) => setProfile({ ...profile, line_id: e.target.value })}
+                            placeholder="LINE ID"
+                          />
+                        </div>
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor="email">อีเมล</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="email"
-                          className="pl-10"
-                          value={profile.email}
-                          disabled
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="phone">เบอร์โทรศัพท์</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="phone"
-                          className="pl-10"
-                          value={profile.phone || ""}
-                          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                          placeholder="0812345678"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="line_id">Line ID</Label>
-                      <div className="relative">
-                        <MessageCircle className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="line_id"
-                          className="pl-10"
-                          value={profile.line_id || ""}
-                          onChange={(e) => setProfile({ ...profile, line_id: e.target.value })}
-                          placeholder="@yourlineid"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="bio">เกี่ยวกับฉัน</Label>
-                    <Textarea
-                      id="bio"
-                      value={profile.bio || ""}
-                      onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                      placeholder="บอกเล่าเกี่ยวกับตัวคุณ..."
-                      rows={4}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>โซเชียลมีเดีย</CardTitle>
-                  <CardDescription>เพิ่มลิงก์โซเชียลมีเดีย</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="facebook">Facebook</Label>
-                    <div className="relative">
-                      <Facebook className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="facebook"
-                        className="pl-10"
-                        value={profile.social_links?.facebook || ""}
-                        onChange={(e) =>
-                          setProfile({
-                            ...profile,
-                            social_links: { ...profile.social_links, facebook: e.target.value },
-                          })
-                        }
-                        placeholder="https://facebook.com/username"
+                      <Label htmlFor="bio" className="text-xs text-muted-foreground">เกี่ยวกับฉัน</Label>
+                      <Textarea
+                        id="bio"
+                        className="mt-1 min-h-[100px]"
+                        value={profile.bio || ""}
+                        onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                        placeholder="บอกเล่าเกี่ยวกับตัวคุณ..."
                       />
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="instagram">Instagram</Label>
-                    <div className="relative">
-                      <Instagram className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="instagram"
-                        className="pl-10"
-                        value={profile.social_links?.instagram || ""}
-                        onChange={(e) =>
-                          setProfile({
-                            ...profile,
-                            social_links: { ...profile.social_links, instagram: e.target.value },
-                          })
-                        }
-                        placeholder="https://instagram.com/username"
-                      />
+
+                  {/* Social Links Section */}
+                  <div className="space-y-4 pt-6 border-t border-border">
+                    <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                      <Instagram className="h-5 w-5 text-primary" />
+                      โซเชียลมีเดีย
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="facebook" className="text-xs text-muted-foreground">Facebook</Label>
+                        <div className="relative mt-1">
+                          <Facebook className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="facebook"
+                            className="pl-10"
+                            value={profile.social_links?.facebook || ""}
+                            onChange={(e) =>
+                              setProfile({
+                                ...profile,
+                                social_links: { ...profile.social_links, facebook: e.target.value },
+                              })
+                            }
+                            placeholder="https://facebook.com/username"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="instagram" className="text-xs text-muted-foreground">Instagram</Label>
+                        <div className="relative mt-1">
+                          <Instagram className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="instagram"
+                            className="pl-10"
+                            value={profile.social_links?.instagram || ""}
+                            onChange={(e) =>
+                              setProfile({
+                                ...profile,
+                                social_links: { ...profile.social_links, instagram: e.target.value },
+                              })
+                            }
+                            placeholder="https://instagram.com/username"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              ) : (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {/* Bio Section */}
+                  {profile.bio && (
+                    <div className="p-4 bg-muted/30 rounded-lg border border-border">
+                      <p className="text-sm text-muted-foreground mb-1">เกี่ยวกับฉัน</p>
+                      <p className="text-foreground leading-relaxed">{profile.bio}</p>
+                    </div>
+                  )}
 
-              {/* Interests - Show only when editing */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>ความสนใจ</CardTitle>
-                  <CardDescription>เพิ่มความสนใจของคุณเพื่อหาผู้ร่วมงานที่ใช่</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newInterest}
-                      onChange={(e) => setNewInterest(e.target.value)}
-                      placeholder="เช่น Technology, Marketing, Design"
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          addInterest();
-                        }
-                      }}
-                    />
-                    <Button onClick={addInterest}>เพิ่ม</Button>
+                  {/* Contact Info Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {profile.phone && (
+                      <div className="flex items-center gap-3 p-4 bg-muted/20 rounded-lg border border-border hover:border-primary/50 transition-colors">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Phone className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">เบอร์โทรศัพท์</p>
+                          <p className="text-sm font-medium text-foreground">{profile.phone}</p>
+                        </div>
+                      </div>
+                    )}
+                    {profile.line_id && (
+                      <div className="flex items-center gap-3 p-4 bg-muted/20 rounded-lg border border-border hover:border-accent/50 transition-colors">
+                        <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
+                          <MessageCircle className="h-5 w-5 text-accent" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">LINE ID</p>
+                          <p className="text-sm font-medium text-foreground">{profile.line_id}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {interests.map((interest) => (
+
+                  {/* Social Links */}
+                  {(profile.social_links?.facebook || profile.social_links?.instagram) && (
+                    <div className="pt-4 border-t border-border">
+                      <p className="text-sm text-muted-foreground mb-3">โซเชียลมีเดีย</p>
+                      <div className="flex gap-3">
+                        {profile.social_links?.facebook && (
+                          <a
+                            href={profile.social_links.facebook}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-primary hover:text-primary-foreground rounded-lg border border-border transition-all duration-300 group"
+                          >
+                            <Facebook className="h-5 w-5" />
+                            <span className="text-sm font-medium">Facebook</span>
+                          </a>
+                        )}
+                        {profile.social_links?.instagram && (
+                          <a
+                            href={profile.social_links.instagram}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-muted/30 hover:bg-accent hover:text-accent-foreground rounded-lg border border-border transition-all duration-300 group"
+                          >
+                            <Instagram className="h-5 w-5" />
+                            <span className="text-sm font-medium">Instagram</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {!profile.bio && !profile.phone && !profile.line_id && !profile.social_links?.facebook && !profile.social_links?.instagram && (
+                    <div className="text-center py-8">
+                      <User className="h-12 w-12 text-muted-foreground/50 mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground">ยังไม่มีข้อมูลโปรไฟล์</p>
+                      <Button 
+                        onClick={() => setIsEditing(true)} 
+                        variant="outline" 
+                        size="sm"
+                        className="mt-3"
+                      >
+                        เพิ่มข้อมูลโปรไฟล์
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Interests Section */}
+              <div className="pt-6 border-t border-border space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-foreground">ความสนใจ</h3>
+                  <Badge variant="secondary" className="text-xs">
+                    {interests.length} รายการ
+                  </Badge>
+                </div>
+                
+                {/* Interests Display */}
+                <div className="flex flex-wrap gap-2">
+                  {interests.length > 0 ? (
+                    interests.map((interest) => (
                       <Badge
                         key={interest.id}
                         variant="secondary"
-                        className="cursor-pointer"
+                        className="px-3 py-1.5 cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-all duration-300 hover:scale-105"
                         onClick={() => removeInterest(interest.id)}
                       >
-                        {interest.interest_tag} ×
+                        {interest.interest_tag}
+                        <span className="ml-1.5 font-bold">×</span>
                       </Badge>
-                    ))}
-                    {interests.length === 0 && (
-                      <p className="text-sm text-muted-foreground">ยังไม่มีความสนใจ</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </>
-          )}
-        </div>
-      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic py-2">
+                      ยังไม่มีความสนใจ เพิ่มความสนใจเพื่อรับคำแนะนำกิจกรรมที่เหมาะกับคุณ
+                    </p>
+                  )}
+                </div>
 
-      {/* Sticky Save Button - Show only when editing */}
-      {isEditing && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t shadow-lg p-4">
-          <div className="container mx-auto max-w-4xl flex gap-4">
-            <Button onClick={() => setIsEditing(false)} variant="outline" className="flex-1">
-              ยกเลิก
-            </Button>
-            <Button onClick={updateProfile} className="flex-1">
-              <Save className="mr-2 h-4 w-4" />
-              บันทึกข้อมูล
-            </Button>
+                {/* Add Interest Form */}
+                <div className="flex gap-2">
+                  <Input
+                    value={newInterest}
+                    onChange={(e) => setNewInterest(e.target.value)}
+                    placeholder="เช่น กีฬา, ดนตรี, ศิลปะ, เทคโนโลยี"
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addInterest();
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <Button onClick={addInterest} disabled={!newInterest.trim()}>
+                    เพิ่ม
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sticky Footer with Save/Cancel Buttons */}
+        {isEditing && (
+          <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border shadow-lg z-50 animate-in slide-in-from-bottom duration-300">
+            <div className="container mx-auto max-w-4xl px-4 py-4 flex justify-between items-center">
+              <p className="text-sm text-muted-foreground hidden sm:block">
+                อย่าลืมบันทึกการเปลี่ยนแปลงของคุณ
+              </p>
+              <div className="flex gap-3 ml-auto">
+                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={updateProfile} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  บันทึกการเปลี่ยนแปลง
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
