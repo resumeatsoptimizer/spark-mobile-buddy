@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye } from "lucide-react";
+import { Search, Eye, Download } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -47,6 +47,28 @@ export function MembersTab() {
     return <Badge variant={variant}>{label}</Badge>;
   };
 
+  const handleExportCSV = () => {
+    const csv = [
+      ["Email", "Name", "Status", "Registrations", "Revenue", "Joined Date"],
+      ...filteredMembers.map(m => [
+        m.email,
+        m.name || "",
+        m.status,
+        m.total_registrations?.toString() || "0",
+        `฿${(m.total_amount_paid || 0).toLocaleString()}`,
+        format(new Date(m.created_at), "yyyy-MM-dd"),
+      ])
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `members_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -54,9 +76,15 @@ export function MembersTab() {
           <h2 className="text-2xl font-bold tracking-tight">Members</h2>
           <p className="text-sm text-muted-foreground">Manage your members</p>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Total Members</p>
-          <p className="text-2xl font-bold mono">{members.length}</p>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Total Members</p>
+            <p className="text-2xl font-bold mono">{members.length}</p>
+          </div>
+          <Button onClick={handleExportCSV} variant="outline" size="sm" className="gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
         </div>
       </div>
 
