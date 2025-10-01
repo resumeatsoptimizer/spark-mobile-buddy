@@ -29,6 +29,8 @@ import AdminSSO from "./pages/AdminSSO";
 import APIDocumentation from "./pages/APIDocumentation";
 import Security2FA from "./pages/Security2FA";
 import DataPrivacy from "./pages/DataPrivacy";
+import MemberManagement from "./pages/MemberManagement";
+import MemberDetail from "./pages/MemberDetail";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,8 @@ const App = () => (
           <Route path="/admin/security" element={<AdminSecurity />} />
           <Route path="/admin/sso" element={<AdminSSO />} />
           <Route path="/admin/api-docs" element={<APIDocumentation />} />
+          <Route path="/admin/members" element={<MemberManagement />} />
+          <Route path="/admin/members/:memberId" element={<MemberDetail />} />
           <Route path="/security/2fa" element={<Security2FA />} />
           <Route path="/data-privacy" element={<DataPrivacy />} />
           <Route path="/profile" element={<UserProfile />} />

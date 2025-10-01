@@ -114,6 +114,15 @@ const Navbar = () => {
                       จัดการการลงทะเบียน
                     </Button>
 
+                    {/* 4.5 จัดการสมาชิก */}
+                    <Button
+                      variant={isActive("/admin/members") ? "default" : "ghost"}
+                      onClick={() => navigate("/admin/members")}
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      จัดการสมาชิก
+                    </Button>
+
                     {/* 5. Check-in */}
                     <Button
                       variant={isActive("/check-in") ? "default" : "ghost"}
