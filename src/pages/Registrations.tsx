@@ -34,6 +34,7 @@ interface Registration {
     start_date: string;
     end_date: string;
     location?: string;
+    cover_image_url?: string;
   };
   ticket_types?: {
     id: string;
@@ -83,7 +84,8 @@ const Registrations = () => {
           title,
           start_date,
           end_date,
-          location
+          location,
+          cover_image_url
         ),
         ticket_types (
           id,
@@ -92,6 +94,7 @@ const Registrations = () => {
         )
       `)
       .eq("user_id", userId)
+      .neq("status", "cancelled")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -248,11 +251,32 @@ const Registrations = () => {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {registrations.map((registration) => (
-              <Card key={registration.id} className="hover:shadow-lg transition-shadow">
+              <Card key={registration.id} className="hover:shadow-lg transition-shadow overflow-hidden">
+                {/* Event Cover Image */}
+                {registration.events.cover_image_url ? (
+                  <div className="relative h-48 overflow-hidden group">
+                    <img
+                      src={registration.events.cover_image_url}
+                      alt={registration.events.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                    <div className="absolute top-3 right-3">
+                      {getStatusBadge(registration.status)}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative h-48 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                    <Calendar className="h-16 w-16 text-muted-foreground/30" />
+                    <div className="absolute top-3 right-3">
+                      {getStatusBadge(registration.status)}
+                    </div>
+                  </div>
+                )}
+
                 <CardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-lg">{registration.events.title}</CardTitle>
-                    {getStatusBadge(registration.status)}
                   </div>
                   <CardDescription>
                     ลงทะเบียนเมื่อ {format(new Date(registration.created_at), "d MMM yyyy", { locale: th })}
