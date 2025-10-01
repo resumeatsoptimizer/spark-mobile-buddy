@@ -66,7 +66,7 @@ export const REGISTRATION_FIELDS: RegistrationField[] = [
     label: "องค์กร/บริษัท",
     labelEn: "Organization",
     type: "text",
-    required: true,
+    required: false,
     category: "work",
     placeholder: "ชื่อองค์กรหรือบริษัท",
     icon: "Building2",
@@ -209,6 +209,13 @@ export const DEFAULT_ENABLED_FIELDS = [
   "phone",
   "line_id",
   "organization",
+  "position",
+  "dietary_requirements",
+  "shirt_size",
+  "transportation",
+  "emergency_contact_name",
+  "emergency_contact_phone",
+  "additional_notes",
 ];
 
 export const getFieldsByCategory = (category: string) => {
