@@ -1,27 +1,39 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { OverviewTab } from "@/components/admin/DashboardTabs/OverviewTab";
-import { EventsTab } from "@/components/admin/DashboardTabs/EventsTab";
-import { RegistrationsTab } from "@/components/admin/DashboardTabs/RegistrationsTab";
-import { PaymentsTab } from "@/components/admin/DashboardTabs/PaymentsTab";
-import { MembersTab } from "@/components/admin/DashboardTabs/MembersTab";
-import { useDashboardState } from "@/components/admin/hooks/useDashboardState";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { MetricsWidget } from "@/components/admin/DashboardWidgets/MetricsWidget";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Users, DollarSign, TrendingUp } from "lucide-react";
+
+interface DashboardStats {
+  totalEvents: number;
+  totalRegistrations: number;
+  totalRevenue: number;
+  successRate: number;
+}
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { activeTab, setActiveTab } = useDashboardState();
   const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState<string>("30");
+  const [stats, setStats] = useState<DashboardStats>({
+    totalEvents: 0,
+    totalRegistrations: 0,
+    totalRevenue: 0,
+    successRate: 0,
+  });
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      fetchDashboardData();
+    }
+  }, [timeRange, loading]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -51,6 +63,48 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
+  const fetchDashboardData = async () => {
+    try {
+      const daysAgo = parseInt(timeRange);
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - daysAgo);
+
+      // Fetch events
+      const { data: events } = await supabase
+        .from("events")
+        .select("id")
+        .gte("created_at", startDate.toISOString());
+
+      // Fetch registrations
+      const { data: registrations } = await supabase
+        .from("registrations")
+        .select("id, status, created_at")
+        .gte("created_at", startDate.toISOString());
+
+      // Fetch payments
+      const { data: payments } = await supabase
+        .from("payments")
+        .select("amount, status, created_at")
+        .gte("created_at", startDate.toISOString());
+
+      const totalRevenue = payments
+        ?.filter(p => p.status === "successful" || p.status === "success")
+        .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+
+      const successfulPayments = payments?.filter(p => p.status === "successful" || p.status === "success").length || 0;
+      const successRate = payments && payments.length > 0 ? (successfulPayments / payments.length) * 100 : 0;
+
+      setStats({
+        totalEvents: events?.length || 0,
+        totalRegistrations: registrations?.length || 0,
+        totalRevenue,
+        successRate,
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -62,48 +116,52 @@ export default function AdminDashboard() {
     );
   }
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "overview":
-        return <OverviewTab />;
-      case "events":
-        return <EventsTab />;
-      case "registrations":
-        return <RegistrationsTab />;
-      case "payments":
-        return <PaymentsTab />;
-      case "members":
-        return <MembersTab />;
-      case "settings":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-              <p className="text-sm text-muted-foreground">Configure your admin preferences</p>
-            </div>
-            <div className="flex gap-4">
-              <Button onClick={() => navigate("/admin/settings")} variant="outline">
-                <Settings className="mr-2 h-4 w-4" />
-                Go to Settings
-              </Button>
-            </div>
-          </div>
-        );
-      default:
-        return <OverviewTab />;
-    }
-  };
-
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-        <main className="flex-1 overflow-y-auto">
-          <div className="container mx-auto p-6 max-w-7xl">
-            {renderTabContent()}
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto p-6 max-w-7xl">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+              <p className="text-sm text-muted-foreground mt-1">Monitor your event management metrics</p>
+            </div>
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Time Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="30">Last 30 days</SelectItem>
+                <SelectItem value="90">Last 3 months</SelectItem>
+                <SelectItem value="365">Last year</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </main>
-      </div>
-    </SidebarProvider>
+
+          <div className="grid gap-4 md:grid-cols-4">
+            <MetricsWidget
+              title="Total Events"
+              value={stats.totalEvents}
+              icon={Calendar}
+            />
+            <MetricsWidget
+              title="Registrations"
+              value={stats.totalRegistrations}
+              icon={Users}
+            />
+            <MetricsWidget
+              title="Revenue"
+              value={`฿${stats.totalRevenue.toLocaleString()}`}
+              icon={DollarSign}
+            />
+            <MetricsWidget
+              title="Success Rate"
+              value={`${stats.successRate.toFixed(1)}%`}
+              icon={TrendingUp}
+            />
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
