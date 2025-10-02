@@ -1357,41 +1357,53 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_verified: boolean | null
           avatar_url: string | null
           bio: string | null
           created_at: string
           email: string
           id: string
+          is_backdoor_admin: boolean | null
+          last_login_at: string | null
           name: string | null
           phone: string | null
           preferences: Json | null
           social_links: Json | null
+          status: string | null
           timezone: string | null
           updated_at: string
         }
         Insert: {
+          account_verified?: boolean | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           email: string
           id: string
+          is_backdoor_admin?: boolean | null
+          last_login_at?: string | null
           name?: string | null
           phone?: string | null
           preferences?: Json | null
           social_links?: Json | null
+          status?: string | null
           timezone?: string | null
           updated_at?: string
         }
         Update: {
+          account_verified?: boolean | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           email?: string
           id?: string
+          is_backdoor_admin?: boolean | null
+          last_login_at?: string | null
           name?: string | null
           phone?: string | null
           preferences?: Json | null
           social_links?: Json | null
+          status?: string | null
           timezone?: string | null
           updated_at?: string
         }
@@ -2107,6 +2119,9 @@ export type Database = {
       mv_member_statistics: {
         Row: {
           activity_level: string | null
+          avg_payment_amount: number | null
+          cancelled_registrations: number | null
+          confirmed_registrations: number | null
           created_at: string | null
           email: string | null
           engagement_score: number | null
@@ -2114,8 +2129,8 @@ export type Database = {
           last_registration_at: string | null
           name: string | null
           status: string | null
+          tags_count: number | null
           total_amount_paid: number | null
-          total_events_attended: number | null
           total_payments: number | null
           total_registrations: number | null
           user_id: string | null
@@ -2187,6 +2202,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_backdoor_admin: {
+        Args: { _user_id: string }
         Returns: boolean
       }
       log_payment_action: {
