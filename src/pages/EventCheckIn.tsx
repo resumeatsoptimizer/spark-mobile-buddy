@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { QrCode, CheckCircle, XCircle, Smartphone, Activity, Users, TrendingUp, AlertCircle, Download, Search } from 'lucide-react';
+import { QrCode, CheckCircle, XCircle, Smartphone, Activity, Users, TrendingUp, AlertCircle, Download, Search, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -165,12 +165,8 @@ export default function EventCheckIn() {
     if (!selectedEventId) return;
     
     try {
-      // Count total registrations
-      const { count: totalRegs } = await supabase
-        .from('registrations')
-        .select('*', { count: 'exact', head: true })
-        .eq('event_id', selectedEventId)
-        .eq('status', 'confirmed');
+      // Phase 2: Use seats_total from currentEvent instead of counting registrations
+      const totalRegistrations = currentEvent?.seats_total || 0;
       
       // Count checked-in
       const { count: checkedIn } = await supabase
@@ -197,7 +193,7 @@ export default function EventCheckIn() {
       }));
       
       setSummary({
-        totalRegistrations: totalRegs || 0,
+        totalRegistrations: totalRegistrations,
         totalCheckedIn: checkedIn || 0,
         byTicketType: byTicketArray
       });
@@ -324,6 +320,17 @@ export default function EventCheckIn() {
         return;
       }
 
+      // Phase 3: Check if seats are available before check-in
+      if (currentEvent && currentEvent.seats_remaining <= 0) {
+        toast({
+          title: '❌ ที่นั่งเต็ม',
+          description: 'ไม่สามารถเช็คอินได้เพราะที่นั่งเต็มแล้ว',
+          variant: 'destructive',
+        });
+        setScanning(false);
+        return;
+      }
+
       const deviceInfo = {
         userAgent: navigator.userAgent,
         platform: navigator.platform,
@@ -382,6 +389,14 @@ export default function EventCheckIn() {
     return 'bg-green-500';
   };
 
+  // Phase 4: Calculate actual remaining seats and check for mismatch
+  const actualRemaining = currentEvent 
+    ? currentEvent.seats_total - summary.totalCheckedIn 
+    : 0;
+  
+  const isCapacityMismatch = currentEvent 
+    && Math.abs(currentEvent.seats_remaining - actualRemaining) > 1;
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -437,6 +452,15 @@ export default function EventCheckIn() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
                       ⚠️ ที่นั่งเหลือน้อย!
+                    </AlertDescription>
+                  </Alert>
+                )}
+                {/* Phase 4: Alert when capacity data doesn't match */}
+                {isCapacityMismatch && (
+                  <Alert variant="destructive" className="py-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      ⚠️ ข้อมูลไม่ sync: DB = {currentEvent.seats_remaining}, คำนวณ = {actualRemaining}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -677,15 +701,59 @@ export default function EventCheckIn() {
                   อัพเดทเรียลไทม์การเช็คอินของผู้เข้าร่วม
                 </CardDescription>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => exportCheckInsToCSV(recentCheckIns, currentEvent?.title || 'Event')}
-                disabled={recentCheckIns.length === 0}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => exportCheckInsToCSV(recentCheckIns, currentEvent?.title || 'Event')}
+                  disabled={recentCheckIns.length === 0}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export CSV
+                </Button>
+                
+                {/* Phase 5: Sync Capacity Button */}
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (!selectedEventId || !currentEvent) return;
+                    
+                    try {
+                      // Recalculate seats_remaining based on actual check-ins
+                      const { count: checkInCount } = await supabase
+                        .from('event_check_ins')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('event_id', selectedEventId);
+                      
+                      const newRemaining = currentEvent.seats_total - (checkInCount || 0);
+                      
+                      await supabase
+                        .from('events')
+                        .update({ seats_remaining: newRemaining })
+                        .eq('id', selectedEventId);
+                      
+                      toast({ 
+                        title: '✅ Capacity Synced!',
+                        description: `อัพเดท seats_remaining เป็น ${newRemaining}`
+                      });
+                      
+                      fetchCurrentEvent();
+                      fetchSummary();
+                    } catch (error) {
+                      console.error('Sync error:', error);
+                      toast({
+                        title: '❌ Sync Failed',
+                        description: 'ไม่สามารถ sync capacity ได้',
+                        variant: 'destructive',
+                      });
+                    }
+                  }}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Sync Capacity
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
