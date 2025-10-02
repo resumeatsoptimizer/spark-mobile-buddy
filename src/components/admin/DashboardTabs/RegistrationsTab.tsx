@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Download } from "lucide-react";
+import { Search, Download, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { exportRegistrationsToCSV } from "@/lib/csvExport";
@@ -18,6 +18,27 @@ export function RegistrationsTab() {
 
   useEffect(() => {
     fetchRegistrations();
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('registrations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'registrations'
+        },
+        () => {
+          fetchRegistrations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchRegistrations = async () => {
@@ -62,10 +83,16 @@ export function RegistrationsTab() {
           <h2 className="text-2xl font-bold tracking-tight">Registrations</h2>
           <p className="text-sm text-muted-foreground">Manage event registrations</p>
         </div>
-        <Button onClick={() => exportRegistrationsToCSV(filteredRegistrations)} variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={fetchRegistrations} variant="outline" disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button onClick={() => exportRegistrationsToCSV(filteredRegistrations)} variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <Card className="glass">
