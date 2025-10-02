@@ -26,6 +26,8 @@ import {
   XCircle,
   Ban,
   Clock,
+  TrendingUp,
+  DollarSign,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { format } from "date-fns";
@@ -138,7 +140,6 @@ const MemberDetail = () => {
   const [newNote, setNewNote] = useState("");
   const [isImportantNote, setIsImportantNote] = useState(false);
   const [newTag, setNewTag] = useState("");
-  const [newTagColor, setNewTagColor] = useState("#3b82f6");
 
   useEffect(() => {
     checkAuth();
@@ -701,16 +702,15 @@ const MemberDetail = () => {
                     {!member.tags || member.tags.length === 0 ? (
                       <p className="text-sm text-muted-foreground">ยังไม่มี tag</p>
                     ) : (
-                      member.tags.map((tag: any, idx: number) => (
+                      member.tags.map((tag: string, idx: number) => (
                         <Badge
                           key={idx}
-                          style={{ backgroundColor: tag.color }}
-                          className="text-white"
+                          variant="secondary"
                         >
-                          {tag.name}
+                          {tag}
                           <X
                             className="ml-1 h-3 w-3 cursor-pointer"
-                            onClick={() => handleDeleteTag(tag.name)}
+                            onClick={() => handleDeleteTag(tag)}
                           />
                         </Badge>
                       ))
@@ -723,12 +723,6 @@ const MemberDetail = () => {
                       value={newTag}
                       onChange={(e) => setNewTag(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
-                    />
-                    <Input
-                      type="color"
-                      value={newTagColor}
-                      onChange={(e) => setNewTagColor(e.target.value)}
-                      className="w-16"
                     />
                     <Button onClick={handleAddTag}>
                       <Plus className="h-4 w-4" />
