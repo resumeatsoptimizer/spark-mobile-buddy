@@ -177,6 +177,14 @@ const MemberDetail = () => {
     if (!memberId) return;
 
     setLoading(true);
+    
+    // Refresh materialized view to ensure latest data
+    try {
+      await supabase.rpc('refresh_member_statistics');
+    } catch (err) {
+      console.error('Failed to refresh member statistics:', err);
+    }
+    
     await Promise.all([
       fetchMemberDetails(),
       fetchRegistrations(),
