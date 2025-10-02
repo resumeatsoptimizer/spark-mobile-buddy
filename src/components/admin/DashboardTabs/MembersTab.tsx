@@ -133,7 +133,15 @@ export function MembersTab() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to update role");
+        let errorMessage = result.error || "ไม่สามารถอัปเดตสิทธิ์ได้";
+
+        if (errorMessage.includes("duplicate")) {
+          errorMessage = "มีสิทธิ์นี้อยู่แล้ว";
+        } else if (errorMessage.includes("constraint")) {
+          errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
+        }
+
+        throw new Error(errorMessage);
       }
 
       toast({
