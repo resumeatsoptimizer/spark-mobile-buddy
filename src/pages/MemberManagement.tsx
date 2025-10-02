@@ -37,6 +37,8 @@ import {
   DollarSign,
   Shield,
   Trash2,
+  User,
+  Clock,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import {
@@ -181,15 +183,20 @@ const MemberManagement = () => {
     }
   };
 
-  const getStatusBadge = (status: MemberStatus) => {
-    const config = {
+  const getStatusBadge = (status: string | null | undefined) => {
+    const config: Record<string, { icon: any; color: string; label: string }> = {
       active: { icon: CheckCircle, color: "bg-green-500", label: "Active" },
       inactive: { icon: AlertCircle, color: "bg-gray-500", label: "Inactive" },
       suspended: { icon: XCircle, color: "bg-yellow-500", label: "Suspended" },
       blocked: { icon: Ban, color: "bg-red-500", label: "Blocked" },
+      new: { icon: User, color: "bg-blue-500", label: "New" },
+      dormant: { icon: Clock, color: "bg-orange-500", label: "Dormant" },
     };
 
-    const { icon: Icon, color, label } = config[status];
+    // Default to 'new' if status is null or undefined
+    const validStatus = status || 'new';
+    const statusConfig = config[validStatus] || config.inactive;
+    const { icon: Icon, color, label } = statusConfig;
 
     return (
       <Badge className={color}>
