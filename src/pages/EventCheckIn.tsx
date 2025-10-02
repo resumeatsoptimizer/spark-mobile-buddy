@@ -258,11 +258,11 @@ export default function EventCheckIn() {
         .from('event_check_ins')
         .select(`
           *,
-          registrations (
+          registrations!inner (
             user_id,
             ticket_type_id,
             ticket_types (name, price),
-            profiles:user_id (
+            profiles!inner (
               name,
               email
             )
@@ -277,6 +277,7 @@ export default function EventCheckIn() {
       }
 
       const { data } = await query;
+      console.log('Recent check-ins data:', data);
       setRecentCheckIns(data || []);
     } catch (error) {
       console.error('Error fetching recent check-ins:', error);
