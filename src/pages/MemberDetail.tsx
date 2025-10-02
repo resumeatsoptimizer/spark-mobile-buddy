@@ -77,7 +77,7 @@ interface MemberDetails {
   total_amount_paid: number;
   engagement_score: number;
   tags: any[];
-  roles: any[];
+  roles: string[];
 }
 
 interface Registration {
@@ -202,7 +202,14 @@ const MemberDetail = () => {
         variant: "destructive",
       });
     } else if (data) {
-      setMember(data as any);
+      // Ensure tags and roles are always arrays
+      const rawData = data as any;
+      const memberData = {
+        ...rawData,
+        tags: rawData.tags || [],
+        roles: rawData.roles || [],
+      };
+      setMember(memberData);
     }
   };
 
