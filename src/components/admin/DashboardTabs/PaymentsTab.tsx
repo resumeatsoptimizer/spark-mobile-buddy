@@ -41,7 +41,7 @@ export function PaymentsTab() {
           user_id,
           form_data,
           event:events(title),
-          profiles!registrations_user_id_fkey(email, name)
+          user:profiles(email, name)
         )
       `)
       .order("created_at", { ascending: false })
@@ -63,8 +63,8 @@ export function PaymentsTab() {
 
   const filteredPayments = payments.filter((p) => {
     const matchesSearch =
-      p.registration?.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.registration?.profiles?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.registration?.user?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.registration?.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.registration?.event?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.omise_charge_id?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === "all" || p.status === filterStatus;
@@ -287,10 +287,10 @@ export function PaymentsTab() {
                     <TableCell>
                       <div>
                         <p className="font-medium text-sm">
-                          {payment.registration?.profiles?.name || 'ไม่ระบุ'}
+                          {payment.registration?.user?.name || 'ไม่ระบุ'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {payment.registration?.profiles?.email || '-'}
+                          {payment.registration?.user?.email || '-'}
                         </p>
                       </div>
                     </TableCell>
@@ -356,7 +356,7 @@ export function PaymentsTab() {
               <div className="rounded-lg bg-muted p-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">ลูกค้า:</span>
-                  <span className="font-medium">{refundDialog.payment.registration?.profiles?.name}</span>
+                  <span className="font-medium">{refundDialog.payment.registration?.user?.name}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">กิจกรรม:</span>
