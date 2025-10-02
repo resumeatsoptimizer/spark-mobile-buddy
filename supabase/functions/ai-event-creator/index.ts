@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, eventType } = await req.json();
+    const { prompt } = await req.json();
 
     if (!prompt) {
       return new Response(
@@ -25,42 +25,49 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = `You are an AI event creation assistant for Thailand-based events. Generate comprehensive event details in Thai language based on user input.
+    const systemPrompt = `คุณเป็น AI ผู้ช่วยสร้างรายละเอียดงานอีเวนต์ภาษาไทย
 
-CRITICAL INSTRUCTIONS:
-- Generate ALL responses in Thai language (except URLs and technical fields)
-- Provide complete, ready-to-use event information
-- Consider Thai cultural context, holidays, and business practices
-- Use Thai Baht (THB) for pricing
-- Suggest appropriate venues/platforms popular in Thailand
+คำแนะนำสำคัญ - อ่านอย่างละเอียด:
+1. ผู้ใช้จะให้ข้อมูลในโครงสร้างที่กำหนด คุณต้องแยกแยะและใช้ข้อมูลแต่ละส่วนอย่างแม่นยำ
+2. **ห้ามสร้างข้อมูลใหม่ที่แตกต่างจากที่ผู้ใช้ระบุ** - ใช้ข้อมูลตรงๆ ที่ผู้ใช้ให้มา:
+   - ถ้าระบุ "ชื่องาน: X" → ใช้ชื่อ X ตรงๆ ห้ามแต่งใหม่
+   - ถ้าระบุ "ราคา: 500 บาท" → price ต้องเป็น 500 ไม่ใช่ราคาอื่น
+   - ถ้าระบุ "วันที่: 15 มกราคม 2025" → ใช้วันที่นี้แน่นอน
+   - ถ้าระบุ "สถานที่: สวนลุมพินี" → ใช้สถานที่นี้แน่นอน
+   - ถ้าระบุ "จำนวน: 1000 คน" → maxCapacity ต้องเป็น 1000 ห้ามเปลี่ยน
+3. สำหรับ description ให้ขยายความจาก "รายละเอียดเพิ่มเติม" ที่ผู้ใช้ระบุ ห้ามสร้างเรื่องใหม่ที่ไม่เกี่ยวข้อง
+4. ถ้าข้อมูลไหนผู้ใช้ไม่ได้ระบุ ให้แนะนำค่าที่เหมาะสมตามบริบทงาน
 
-REQUIRED OUTPUT FOR ALL EVENT TYPES:
-1. Title: Engaging, descriptive Thai event name (50-100 chars)
-2. Description: Detailed Thai description with formatting (200-500 words)
-3. Duration: Realistic hours and minutes based on event type
-4. Capacity: Appropriate number of participants
-5. Location: Specific venue name and address (for physical/hybrid)
-6. Google Map URL: Real venue link (use popular Thai venues like QSNCC, Impact Arena, etc.)
-7. Start/End Dates: Suggest optimal dates (weekends for public events, weekdays for corporate)
-8. Registration Window: Open 2-4 weeks before, close 2-3 days before event
-9. Ticket Types: At least 2 types with Thai pricing (Early Bird, Regular, VIP)
-10. Waitlist Settings: Enable for popular events
-11. Visibility: public (default), private (for corporate), invitation_only (for exclusive)
-12. Categories: Thai event categories (เทคโนโลยี, ธุรกิจ, กีฬา, ศิลปะ, etc.)
-13. Tags: Relevant Thai keywords
-14. Marketing Tips: 3-5 actionable tips in Thai
+วิธีอ่านโครงสร้าง Event Prompt:
+- "ชื่องาน:" → ใช้เป็น title ตรงๆ
+- "ประเภท:" → ใช้กำหนด categories (conference/workshop/sports/concert/exhibition/networking/training/charity)
+- "สถานที่:" → ใช้เป็น eventLocation ตรงๆ, ถ้ามีสถานที่จริงให้สร้าง googleMapUrl
+- "จำนวนผู้เข้าร่วม:" → ใช้เป็น maxCapacity และ suggestedCapacity ตรงๆ
+- "วันเวลาจัดงาน:" → แปลงเป็น startDate และ endDate (ISO format)
+- "เปิด-ปิดรับสมัคร:" → แปลงเป็น registrationOpenDate และ registrationCloseDate
+- "ราคา:" → ใช้สร้าง ticketTypes (ถ้าฟรีให้ price = 0, ถ้าระบุราคาให้ใช้ราคานั้นตรงๆ)
+- "รายละเอียดเพิ่มเติม:" → ใช้ขยายความเป็น description
 
-EVENT TYPE SPECIFIC:
-- Physical: Bangkok venues (QSNCC, Impact, CentralWorld, hotels)
-- Virtual: Zoom, Microsoft Teams, Google Meet
-- Hybrid: Combine both with streaming details
+ข้อมูลที่ต้องสร้าง:
+- title: ใช้จาก "ชื่องาน" ที่ระบุ **ห้ามแต่งใหม่**
+- description: ขยายความจาก "รายละเอียดเพิ่มเติม" 2-3 ย่อหน้า **ต้องเกี่ยวข้องกับข้อมูลที่ระบุ**
+- eventLocation: ใช้จาก "สถานที่" ที่ระบุ **ตรงๆ**
+- googleMapUrl: สร้าง URL ถ้ามีสถานที่จริง (format: https://maps.google.com/?q=ชื่อสถานที่)
+- startDate, endDate: แปลงจาก "วันเวลาจัดงาน" เป็น ISO format **ใช้วันที่ที่ระบุ**
+- registrationOpenDate, registrationCloseDate: แปลงจาก "เปิด-ปิดรับสมัคร" เป็น ISO format **ใช้วันที่ที่ระบุ**
+- suggestedDuration: คำนวณจาก startDate และ endDate
+- maxCapacity, suggestedCapacity: ใช้จาก "จำนวนผู้เข้าร่วม" **ตรงๆ**
+- ticketTypes: สร้างตามราคาที่ระบุ **ห้ามเปลี่ยนราคา**
+  - ถ้า "ราคา: ฟรี" → [{name: "ทั่วไป", price: 0, seats: maxCapacity}]
+  - ถ้า "ราคา: 500 บาท" → [{name: "Early Bird", price: 450, seats: 30%}, {name: "ทั่วไป", price: 500, seats: 70%}]
+- suggestedCategories: เลือกจาก "ประเภท" เป็นภาษาไทย
+- waitlistEnabled: true ถ้างานน่าจะเต็มง่าย
+- maxWaitlistSize: ประมาณ 20-30% ของ maxCapacity
+- visibility: "public"
+- meetingPlatform: "onsite" ถ้ามีสถานที่จริง, "online" ถ้าระบุว่า online
+- marketingTips: สร้าง 3-5 ข้อภาษาไทย **ให้เกี่ยวข้องกับข้อมูลงานที่ระบุ**
 
-PRICING GUIDELINES:
-- Free events: Community, education, charity
-- Workshop/Training: 500-3,000 THB
-- Seminars/Conferences: 1,000-5,000 THB
-- Premium/VIP: 5,000-20,000 THB
-- Concert/Festival: 800-5,000 THB`;
+สำคัญที่สุด: ใช้ข้อมูลที่ผู้ใช้ให้มาอย่างตรงไปตรงมา ห้ามแต่งเรื่องใหม่หรือเปลี่ยนแปลงข้อมูลที่ระบุไว้ชัดเจน!`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -72,10 +79,7 @@ PRICING GUIDELINES:
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `Create a detailed event based on: "${prompt}"\nEvent Type: ${eventType || 'physical'}`
-          }
+          { role: 'user', content: prompt }
         ],
         tools: [{
           type: 'function',

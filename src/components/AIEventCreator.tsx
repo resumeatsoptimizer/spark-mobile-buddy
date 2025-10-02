@@ -42,7 +42,6 @@ interface AIEventCreatorProps {
 
 const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
   const [prompt, setPrompt] = useState("");
-  const [eventType, setEventType] = useState<"physical" | "virtual" | "hybrid">("physical");
   const [loading, setLoading] = useState(false);
   const [generatedData, setGeneratedData] = useState<EventData | null>(null);
   const { toast } = useToast();
@@ -50,8 +49,8 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast({
-        title: "Input Required",
-        description: "Please describe the event you want to create",
+        title: "กรุณาใส่ Event Prompt",
+        description: "โปรดระบุข้อมูลงานตามโครงสร้างที่กำหนด",
         variant: "destructive",
       });
       return;
@@ -60,7 +59,7 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-event-creator', {
-        body: { prompt, eventType }
+        body: { prompt }
       });
 
       if (error) {
@@ -117,36 +116,41 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
-          AI Event Creator
+          สร้างงานด้วย AI
         </CardTitle>
         <CardDescription>
-          Describe your event idea and let AI generate comprehensive details
+          ใส่ข้อมูลงานตามโครงสร้างด้านล่าง AI จะสร้างรายละเอียดที่เกี่ยวข้องให้อัตโนมัติ
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label htmlFor="prompt">Event Description</Label>
+          <Label htmlFor="prompt">Event Prompt</Label>
           <Textarea
             id="prompt"
-            placeholder="ตัวอย่าง:&#10;• งานวิ่งมินิมาราธอน 10K ที่สวนลุมพินี เปิดรับสมัคร 500 คน มีของที่ระลึก&#10;• สัมมนาเทคโนโลยี AI สำหรับธุรกิจ SME ที่โรงแรม 5 ดาว ราคา 2,500 บาท&#10;• Workshop ทำอาหารไทยต้นตำรับ ณ ครัวเรียนทำอาหาร พร้อมวุฒิบัตร&#10;• คอนเสิร์ตดนตรีคลาสสิก ที่ Thailand Cultural Centre ราคา 1,000-3,000 บาท&#10;• นิทรรศการศิลปะร่วมสมัย ฟรี ณ หอศิลป์ 3 วัน"
+            placeholder={`กรุณาใส่ข้อมูลตามโครงสร้างนี้:
+
+ชื่องาน: [ระบุชื่องานที่ต้องการ]
+ประเภท: [สัมมนา/workshop/กีฬา/คอนเสิร์ต/นิทรรศการ/ฝึกอบรม/การกุศล]
+สถานที่: [ระบุสถานที่จัดงาน หรือ online]
+จำนวนผู้เข้าร่วม: [จำนวนคน]
+วันเวลาจัดงาน: [วัน/เดือน/ปี และเวลา]
+เปิด-ปิดรับสมัคร: [วันที่เปิดและปิดรับสมัคร]
+ราคา: [ฟรี หรือ ระบุราคา เช่น 500 บาท]
+รายละเอียดเพิ่มเติม: [อธิบายลักษณะงาน กิจกรรม สิ่งที่ผู้เข้าร่วมจะได้รับ ฯลฯ]
+
+ตัวอย่าง:
+ชื่องาน: งานวิ่งมาราธอน Bangkok Half Marathon 2025
+ประเภท: กีฬา
+สถานที่: สวนลุมพินี กรุงเทพฯ
+จำนวนผู้เข้าร่วม: 1000 คน
+วันเวลาจัดงาน: 15 มกราคม 2025 เวลา 06:00-10:00 น.
+เปิด-ปิดรับสมัคร: เปิด 1 พฤศจิกายน 2024 ปิด 10 มกราคม 2025
+ราคา: 500 บาท
+รายละเอียดเพิ่มเติม: วิ่งระยะทาง 21 กม. รับเสื้อ เหรียญ และของที่ระลึก มีจุดน้ำดื่มและเจลทุก 3 กม.`}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="min-h-[120px] mt-2 text-sm"
+            className="min-h-[200px] mt-2 text-sm font-mono"
           />
-        </div>
-
-        <div>
-          <Label htmlFor="eventType">Event Type</Label>
-          <Select value={eventType} onValueChange={(value: any) => setEventType(value)}>
-            <SelectTrigger id="eventType" className="mt-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="physical">Physical</SelectItem>
-              <SelectItem value="virtual">Virtual</SelectItem>
-              <SelectItem value="hybrid">Hybrid</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <Button 
