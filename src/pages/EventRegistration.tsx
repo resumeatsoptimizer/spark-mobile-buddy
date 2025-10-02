@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import Navbar from "@/components/Navbar";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { REGISTRATION_FIELDS, DEFAULT_ENABLED_FIELDS, RegistrationField } from "@/lib/registrationFields";
 import { Progress } from "@/components/ui/progress";
@@ -702,6 +702,15 @@ const EventRegistration = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Important Notice */}
+                <Alert className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>โปรดใช้ชื่อ-นามสกุลจริง</AlertTitle>
+                  <AlertDescription>
+                    กรุณากรอกชื่อ-นามสกุลจริงของคุณเพื่อใช้ในการตรวจสอบเข้าร่วมกิจกรรม
+                  </AlertDescription>
+                </Alert>
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Basic Information */}
                   <div className="space-y-4">

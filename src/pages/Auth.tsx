@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@supabase/supabase-js";
-import { ArrowLeft, Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -324,6 +325,15 @@ const Auth = () => {
             </TabsContent>
             
             <TabsContent value="signup">
+              {/* Important Notice */}
+              <Alert className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>โปรดใช้ชื่อ-นามสกุลจริง</AlertTitle>
+                <AlertDescription>
+                  กรุณากรอกชื่อ-นามสกุลจริงของคุณเพื่อใช้ในการตรวจสอบเข้าร่วมกิจกรรม
+                </AlertDescription>
+              </Alert>
+
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">ชื่อ-นามสกุล</Label>
