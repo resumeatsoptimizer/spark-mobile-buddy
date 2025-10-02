@@ -47,34 +47,28 @@ Deno.serve(async (req) => {
 
     console.log('✓ Profile updated successfully');
 
-    // Step 2: Ensure admin role exists
+    // Step 2: Ensure admin role exists (using UPSERT)
     console.log('Step 2: Setting up admin role...');
     
-    // First, delete any existing roles for this user
-    const { error: deleteError } = await supabaseAdmin
-      .from('user_roles')
-      .delete()
-      .eq('user_id', backdoorUserId);
-
-    if (deleteError) {
-      console.error('Role delete error:', deleteError);
-      throw new Error(`Failed to delete existing roles: ${deleteError.message}`);
-    }
-    console.log('✓ Existing roles deleted');
-
-    // Now insert the admin role
+    // Use upsert to insert if not exists, or update if exists
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({
-        user_id: backdoorUserId,
-        role: 'admin'
-      });
+      .upsert(
+        {
+          user_id: backdoorUserId,
+          role: 'admin'
+        },
+        { 
+          onConflict: 'user_id',
+          ignoreDuplicates: false 
+        }
+      );
 
     if (roleError) {
-      console.error('Role insert error:', roleError);
-      throw new Error(`Failed to insert admin role: ${roleError.message}`);
+      console.error('Role upsert error:', roleError);
+      throw new Error(`Failed to upsert admin role: ${roleError.message}`);
     }
-    console.log('✓ Admin role inserted successfully');
+    console.log('✓ Admin role set successfully');
 
     // Step 3: Refresh materialized view
     console.log('Step 3: Refreshing materialized view...');
