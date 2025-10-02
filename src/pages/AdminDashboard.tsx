@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Navbar from "@/components/Navbar";
 import { Calendar, Users, DollarSign, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { isSuccessfulPayment } from "@/lib/payment-constants";
 
 interface DashboardStats {
   totalEvents: number;
@@ -92,12 +93,32 @@ export default function AdminDashboard() {
         .select("amount, status, created_at")
         .gte("created_at", startDate.toISOString());
 
+      // Debug: Log all payment statuses
+      console.log('📊 Payment Status Breakdown:', {
+        total: payments?.length || 0,
+        statuses: payments?.reduce((acc: any, p) => {
+          acc[p.status] = (acc[p.status] || 0) + 1;
+          return acc;
+        }, {}),
+        allPayments: payments?.map(p => ({ 
+          amount: p.amount, 
+          status: p.status, 
+          created_at: p.created_at 
+        }))
+      });
+
       const totalRevenue = payments
-        ?.filter(p => p.status === "successful" || p.status === "success")
+        ?.filter(p => isSuccessfulPayment(p.status))
         .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
 
-      const successfulPayments = payments?.filter(p => p.status === "successful" || p.status === "success").length || 0;
+      const successfulPayments = payments?.filter(p => isSuccessfulPayment(p.status)).length || 0;
       const successRate = payments && payments.length > 0 ? (successfulPayments / payments.length) * 100 : 0;
+
+      console.log('💰 Revenue Calculation:', {
+        totalRevenue,
+        successfulPayments,
+        successRate: `${successRate.toFixed(1)}%`
+      });
 
       setStats({
         totalEvents: events?.length || 0,
@@ -108,7 +129,7 @@ export default function AdminDashboard() {
 
       // Monthly revenue data
       const revenueByMonth = payments?.reduce((acc: any, payment) => {
-        if (payment.status === "successful" || payment.status === "success") {
+        if (isSuccessfulPayment(payment.status)) {
           const month = new Date(payment.created_at).toLocaleDateString("en-US", { month: "short" });
           acc[month] = (acc[month] || 0) + Number(payment.amount);
         }

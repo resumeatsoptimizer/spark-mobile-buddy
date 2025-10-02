@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useWidgetCustomization } from "../hooks/useWidgetCustomization";
+import { isSuccessfulPayment } from "@/lib/payment-constants";
 
 interface DashboardStats {
   totalEvents: number;
@@ -54,11 +55,21 @@ export function OverviewTab() {
         .select("amount, status, created_at")
         .gte("created_at", startDate.toISOString());
 
+      // Debug: Log payment details
+      console.log('📊 OverviewTab Payment Data:', {
+        total: payments?.length || 0,
+        byStatus: payments?.reduce((acc: any, p) => {
+          acc[p.status] = (acc[p.status] || 0) + 1;
+          return acc;
+        }, {}),
+        details: payments
+      });
+
       const totalRevenue = payments
-        ?.filter(p => p.status === "successful" || p.status === "success")
+        ?.filter(p => isSuccessfulPayment(p.status))
         .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
 
-      const successfulPayments = payments?.filter(p => p.status === "successful" || p.status === "success").length || 0;
+      const successfulPayments = payments?.filter(p => isSuccessfulPayment(p.status)).length || 0;
       const successRate = payments && payments.length > 0 ? (successfulPayments / payments.length) * 100 : 0;
 
       setStats({
@@ -70,7 +81,7 @@ export function OverviewTab() {
 
       // Monthly revenue data
       const revenueByMonth = payments?.reduce((acc: any, payment) => {
-        if (payment.status === "successful" || payment.status === "success") {
+        if (isSuccessfulPayment(payment.status)) {
           const month = new Date(payment.created_at).toLocaleDateString("en-US", { month: "short" });
           acc[month] = (acc[month] || 0) + Number(payment.amount);
         }

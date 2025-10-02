@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Search, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { isSuccessfulPayment, PAYMENT_STATUS } from "@/lib/payment-constants";
 
 export function PaymentsTab() {
   const [payments, setPayments] = useState<any[]>([]);
@@ -32,6 +33,17 @@ export function PaymentsTab() {
       `)
       .order("created_at", { ascending: false })
       .limit(100);
+    
+    // Debug: Log payment status distribution
+    console.log('💳 PaymentsTab Data:', {
+      total: data?.length || 0,
+      statusBreakdown: data?.reduce((acc: any, p) => {
+        acc[p.status] = (acc[p.status] || 0) + 1;
+        return acc;
+      }, {}),
+      amounts: data?.map(p => ({ status: p.status, amount: p.amount }))
+    });
+    
     setPayments(data || []);
     setLoading(false);
   };
@@ -47,19 +59,30 @@ export function PaymentsTab() {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, any> = {
-      successful: { variant: "default", label: "Success" },
-      success: { variant: "default", label: "Success" },
-      pending: { variant: "secondary", label: "Pending" },
-      failed: { variant: "destructive", label: "Failed" },
-      refunded: { variant: "outline", label: "Refunded" },
+      [PAYMENT_STATUS.SUCCESSFUL]: { variant: "default", label: "Success" },
+      [PAYMENT_STATUS.SUCCESS]: { variant: "default", label: "Success" },
+      [PAYMENT_STATUS.COMPLETED]: { variant: "default", label: "Completed" },
+      [PAYMENT_STATUS.PENDING]: { variant: "secondary", label: "Pending" },
+      [PAYMENT_STATUS.FAILED]: { variant: "destructive", label: "Failed" },
+      [PAYMENT_STATUS.REFUNDED]: { variant: "outline", label: "Refunded" },
     };
     const { variant, label } = config[status] || { variant: "outline", label: status };
     return <Badge variant={variant}>{label}</Badge>;
   };
 
   const totalRevenue = filteredPayments
-    .filter(p => p.status === "successful" || p.status === "success")
+    .filter(p => isSuccessfulPayment(p.status))
     .reduce((sum, p) => sum + Number(p.amount), 0);
+
+  // Debug: Log revenue calculation
+  console.log('💰 Revenue Summary:', {
+    totalPayments: filteredPayments.length,
+    successfulPayments: filteredPayments.filter(p => isSuccessfulPayment(p.status)).length,
+    totalRevenue,
+    breakdown: filteredPayments
+      .filter(p => isSuccessfulPayment(p.status))
+      .map(p => ({ amount: p.amount, status: p.status }))
+  });
 
   return (
     <div className="space-y-6">
@@ -98,9 +121,9 @@ export function PaymentsTab() {
                 All
               </Button>
               <Button
-                variant={filterStatus === "successful" ? "default" : "outline"}
+                variant={filterStatus === "success" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setFilterStatus("successful")}
+                onClick={() => setFilterStatus("success")}
               >
                 Success
               </Button>
