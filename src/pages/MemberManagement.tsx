@@ -286,7 +286,16 @@ const MemberManagement = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to update roles");
+        // Provide more specific error messages
+        let errorMessage = result.error || "ไม่สามารถอัปเดตสิทธิ์ได้";
+        
+        if (errorMessage.includes("duplicate")) {
+          errorMessage = "มีสิทธิ์นี้อยู่แล้ว";
+        } else if (errorMessage.includes("constraint")) {
+          errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
+        }
+        
+        throw new Error(errorMessage);
       }
 
       toast({
@@ -326,7 +335,16 @@ const MemberManagement = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to delete user");
+        // Provide more specific error messages
+        let errorMessage = result.error || "ไม่สามารถลบผู้ใช้ได้";
+        
+        if (errorMessage.includes("foreign key")) {
+          errorMessage = "ไม่สามารถลบได้ เนื่องจากมีข้อมูลที่เกี่ยวข้อง";
+        } else if (errorMessage.includes("permission")) {
+          errorMessage = "คุณไม่มีสิทธิ์ลบผู้ใช้นี้";
+        }
+        
+        throw new Error(errorMessage);
       }
 
       toast({

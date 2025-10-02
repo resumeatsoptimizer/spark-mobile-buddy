@@ -60,7 +60,16 @@ export function AddUserDialog({ onUserAdded }: AddUserDialogProps) {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to create user");
+        // Provide more specific error messages
+        let errorMessage = result.error || "ไม่สามารถสร้างผู้ใช้ได้";
+        
+        if (errorMessage.includes("duplicate")) {
+          errorMessage = "มีผู้ใช้นี้ในระบบอยู่แล้ว";
+        } else if (errorMessage.includes("constraint")) {
+          errorMessage = "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
+        }
+        
+        throw new Error(errorMessage);
       }
 
       toast({
