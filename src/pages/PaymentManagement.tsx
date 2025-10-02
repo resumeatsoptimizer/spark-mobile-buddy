@@ -350,8 +350,14 @@ const PaymentManagement = () => {
                       <TableCell>{payment.registration?.event?.title}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{payment.registration?.profiles?.name || '-'}</p>
-                          <p className="text-xs text-muted-foreground">{payment.registration?.profiles?.email || '-'}</p>
+                          <p className="font-medium">
+                            {payment.registration?.profiles?.name || 
+                             payment.registration?.profiles?.email || 
+                             'ไม่ระบุ'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {payment.registration?.profiles?.email || '-'}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">

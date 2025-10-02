@@ -1094,8 +1094,16 @@ const AdminRegistrations = () => {
                       <TableCell>{reg.events?.title}</TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{reg.profiles?.name || '-'}</p>
-                          <p className="text-xs text-muted-foreground">{reg.profiles?.email || '-'}</p>
+                          <p className="font-medium">
+                            {reg.profiles?.name || 
+                             reg.profiles?.email || 
+                             (reg.form_data as any)?.name || 
+                             (reg.form_data as any)?.email || 
+                             'ไม่ระบุ'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {reg.profiles?.email || (reg.form_data as any)?.email || '-'}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>

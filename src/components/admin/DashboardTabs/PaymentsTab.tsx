@@ -257,8 +257,14 @@ export function PaymentsTab() {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium text-sm">{payment.registration?.profiles?.name || '-'}</p>
-                        <p className="text-xs text-muted-foreground">{payment.registration?.profiles?.email || '-'}</p>
+                        <p className="font-medium text-sm">
+                          {payment.registrations?.profiles?.name || 
+                           payment.registrations?.profiles?.email || 
+                           'ไม่ระบุ'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {payment.registrations?.profiles?.email || '-'}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{payment.registration?.event?.title}</TableCell>

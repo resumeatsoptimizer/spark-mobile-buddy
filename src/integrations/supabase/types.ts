@@ -2165,6 +2165,10 @@ export type Database = {
         Args: { p_payment_id: string }
         Returns: boolean
       }
+      ensure_user_profile: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       get_member_details: {
         Args: { member_id: string }
         Returns: Json
