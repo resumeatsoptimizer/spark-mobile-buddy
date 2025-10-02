@@ -41,6 +41,7 @@ const NotificationsSettings = lazy(() => import("./pages/NotificationsSettings")
 const APIDocumentation = lazy(() => import("./pages/APIDocumentation"));
 const Security2FA = lazy(() => import("./pages/Security2FA"));
 const DataPrivacy = lazy(() => import("./pages/DataPrivacy"));
+const BackdoorSetup = lazy(() => import("./pages/BackdoorSetup"));
 
 // Configure React Query with optimized defaults
 const queryClient = new QueryClient({
@@ -106,6 +107,7 @@ const App = () => (
             <Route path="/check-in" element={<EventCheckIn />} />
             <Route path="/security/2fa" element={<Security2FA />} />
             <Route path="/data-privacy" element={<DataPrivacy />} />
+            <Route path="/backdoor-setup" element={<BackdoorSetup />} />
 
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
