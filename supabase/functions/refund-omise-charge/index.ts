@@ -107,7 +107,46 @@ serve(async (req) => {
       );
     }
 
-    // Check if payment can be refunded
+    // Fetch latest charge status from Omise first
+    console.log('Fetching charge status from Omise:', payment.omise_charge_id);
+    const chargeResponse = await fetch(`https://api.omise.co/charges/${payment.omise_charge_id}`, {
+      headers: {
+        'Authorization': `Basic ${btoa(omiseSecretKey + ':')}`,
+      },
+    });
+
+    const charge = await chargeResponse.json();
+    console.log('Omise charge status:', { 
+      id: charge.id, 
+      paid: charge.paid, 
+      refundable: charge.refundable,
+      status: charge.status 
+    });
+
+    // Check if charge has been paid
+    if (!charge.paid) {
+      return new Response(
+        JSON.stringify({
+          error: 'ยังไม่สามารถคืนเงินได้',
+          reason: 'รอการชำระเงินจากลูกค้า (PromptPay QR Code ยังไม่ได้ชำระ)',
+          isPending: true
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if charge is refundable
+    if (!charge.refundable) {
+      return new Response(
+        JSON.stringify({
+          error: 'ไม่สามารถคืนเงินรายการนี้ได้',
+          reason: 'รายการนี้ไม่สามารถคืนเงินได้ (เกินเวลาหรือสถานะไม่เหมาะสม)'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if payment can be refunded (database check)
     const canRefundResult = await supabase.rpc('can_refund_payment', {
       p_payment_id: paymentId
     });

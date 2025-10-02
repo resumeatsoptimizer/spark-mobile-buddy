@@ -72,13 +72,25 @@ async function handleChargeComplete(data: any, supabase: any) {
 
   if (!registrationId) return;
 
+  console.log('Charge complete webhook:', { 
+    chargeId, 
+    paid: data.paid, 
+    refundable: data.refundable,
+    status: data.status 
+  });
+
   const { error: paymentError } = await supabase
     .from('payments')
     .update({
-      status: 'success',
+      status: data.paid ? 'success' : 'pending',
       card_last4: data.card?.last_digits,
       receipt_url: data.receipt_url,
-      webhook_data: data,
+      webhook_data: {
+        ...data,
+        paid: data.paid,
+        refundable: data.refundable,
+        updated_at: new Date().toISOString()
+      },
     })
     .eq('omise_charge_id', chargeId);
 

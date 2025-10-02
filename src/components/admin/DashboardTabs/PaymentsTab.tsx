@@ -88,8 +88,34 @@ export function PaymentsTab() {
     .reduce((sum, p) => sum + (Number(p.amount) - Number(p.refund_amount || 0)), 0);
 
   const canRefund = (payment: any) => {
+    // Check if payment has webhook data indicating it's paid and refundable
+    const webhookData = payment.webhook_data;
+    const isPaid = webhookData?.paid === true;
+    const isRefundable = webhookData?.refundable === true;
+    
     return isSuccessfulPayment(payment.status) && 
-           Number(payment.refund_amount || 0) < Number(payment.amount);
+           Number(payment.refund_amount || 0) < Number(payment.amount) &&
+           isPaid && 
+           isRefundable;
+  };
+
+  const getPaymentStatusIndicator = (payment: any) => {
+    const webhookData = payment.webhook_data;
+    const isPaid = webhookData?.paid === true;
+    const isRefundable = webhookData?.refundable === true;
+    
+    if (!isSuccessfulPayment(payment.status)) {
+      return null;
+    }
+
+    if (isPaid && isRefundable) {
+      return <span className="text-xs text-green-600">🟢 ชำระเงินแล้ว (สามารถคืนได้)</span>;
+    } else if (!isPaid) {
+      return <span className="text-xs text-yellow-600">🟡 รอการชำระเงิน (ยังคืนไม่ได้)</span>;
+    } else if (!isRefundable) {
+      return <span className="text-xs text-red-600">🔴 ไม่สามารถคืนได้</span>;
+    }
+    return null;
   };
 
   const handleRefundClick = (payment: any) => {
@@ -275,7 +301,12 @@ export function PaymentsTab() {
                     </TableCell>
                     <TableCell className="text-sm">{payment.registration?.event?.title}</TableCell>
                     <TableCell className="font-medium mono">฿{Number(payment.amount).toLocaleString()}</TableCell>
-                    <TableCell>{getStatusBadge(payment.status)}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {getStatusBadge(payment.status)}
+                        {getPaymentStatusIndicator(payment)}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {payment.refund_amount && Number(payment.refund_amount) > 0 ? (
                         <span className="text-sm text-muted-foreground">
