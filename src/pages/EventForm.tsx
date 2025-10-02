@@ -17,6 +17,8 @@ import { VisibilitySettings } from "@/components/event-builder/VisibilitySetting
 import AIEventCreator from "@/components/AIEventCreator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from "@/components/Navbar";
+import { CategoriesSelector } from "@/components/event-form/CategoriesSelector";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 const EventForm = () => {
   const { id } = useParams();
@@ -50,10 +52,11 @@ const EventForm = () => {
   const [invitationCode, setInvitationCode] = useState("");
   const [showAICreator, setShowAICreator] = useState(!id); // Show AI creator for new events
   const [sourceEventTitle, setSourceEventTitle] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<Array<{ id: string; name: string; color?: string }>>([]);
 
   const isEditMode = !!id && !isDuplicateMode;
 
-  const handleAIEventGenerated = (eventData: any) => {
+  const handleAIEventGenerated = async (eventData: any) => {
     setTitle(eventData.title);
     setDescription(eventData.description);
     setCoverImageUrl(eventData.cover_image_url || '');
@@ -103,6 +106,44 @@ const EventForm = () => {
     // Set visibility
     if (eventData.visibility) {
       setVisibility(eventData.visibility);
+    }
+    
+    // Handle categories from AI
+    if (eventData.suggestedCategories && eventData.suggestedCategories.length > 0) {
+      try {
+        // Fetch existing categories
+        const { data: existingCategories } = await supabase
+          .from("event_categories")
+          .select("id, name, color");
+        
+        const categoriesToAdd = [];
+        
+        for (const catName of eventData.suggestedCategories) {
+          // Check if category exists
+          const existing = existingCategories?.find(
+            (cat) => cat.name.toLowerCase() === catName.toLowerCase()
+          );
+          
+          if (existing) {
+            categoriesToAdd.push(existing);
+          } else {
+            // Create new category
+            const { data: newCat, error } = await supabase
+              .from("event_categories")
+              .insert({ name: catName })
+              .select()
+              .single();
+            
+            if (newCat && !error) {
+              categoriesToAdd.push(newCat);
+            }
+          }
+        }
+        
+        setSelectedCategories(categoriesToAdd);
+      } catch (error) {
+        console.error("Error handling categories:", error);
+      }
     }
     
     // AI can suggest enabled fields if needed
@@ -356,6 +397,31 @@ const EventForm = () => {
       }
     }
 
+      // Handle event-category mappings
+      if (!error && eventId && selectedCategories.length > 0) {
+        // Delete existing mappings if editing
+        if (isEditMode) {
+          await supabase
+            .from("event_category_mapping")
+            .delete()
+            .eq("event_id", eventId);
+        }
+
+        // Insert new mappings
+        const mappings = selectedCategories.map((cat) => ({
+          event_id: eventId,
+          category_id: cat.id,
+        }));
+
+        const { error: mappingError } = await supabase
+          .from("event_category_mapping")
+          .insert(mappings);
+
+        if (mappingError) {
+          console.error("Error saving category mappings:", mappingError);
+        }
+      }
+
       if (error) {
         console.error("❌ Error saving event:", error);
         toast({
@@ -445,6 +511,29 @@ const EventForm = () => {
               <CardDescription>ข้อมูลหลักของงานอีเว้นท์</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Cover Image */}
+              <div className="space-y-2">
+                <Label htmlFor="coverImage">รูปภาพหน้าปก</Label>
+                <Input
+                  id="coverImage"
+                  type="url"
+                  value={coverImageUrl}
+                  onChange={(e) => setCoverImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                />
+                {coverImageUrl && (
+                  <div className="mt-3 rounded-lg overflow-hidden border">
+                    <AspectRatio ratio={16 / 9}>
+                      <img
+                        src={coverImageUrl}
+                        alt="Cover preview"
+                        className="object-cover w-full h-full"
+                      />
+                    </AspectRatio>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="title">ชื่องานอีเว้นท์ *</Label>
                 <Input
@@ -455,6 +544,13 @@ const EventForm = () => {
                   required
                 />
               </div>
+
+              {/* Categories */}
+              <CategoriesSelector
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
+              />
+
               <div className="space-y-2">
                 <Label htmlFor="description">รายละเอียด</Label>
                 <Textarea
@@ -465,78 +561,63 @@ const EventForm = () => {
                   rows={4}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="coverImageUrl">URL ภาพปกงาน</Label>
-                <Input
-                  id="coverImageUrl"
-                  type="url"
-                  value={coverImageUrl}
-                  onChange={(e) => setCoverImageUrl(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                />
-                {coverImageUrl && (
-                  <div className="mt-2 relative aspect-video w-full max-w-md rounded-lg overflow-hidden border">
-                    <img
-                      src={coverImageUrl}
-                      alt="ตัวอย่างภาพปก"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = "";
-                        e.currentTarget.alt = "ไม่สามารถโหลดรูปภาพได้";
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="location">สถานที่จัดงาน</Label>
-                <Input
-                  id="location"
-                  value={eventLocation}
-                  onChange={(e) => setEventLocation(e.target.value)}
-                  placeholder="เช่น โรงแรม ABC กรุงเทพฯ หรือ Central World"
-                />
-                <p className="text-xs text-muted-foreground">
-                  💡 ระบุชื่อสถานที่หรือที่อยู่เพื่อแสดงแผนที่แบบ Embed ในหน้ารายละเอียด
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="googleMapUrl">ลิงค์ Google Map (ทางเลือก)</Label>
-                <Input
-                  id="googleMapUrl"
-                  type="url"
-                  value={googleMapUrl}
-                  onChange={(e) => setGoogleMapUrl(e.target.value)}
-                  placeholder="https://maps.google.com/... หรือ https://goo.gl/maps/..."
-                />
-                <p className="text-xs text-muted-foreground">
-                  🔗 ลิงค์สำหรับปุ่ม "เปิดใน Google Maps" (ใช้ลิงค์ใดก็ได้จาก Google Maps)
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code (แนะนำ - แม่นยำที่สุด)</Label>
-                <Textarea
-                  id="googleMapEmbedCode"
-                  value={googleMapEmbedCode}
-                  onChange={(e) => setGoogleMapEmbedCode(e.target.value)}
-                  placeholder='<iframe src="https://www.google.com/maps/embed?pb=..." width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
-                  rows={4}
-                  className="font-mono text-xs"
-                />
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>📍 <strong>วิธีใช้:</strong></p>
-                  <ol className="list-decimal list-inside space-y-0.5 ml-2">
-                    <li>เปิด Google Maps แล้วค้นหาสถานที่</li>
-                    <li>กดปุ่ม "แชร์" (Share)</li>
-                    <li>เลือกแท็บ "ฝังแผนที่" (Embed a map)</li>
-                    <li>คัดลอกโค้ด iframe ทั้งหมดมาวางที่นี่</li>
-                  </ol>
-                  <p className="mt-2 text-primary">✨ ถ้ามีโค้ดนี้ จะใช้แผนที่จาก Embed Code ก่อนเสมอ</p>
+
+              {/* Location & Maps Section */}
+              <div className="space-y-3 p-4 border rounded-lg bg-card/50">
+                <h3 className="font-semibold text-sm">สถานที่และแผนที่</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="location">สถานที่จัดงาน</Label>
+                  <Input
+                    id="location"
+                    value={eventLocation}
+                    onChange={(e) => setEventLocation(e.target.value)}
+                    placeholder="เช่น โรงแรม ABC กรุงเทพฯ หรือ Central World"
+                  />
                 </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="googleMapEmbedCode">
+                    Google Maps Embed Code (แนะนำ - แม่นยำที่สุด)
+                  </Label>
+                  <Textarea
+                    id="googleMapEmbedCode"
+                    value={googleMapEmbedCode}
+                    onChange={(e) => setGoogleMapEmbedCode(e.target.value)}
+                    placeholder='<iframe src="https://www.google.com/maps/embed?pb=..." width="600" height="450"></iframe>'
+                    rows={3}
+                    className="font-mono text-xs"
+                  />
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p>📍 <strong>วิธีใช้:</strong></p>
+                    <ol className="list-decimal list-inside space-y-0.5 ml-2">
+                      <li>เปิด Google Maps แล้วค้นหาสถานที่</li>
+                      <li>กดปุ่ม "แชร์" (Share)</li>
+                      <li>เลือกแท็บ "ฝังแผนที่" (Embed a map)</li>
+                      <li>คัดลอกโค้ด iframe ทั้งหมดมาวางที่นี่</li>
+                    </ol>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="googleMapUrl">Google Maps URL (สำรอง)</Label>
+                  <Input
+                    id="googleMapUrl"
+                    type="url"
+                    value={googleMapUrl}
+                    onChange={(e) => setGoogleMapUrl(e.target.value)}
+                    placeholder="https://maps.google.com/... หรือ https://goo.gl/maps/..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    🔗 ลิงค์สำหรับปุ่ม "เปิดใน Google Maps"
+                  </p>
+                </div>
+
+                {/* Map Preview */}
                 {googleMapEmbedCode && (
-                  <div className="mt-2 p-3 bg-muted/50 rounded-lg border">
-                    <p className="text-xs font-medium mb-1">ตัวอย่างแผนที่ที่จะแสดง:</p>
-                    <div className="w-full h-[200px] rounded overflow-hidden" dangerouslySetInnerHTML={{ __html: googleMapEmbedCode }} />
+                  <div className="mt-3 rounded-lg overflow-hidden border">
+                    <p className="text-xs font-medium mb-2 px-2 pt-2">ตัวอย่างแผนที่:</p>
+                    <div className="w-full h-[200px]" dangerouslySetInnerHTML={{ __html: googleMapEmbedCode }} />
                   </div>
                 )}
               </div>
@@ -554,6 +635,33 @@ const EventForm = () => {
             onRegistrationOpenDateChange={setRegistrationOpenDate}
             onRegistrationCloseDateChange={setRegistrationCloseDate}
           />
+
+          {/* Duration Display */}
+          {startDate && endDate && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span className="text-sm font-medium">ระยะเวลาของงาน:</span>
+                  <span className="text-sm font-semibold text-foreground">
+                    {(() => {
+                      const start = new Date(startDate);
+                      const end = new Date(endDate);
+                      const diffMs = end.getTime() - start.getTime();
+                      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                      const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                      
+                      if (diffHours > 24) {
+                        const days = Math.floor(diffHours / 24);
+                        const hours = diffHours % 24;
+                        return `${days} วัน ${hours} ชั่วโมง`;
+                      }
+                      return `${diffHours} ชั่วโมง ${diffMinutes} นาที`;
+                    })()}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Capacity */}
           <CapacitySettings

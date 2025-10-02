@@ -177,118 +177,148 @@ Google Maps: [URL หรือ Embed Code (ถ้ามี)]
 
         {generatedData && (
           <div className="space-y-4 pt-4 border-t">
-            <div>
-              <h4 className="font-semibold mb-2">Generated Event</h4>
-              <div className="space-y-2">
+              <div className="space-y-6 animate-in fade-in duration-500">
+                {/* Cover Image Preview */}
                 {generatedData.cover_image_url && (
-                  <div className="relative aspect-video w-full rounded-lg overflow-hidden border mb-3">
+                  <div className="rounded-lg overflow-hidden border">
                     <img
                       src={generatedData.cover_image_url}
-                      alt={generatedData.title}
-                      className="w-full h-full object-cover"
+                      alt="Cover"
+                      className="w-full h-48 object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}
                     />
                   </div>
                 )}
-                <div>
-                  <span className="text-sm font-medium">Title:</span>
-                  <p className="text-sm text-muted-foreground">{generatedData.title}</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium">Description:</span>
-                  <p className="text-sm text-muted-foreground line-clamp-3">
+
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-primary">
+                    {generatedData.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-4">
                     {generatedData.description}
                   </p>
                 </div>
-                {generatedData.eventLocation && (
+
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                   <div>
-                    <span className="text-sm font-medium">Location:</span>
-                    <p className="text-sm text-muted-foreground">{generatedData.eventLocation}</p>
-                  </div>
-                )}
-                {generatedData.startDate && (
-                  <div className="flex gap-4">
-                    <div>
-                      <span className="text-sm font-medium">Start:</span>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(generatedData.startDate).toLocaleDateString('th-TH', { 
-                          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                        })}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium">End:</span>
-                      <p className="text-sm text-muted-foreground">
-                        {generatedData.endDate ? new Date(generatedData.endDate).toLocaleDateString('th-TH', { 
-                          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                        }) : '-'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {generatedData.registrationOpenDate && generatedData.registrationCloseDate && (
-                  <div className="flex gap-4">
-                    <div>
-                      <span className="text-sm font-medium">เปิดรับสมัคร:</span>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(generatedData.registrationOpenDate).toLocaleDateString('th-TH', { 
-                          year: 'numeric', month: 'short', day: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium">ปิดรับสมัคร:</span>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(generatedData.registrationCloseDate).toLocaleDateString('th-TH', { 
-                          year: 'numeric', month: 'short', day: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex gap-4">
-                  <div>
-                    <span className="text-sm font-medium">Duration:</span>
-                    <p className="text-sm text-muted-foreground">
-                      {generatedData.suggestedDuration.hours}h {generatedData.suggestedDuration.minutes}m
+                    <p className="text-xs text-muted-foreground mb-1">วันเวลาเริ่ม</p>
+                    <p className="text-sm font-medium">
+                      {new Date(generatedData.startDate).toLocaleDateString("th-TH", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}{" "}
+                      {new Date(generatedData.startDate).toLocaleTimeString("th-TH", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium">Capacity:</span>
-                    <p className="text-sm text-muted-foreground">
-                      {generatedData.suggestedCapacity} people
+                    <p className="text-xs text-muted-foreground mb-1">ระยะเวลา</p>
+                    <p className="text-sm font-medium">
+                      {(() => {
+                        if (!generatedData.endDate) return '-';
+                        const start = new Date(generatedData.startDate);
+                        const end = new Date(generatedData.endDate);
+                        const diffMs = end.getTime() - start.getTime();
+                        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                        
+                        if (diffHours > 24) {
+                          const days = Math.floor(diffHours / 24);
+                          const hours = diffHours % 24;
+                          return `${days} วัน ${hours} ชม.`;
+                        }
+                        return `${diffHours} ชม. ${diffMinutes} นาที`;
+                      })()}
                     </p>
                   </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">จำนวนที่นั่ง</p>
+                    <p className="text-sm font-medium">{generatedData.suggestedCapacity} คน</p>
+                  </div>
+                  {generatedData.eventLocation && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">สถานที่</p>
+                      <p className="text-sm font-medium">{generatedData.eventLocation}</p>
+                    </div>
+                  )}
                 </div>
+
+                {/* Registration Dates */}
+                {(generatedData.registrationOpenDate || generatedData.registrationCloseDate) && (
+                  <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                    <p className="text-sm font-medium">📅 ช่วงเวลาลงทะเบียน</p>
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      {generatedData.registrationOpenDate && (
+                        <p>
+                          เปิด: {new Date(generatedData.registrationOpenDate).toLocaleDateString("th-TH", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                      )}
+                      {generatedData.registrationCloseDate && (
+                        <p>
+                          ปิด: {new Date(generatedData.registrationCloseDate).toLocaleDateString("th-TH", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Categories */}
+                {generatedData.suggestedCategories && generatedData.suggestedCategories.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">🏷️ หมวดหมู่</p>
+                    <div className="flex flex-wrap gap-2">
+                      {generatedData.suggestedCategories.map((category: string, index: number) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="px-3 py-1"
+                        >
+                          {category}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {generatedData.ticketTypes && generatedData.ticketTypes.length > 0 && (
-                  <div>
-                    <span className="text-sm font-medium">Ticket Types:</span>
-                    <div className="space-y-1 mt-1">
-                      {generatedData.ticketTypes.map((ticket, i) => (
-                        <div key={i} className="text-sm text-muted-foreground flex justify-between">
-                          <span>{ticket.name}</span>
-                          <span className="font-medium">
-                            {ticket.price === 0 ? 'ฟรี' : `${ticket.price.toLocaleString('th-TH')} บาท`}
-                          </span>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">🎫 ประเภทบัตร</p>
+                    <div className="space-y-2">
+                      {generatedData.ticketTypes.map((ticket: any, index: number) => (
+                        <div
+                          key={index}
+                          className="p-3 bg-background rounded-lg border flex justify-between items-center"
+                        >
+                          <div>
+                            <p className="font-medium">{ticket.name}</p>
+                            {ticket.description && (
+                              <p className="text-xs text-muted-foreground">
+                                {ticket.description}
+                              </p>
+                            )}
+                          </div>
+                          <p className="font-semibold text-primary">
+                            {ticket.price === 0 ? 'ฟรี' : `${ticket.price} บาท`}
+                          </p>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                {generatedData.suggestedCategories && (
-                  <div>
-                    <span className="text-sm font-medium">Categories:</span>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {generatedData.suggestedCategories.map((cat, i) => (
-                        <Badge key={i} variant="secondary">{cat}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
 
             <div className="flex gap-2">
               <Button onClick={handleUseEvent} className="flex-1">
