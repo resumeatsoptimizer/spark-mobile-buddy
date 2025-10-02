@@ -27,14 +27,15 @@ interface Payment {
   registration: {
     id: string;
     user_id: string;
+    form_data?: any;
     event: {
       title: string;
     };
     profiles: {
       email: string;
       name: string;
-    };
-  };
+    } | null;
+  } | null;
 }
 
 const PaymentManagement = () => {
@@ -84,6 +85,7 @@ const PaymentManagement = () => {
         registration:registrations(
           id,
           user_id,
+          form_data,
           profiles!registrations_user_id_fkey(email, name),
           event:events(title)
         )
@@ -353,10 +355,14 @@ const PaymentManagement = () => {
                           <p className="font-medium">
                             {payment.registration?.profiles?.name || 
                              payment.registration?.profiles?.email || 
+                             (payment.registration?.form_data as any)?.name ||
+                             (payment.registration?.form_data as any)?.email ||
                              'ไม่ระบุ'}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {payment.registration?.profiles?.email || '-'}
+                            {payment.registration?.profiles?.email || 
+                             (payment.registration?.form_data as any)?.email || 
+                             '-'}
                           </p>
                         </div>
                       </TableCell>
