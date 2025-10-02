@@ -47,6 +47,7 @@ serve(async (req) => {
 - "เปิด-ปิดรับสมัคร:" → แปลงเป็น registrationOpenDate และ registrationCloseDate
 - "ราคา:" → ใช้สร้าง ticketTypes (ถ้าฟรีให้ price = 0, ถ้าระบุราคาให้ใช้ราคานั้นตรงๆ)
 - "ภาพปก:" → ใช้เป็น cover_image_url (ถ้าผู้ใช้ระบุ URL ภาพ)
+- "Google Maps:" → ใช้เป็น googleMapUrl (ถ้าเป็น URL) หรือ googleMapEmbedCode (ถ้าเป็น embed code)
 - "รายละเอียดเพิ่มเติม:" → ใช้ขยายความเป็น description
 
 ข้อมูลที่ต้องสร้าง:
@@ -109,6 +110,10 @@ serve(async (req) => {
                 googleMapUrl: {
                   type: 'string',
                   description: 'Google Maps URL of the venue (use real popular Thai venues)'
+                },
+                googleMapEmbedCode: {
+                  type: 'string',
+                  description: 'Google Maps embed iframe code if user provided embed code instead of URL'
                 },
                 startDate: {
                   type: 'string',

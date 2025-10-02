@@ -57,18 +57,53 @@ const EventForm = () => {
     setTitle(eventData.title);
     setDescription(eventData.description);
     setCoverImageUrl(eventData.cover_image_url || '');
+    setEventLocation(eventData.eventLocation || '');
+    setGoogleMapUrl(eventData.googleMapUrl || '');
+    setGoogleMapEmbedCode(eventData.googleMapEmbedCode || '');
     
-    // Calculate dates based on suggested duration
-    const now = new Date();
-    const startDateTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 1 week from now
-    const endDateTime = new Date(
-      startDateTime.getTime() + 
-      (eventData.suggestedDuration.hours * 60 + eventData.suggestedDuration.minutes) * 60 * 1000
-    );
+    // Use AI-generated dates directly if available
+    if (eventData.startDate) {
+      setStartDate(new Date(eventData.startDate).toISOString().slice(0, 16));
+    }
+    if (eventData.endDate) {
+      setEndDate(new Date(eventData.endDate).toISOString().slice(0, 16));
+    }
     
-    setStartDate(startDateTime.toISOString().slice(0, 16));
-    setEndDate(endDateTime.toISOString().slice(0, 16));
-    setSeatsTotal(eventData.suggestedCapacity);
+    // Set registration dates
+    if (eventData.registrationOpenDate) {
+      setRegistrationOpenDate(new Date(eventData.registrationOpenDate).toISOString().slice(0, 16));
+    }
+    if (eventData.registrationCloseDate) {
+      setRegistrationCloseDate(new Date(eventData.registrationCloseDate).toISOString().slice(0, 16));
+    }
+    
+    // Set capacity
+    setSeatsTotal(eventData.suggestedCapacity || 0);
+    
+    // Set ticket types if provided
+    if (eventData.ticketTypes && eventData.ticketTypes.length > 0) {
+      const mappedTickets = eventData.ticketTypes.map((t: any) => ({
+        id: '',
+        name: t.name,
+        seats_allocated: t.seats || 0,
+        seats_remaining: t.seats || 0,
+        price: t.price || 0,
+      }));
+      setTicketTypes(mappedTickets);
+    }
+    
+    // Set waitlist settings
+    if (eventData.waitlistEnabled !== undefined) {
+      setWaitlistEnabled(eventData.waitlistEnabled);
+    }
+    if (eventData.maxWaitlistSize) {
+      setMaxWaitlistSize(eventData.maxWaitlistSize);
+    }
+    
+    // Set visibility
+    if (eventData.visibility) {
+      setVisibility(eventData.visibility);
+    }
     
     // AI can suggest enabled fields if needed
     if (eventData.enabledFields) {

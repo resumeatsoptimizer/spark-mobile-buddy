@@ -15,6 +15,7 @@ interface EventData {
   cover_image_url?: string;
   eventLocation?: string;
   googleMapUrl?: string;
+  googleMapEmbedCode?: string;
   startDate?: string;
   endDate?: string;
   suggestedDuration: { hours: number; minutes: number };
@@ -138,6 +139,7 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
 เปิด-ปิดรับสมัคร: [วันที่เปิดและปิดรับสมัคร]
 ราคา: [ฟรี หรือ ระบุราคา เช่น 500 บาท]
 ภาพปก: [URL ภาพปก (ถ้ามี)]
+Google Maps: [URL หรือ Embed Code (ถ้ามี)]
 รายละเอียดเพิ่มเติม: [อธิบายลักษณะงาน กิจกรรม สิ่งที่ผู้เข้าร่วมจะได้รับ ฯลฯ]
 
 ตัวอย่าง:
@@ -226,6 +228,26 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
                     </div>
                   </div>
                 )}
+                {generatedData.registrationOpenDate && generatedData.registrationCloseDate && (
+                  <div className="flex gap-4">
+                    <div>
+                      <span className="text-sm font-medium">เปิดรับสมัคร:</span>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(generatedData.registrationOpenDate).toLocaleDateString('th-TH', { 
+                          year: 'numeric', month: 'short', day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium">ปิดรับสมัคร:</span>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(generatedData.registrationCloseDate).toLocaleDateString('th-TH', { 
+                          year: 'numeric', month: 'short', day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-4">
                   <div>
                     <span className="text-sm font-medium">Duration:</span>
@@ -263,16 +285,6 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
                         <Badge key={i} variant="secondary">{cat}</Badge>
                       ))}
                     </div>
-                  </div>
-                )}
-                {generatedData.marketingTips && (
-                  <div>
-                    <span className="text-sm font-medium">Marketing Tips:</span>
-                    <ul className="text-sm text-muted-foreground list-disc list-inside mt-1">
-                      {generatedData.marketingTips.slice(0, 3).map((tip, i) => (
-                        <li key={i}>{tip}</li>
-                      ))}
-                    </ul>
                   </div>
                 )}
               </div>
