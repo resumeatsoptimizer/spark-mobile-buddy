@@ -57,7 +57,7 @@ const Index = () => {
             <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
               ค้นพบกิจกรรม Wellness
               <br />
-              ที่เหมาะกับตนเอง
+              ที่เหมาะกับคุณ
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               เข้าร่วมกิจกรรมด้านสุขภาพและความเป็นอยู่ที่ดี
