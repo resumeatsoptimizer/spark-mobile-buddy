@@ -114,13 +114,13 @@ const Navbar = () => {
                           <FolderTree className="mr-2 h-4 w-4" />
                           จัดการงานอีเว้นท์
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/admin/payments")}>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          จัดการการชำระเงิน
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate("/admin/registrations")}>
                           <Users className="mr-2 h-4 w-4" />
                           จัดการการลงทะเบียน
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/admin/payments")}>
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          จัดการการชำระเงิน
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate("/admin/members")}>
                           <Users className="mr-2 h-4 w-4" />
@@ -250,17 +250,6 @@ const Navbar = () => {
                       จัดการงานอีเว้นท์
                     </Button>
                     <Button
-                      variant={isActive("/admin/payments") ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        navigate("/admin/payments");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      จัดการการชำระเงิน
-                    </Button>
-                    <Button
                       variant={isActive("/admin/registrations") ? "default" : "ghost"}
                       className="w-full justify-start"
                       onClick={() => {
@@ -270,6 +259,17 @@ const Navbar = () => {
                     >
                       <Users className="mr-2 h-4 w-4" />
                       จัดการการลงทะเบียน
+                    </Button>
+                    <Button
+                      variant={isActive("/admin/payments") ? "default" : "ghost"}
+                      className="w-full justify-start"
+                      onClick={() => {
+                        navigate("/admin/payments");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      จัดการการชำระเงิน
                     </Button>
                     <Button
                       variant={isActive("/admin/members") ? "default" : "ghost"}
