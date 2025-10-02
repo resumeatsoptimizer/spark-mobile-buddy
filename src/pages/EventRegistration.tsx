@@ -95,8 +95,19 @@ const EventRegistration = () => {
 
     setUserId(session.user.id);
     
-    // Pre-fill email from user session
-    setFormData(prev => ({ ...prev, email: session.user.email || "" }));
+    // ดึงข้อมูล profile เพื่อเติมชื่อและอีเมล
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name, email')
+      .eq('id', session.user.id)
+      .single();
+    
+    // Pre-fill name and email from profile
+    setFormData(prev => ({ 
+      ...prev, 
+      full_name: profile?.name || "",
+      email: profile?.email || session.user.email || ""
+    }));
     
     fetchEvent();
   };
