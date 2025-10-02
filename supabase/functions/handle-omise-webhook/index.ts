@@ -160,10 +160,10 @@ async function handleChargeEvent(supabase: any, event: WebhookEvent) {
     return;
   }
 
-  // Find payment by charge ID
+  // Find payment by charge ID (include payment_method)
   const { data: payment, error: findError } = await supabase
     .from('payments')
-    .select('id, status, registration_id')
+    .select('id, status, registration_id, payment_method')
     .eq('omise_charge_id', charge.id)
     .single();
 
@@ -172,12 +172,35 @@ async function handleChargeEvent(supabase: any, event: WebhookEvent) {
     return;
   }
 
-  // Determine new status
+  console.log('Processing webhook for payment:', {
+    paymentId: payment.id,
+    paymentMethod: payment.payment_method,
+    eventType: event.key,
+    chargePaid: charge.paid,
+    chargeStatus: charge.status
+  });
+
+  // Determine new status based on payment method and event type
   let newStatus = 'pending';
-  if (charge.paid) {
-    newStatus = 'success';
-  } else if (charge.failure_code) {
-    newStatus = 'failed';
+  
+  // CRITICAL: Different logic for PromptPay vs Card payments
+  if (payment.payment_method === 'promptpay') {
+    // For PromptPay, only update to success on charge.complete with paid=true
+    // charge.create is just initial state, not actual payment
+    if (event.key === 'charge.complete' && charge.paid) {
+      newStatus = 'success';
+    } else if (charge.failure_code) {
+      newStatus = 'failed';
+    } else {
+      newStatus = 'pending'; // Keep pending for charge.create
+    }
+  } else {
+    // For card payments, use standard logic
+    if (charge.paid) {
+      newStatus = 'success';
+    } else if (charge.failure_code) {
+      newStatus = 'failed';
+    }
   }
 
   // Update payment if status changed

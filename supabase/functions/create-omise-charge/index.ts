@@ -144,8 +144,27 @@ serve(async (req) => {
       const source = await sourceResponse.json();
       sourceId = source.id;
       
+      // Extract QR code URL
+      const qrCodeUrl = source.scannable_code?.image?.download_uri || null;
+      
+      // CRITICAL VALIDATION: QR code URL must exist for PromptPay
+      if (!qrCodeUrl) {
+        console.error('PromptPay QR code generation failed:', {
+          sourceId: source.id,
+          scannableCode: source.scannable_code,
+          status: source.flow
+        });
+        return new Response(
+          JSON.stringify({ 
+            error: 'QR code generation failed',
+            details: 'Unable to generate PromptPay QR code. This may be due to account configuration issues. Please contact support or try again later.'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       qrCodeData = {
-        qr_code_url: source.scannable_code?.image?.download_uri || null,
+        qr_code_url: qrCodeUrl,
         expires_at: source.expires_at,
         amount: source.amount / 100,
         currency: source.currency

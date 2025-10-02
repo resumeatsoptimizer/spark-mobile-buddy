@@ -221,13 +221,28 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
           description: "กรุณาสแกน QR Code เพื่อชำระเงิน",
         });
       } else {
-        throw new Error('ไม่สามารถสร้าง QR Code ได้');
+        // QR code generation failed
+        const errorMsg = data?.error || data?.details || 'ไม่สามารถสร้าง QR Code ได้';
+        throw new Error(errorMsg);
       }
     } catch (error: any) {
       console.error('PromptPay payment error:', error);
+      
+      // Enhanced error messages
+      let errorTitle = "เกิดข้อผิดพลาด";
+      let errorDescription = error.message || "ไม่สามารถสร้าง QR Code สำหรับการชำระเงินได้";
+      
+      if (error.message?.includes('QR code generation failed')) {
+        errorTitle = "ไม่สามารถสร้าง QR Code";
+        errorDescription = "ระบบไม่สามารถสร้าง PromptPay QR Code ได้ อาจเป็นเพราะการตั้งค่าบัญชีผู้รับเงิน กรุณาติดต่อผู้ดูแลระบบหรือลองใช้วิธีชำระเงินอื่น";
+      } else if (error.message?.includes('not configured')) {
+        errorTitle = "ระบบยังไม่พร้อม";
+        errorDescription = "ระบบชำระเงิน PromptPay ยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ";
+      }
+      
       toast({
-        title: "เกิดข้อผิดพลาด",
-        description: error.message || "ไม่สามารถสร้าง QR Code สำหรับการชำระเงินได้",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
     } finally {
