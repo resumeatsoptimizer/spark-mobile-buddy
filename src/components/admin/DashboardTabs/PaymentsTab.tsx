@@ -5,16 +5,27 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ExternalLink } from "lucide-react";
+import { Search, ExternalLink, Undo2 } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { isSuccessfulPayment, PAYMENT_STATUS } from "@/lib/payment-constants";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/hooks/use-toast";
 
 export function PaymentsTab() {
   const [payments, setPayments] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [refundDialog, setRefundDialog] = useState<{
+    open: boolean;
+    payment: any | null;
+  }>({ open: false, payment: null });
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
+  const [refunding, setRefunding] = useState(false);
 
   useEffect(() => {
     fetchPayments();
@@ -72,7 +83,72 @@ export function PaymentsTab() {
 
   const totalRevenue = filteredPayments
     .filter(p => isSuccessfulPayment(p.status))
-    .reduce((sum, p) => sum + Number(p.amount), 0);
+    .reduce((sum, p) => sum + (Number(p.amount) - Number(p.refund_amount || 0)), 0);
+
+  const canRefund = (payment: any) => {
+    return isSuccessfulPayment(payment.status) && 
+           Number(payment.refund_amount || 0) < Number(payment.amount);
+  };
+
+  const handleRefundClick = (payment: any) => {
+    const maxRefundable = Number(payment.amount) - Number(payment.refund_amount || 0);
+    setRefundDialog({ open: true, payment });
+    setRefundAmount(maxRefundable.toString());
+    setRefundReason("");
+  };
+
+  const handleRefund = async () => {
+    if (!refundDialog.payment) return;
+
+    const amount = parseFloat(refundAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "จำนวนเงินไม่ถูกต้อง",
+        description: "กรุณากรอกจำนวนเงินที่ต้องการคืน",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!refundReason.trim()) {
+      toast({
+        title: "กรุณากรอกเหตุผล",
+        description: "กรุณาระบุเหตุผลในการคืนเงิน",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setRefunding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('refund-omise-charge', {
+        body: {
+          paymentId: refundDialog.payment.id,
+          amount: amount,
+          reason: refundReason,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "คืนเงินสำเร็จ",
+        description: `คืนเงิน ${amount} บาท สำเร็จ`,
+      });
+
+      setRefundDialog({ open: false, payment: null });
+      fetchPayments();
+    } catch (error: any) {
+      console.error('Refund error:', error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: error.message || "ไม่สามารถคืนเงินได้ กรุณาลองอีกครั้ง",
+        variant: "destructive",
+      });
+    } finally {
+      setRefunding(false);
+    }
+  };
 
   // Debug: Log revenue calculation
   console.log('💰 Revenue Summary:', {
@@ -160,6 +236,7 @@ export function PaymentsTab() {
                 <TableHead>Event</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Refund</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -188,15 +265,36 @@ export function PaymentsTab() {
                     <TableCell className="font-medium mono">฿{Number(payment.amount).toLocaleString()}</TableCell>
                     <TableCell>{getStatusBadge(payment.status)}</TableCell>
                     <TableCell>
-                      {payment.receipt_url && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => window.open(payment.receipt_url, "_blank")}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
+                      {payment.refund_amount && Number(payment.refund_amount) > 0 ? (
+                        <span className="text-sm text-muted-foreground">
+                          ฿{Number(payment.refund_amount).toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {canRefund(payment) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRefundClick(payment)}
+                          >
+                            <Undo2 className="h-4 w-4 mr-1" />
+                            คืนเงิน
+                          </Button>
+                        )}
+                        {payment.receipt_url && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => window.open(payment.receipt_url, "_blank")}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -205,6 +303,92 @@ export function PaymentsTab() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={refundDialog.open} onOpenChange={(open) => setRefundDialog({ open, payment: null })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>คืนเงิน</DialogTitle>
+            <DialogDescription>
+              กรอกจำนวนเงินและเหตุผลในการคืนเงินสำหรับรายการนี้
+            </DialogDescription>
+          </DialogHeader>
+          
+          {refundDialog.payment && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">ลูกค้า:</span>
+                  <span className="font-medium">{refundDialog.payment.registration?.profiles?.name}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">กิจกรรม:</span>
+                  <span className="font-medium">{refundDialog.payment.registration?.event?.title}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">ยอดชำระ:</span>
+                  <span className="font-medium">฿{Number(refundDialog.payment.amount).toLocaleString()}</span>
+                </div>
+                {refundDialog.payment.refund_amount && Number(refundDialog.payment.refund_amount) > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">คืนแล้ว:</span>
+                    <span className="font-medium text-destructive">
+                      ฿{Number(refundDialog.payment.refund_amount).toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm pt-2 border-t">
+                  <span className="text-muted-foreground">คืนได้สูงสุด:</span>
+                  <span className="font-bold">
+                    ฿{(Number(refundDialog.payment.amount) - Number(refundDialog.payment.refund_amount || 0)).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="refund-amount">จำนวนเงินที่ต้องการคืน (บาท)</Label>
+                <Input
+                  id="refund-amount"
+                  type="number"
+                  placeholder="0.00"
+                  value={refundAmount}
+                  onChange={(e) => setRefundAmount(e.target.value)}
+                  max={Number(refundDialog.payment.amount) - Number(refundDialog.payment.refund_amount || 0)}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="refund-reason">เหตุผลในการคืนเงิน</Label>
+                <Textarea
+                  id="refund-reason"
+                  placeholder="ระบุเหตุผลในการคืนเงิน..."
+                  value={refundReason}
+                  onChange={(e) => setRefundReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRefundDialog({ open: false, payment: null })}
+              disabled={refunding}
+            >
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={handleRefund}
+              disabled={refunding}
+              variant="destructive"
+            >
+              {refunding ? "กำลังดำเนินการ..." : "ยืนยันคืนเงิน"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

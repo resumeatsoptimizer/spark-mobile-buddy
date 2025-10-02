@@ -2161,6 +2161,10 @@ export type Database = {
         Args: { event_id: string }
         Returns: number
       }
+      can_refund_payment: {
+        Args: { p_payment_id: string }
+        Returns: boolean
+      }
       get_member_details: {
         Args: { member_id: string }
         Returns: Json
@@ -2180,6 +2184,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      log_payment_action: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_payment_id: string
+          p_user_id: string
+        }
+        Returns: string
       }
       recalculate_event_seats: {
         Args: { event_id_param: string }

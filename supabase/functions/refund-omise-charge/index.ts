@@ -76,24 +76,33 @@ serve(async (req) => {
 
     if (paymentError || !payment) {
       return new Response(
-        JSON.stringify({ error: 'Payment not found' }),
+        JSON.stringify({ error: 'ไม่พบรายการชำระเงิน' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Check user authorization (admin, staff, or payment owner)
-    const { data: profile } = await supabase
-      .from('profiles')
+    const { data: userRoles, error: rolesError } = await supabase
+      .from('user_roles')
       .select('role')
-      .eq('id', user.id)
-      .single();
+      .eq('user_id', user.id);
 
-    const isAdmin = profile?.role === 'admin' || profile?.role === 'staff';
+    if (rolesError) {
+      console.error('Error fetching user roles:', rolesError);
+      return new Response(
+        JSON.stringify({ error: 'ไม่สามารถตรวจสอบสิทธิ์การเข้าถึงได้' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const roles = userRoles?.map(r => r.role) || [];
+    const isAdmin = roles.includes('admin');
+    const isStaff = roles.includes('staff');
     const isOwner = payment.registrations.user_id === user.id;
 
-    if (!isAdmin && !isOwner) {
+    if (!isAdmin && !isStaff && !isOwner) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized to refund this payment' }),
+        JSON.stringify({ error: 'คุณไม่มีสิทธิ์คืนเงินสำหรับรายการนี้' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -106,8 +115,8 @@ serve(async (req) => {
     if (canRefundResult.error || !canRefundResult.data) {
       return new Response(
         JSON.stringify({
-          error: 'Payment cannot be refunded',
-          reason: 'Payment must be successful, not fully refunded, and less than 6 months old'
+          error: 'ไม่สามารถคืนเงินรายการนี้ได้',
+          reason: 'อาจเป็นเพราะคืนเงินครบแล้ว ชำระไม่สำเร็จ หรือเกินเวลาที่สามารถคืนเงินได้ (6 เดือน)'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -120,7 +129,7 @@ serve(async (req) => {
     if (refundAmount <= 0 || refundAmount > maxRefundable) {
       return new Response(
         JSON.stringify({
-          error: 'Invalid refund amount',
+          error: `จำนวนเงินที่คืนไม่ถูกต้อง ต้องอยู่ระหว่าง 0 ถึง ${maxRefundable} บาท`,
           maxRefundable: maxRefundable
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -156,8 +165,8 @@ serve(async (req) => {
       console.error('Omise refund failed:', refund);
       return new Response(
         JSON.stringify({
-          error: 'Refund failed',
-          message: refund.message || 'Unknown error from payment gateway'
+          error: 'ไม่สามารถคืนเงินผ่านระบบชำระเงินได้',
+          message: refund.message || 'เกิดข้อผิดพลาดจากระบบชำระเงิน'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
