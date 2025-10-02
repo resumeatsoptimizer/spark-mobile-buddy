@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, MapPin, Clock, ArrowLeft, Edit, Trash2, CreditCard, CheckCircle, XCircle, Loader, QrCode, ChevronRight } from "lucide-react";
+import { Calendar, Users, MapPin, Clock, ArrowLeft, Edit, Trash2, CreditCard, CheckCircle, XCircle, Loader, QrCode, ChevronRight, Ticket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
@@ -31,6 +31,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+interface TicketType {
+  id: string;
+  name: string;
+  price: number;
+}
+
 interface Event {
   id: string;
   title: string;
@@ -51,6 +57,7 @@ interface Event {
   allow_overbooking: boolean | null;
   overbooking_percentage: number | null;
   created_at: string;
+  ticket_types?: TicketType[];
 }
 
 interface UserRegistration {
@@ -134,7 +141,14 @@ const EventDetails = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("events")
-      .select("*")
+      .select(`
+        *,
+        ticket_types (
+          id,
+          name,
+          price
+        )
+      `)
       .eq("id", id)
       .single();
 
@@ -392,35 +406,50 @@ const EventDetails = () => {
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4">
               {/* Event Info Grid */}
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-2">
                 <Card className="bg-muted/50">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Calendar className="h-5 w-5 text-primary" />
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">วันที่จัดงาน</p>
+                          <p className="font-semibold text-sm">
+                            {format(new Date(event.start_date), "d MMM yyyy", { locale: th })}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">วันที่จัดงาน</p>
-                        <p className="font-semibold">
-                          {format(new Date(event.start_date), "d MMMM yyyy", { locale: th })}
-                        </p>
-                      </div>
+                      {event.ticket_types && event.ticket_types.length > 0 && (
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">ราคา</p>
+                          <p className="font-bold text-primary">
+                            ฿{Math.min(...event.ticket_types.map(t => t.price)).toLocaleString('th-TH')}
+                            {event.ticket_types.length > 1 && '+'}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="bg-muted/50">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Clock className="h-5 w-5 text-primary" />
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">เวลา</p>
+                          <p className="font-semibold text-sm">
+                            {format(new Date(event.start_date), "HH:mm")} - {format(new Date(event.end_date), "HH:mm")}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">เวลา</p>
-                        <p className="font-semibold">
-                          {format(new Date(event.start_date), "HH:mm")} - {format(new Date(event.end_date), "HH:mm")} น.
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">ที่นั่งว่าง</p>
+                        <p className="font-bold">
+                          {event.seats_remaining}/{event.seats_total}
                         </p>
                       </div>
                     </div>
@@ -428,39 +457,81 @@ const EventDetails = () => {
                 </Card>
               </div>
 
+              {/* Registration Period */}
+              {(event.registration_open_date || event.registration_close_date) && (
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center gap-4 text-xs">
+                      {event.registration_open_date && (
+                        <div>
+                          <span className="text-muted-foreground">เปิดรับ: </span>
+                          <span className="font-medium">{format(new Date(event.registration_open_date), "d MMM yyyy HH:mm", { locale: th })}</span>
+                        </div>
+                      )}
+                      {event.registration_close_date && (
+                        <div>
+                          <span className="text-muted-foreground">ปิดรับ: </span>
+                          <span className="font-medium">{format(new Date(event.registration_close_date), "d MMM yyyy HH:mm", { locale: th })}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Additional Info */}
+              {(event.waitlist_enabled || event.allow_overbooking) && (
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      {event.waitlist_enabled && (
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs">Waitlist</Badge>
+                          <span className="text-muted-foreground">
+                            {event.max_waitlist_size ? `สูงสุด ${event.max_waitlist_size} คน` : 'เปิดใช้งาน'}
+                          </span>
+                        </div>
+                      )}
+                      {event.allow_overbooking && (
+                        <div className="flex items-center gap-1">
+                          <Badge variant="outline" className="text-xs">Overbooking</Badge>
+                          <span className="text-muted-foreground">รับเกิน {event.overbooking_percentage}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Location Info */}
               {(event.location || event.google_map_url) && (
                 <Card className="bg-muted/50">
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <MapPin className="h-5 w-5 text-primary" />
-                      </div>
+                  <CardContent className="pt-4 pb-4 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-4 w-4 text-primary mt-0.5" />
                       <div className="flex-1">
-                        <p className="text-sm text-muted-foreground">สถานที่จัดงาน</p>
+                        <p className="text-xs text-muted-foreground">สถานที่จัดงาน</p>
                         {event.location ? (
-                          <p className="font-semibold">{event.location}</p>
+                          <p className="font-medium text-sm">{event.location}</p>
                         ) : (
-                          <p className="font-semibold text-muted-foreground">ดูตำแหน่งบนแผนที่</p>
+                          <p className="font-medium text-sm text-muted-foreground">ดูตำแหน่งบนแผนที่</p>
                         )}
                         {event.google_map_url && (
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            <a
-                              href={event.google_map_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline inline-flex items-center gap-1"
-                            >
-                              เปิดใน Google Maps →
-                            </a>
-                          </div>
+                          <a
+                            href={event.google_map_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                          >
+                            เปิดใน Google Maps →
+                          </a>
                         )}
                       </div>
                     </div>
                     
                     {/* Embedded Google Map */}
                     {(event.google_map_embed_code || event.location || (event.google_map_url && isValidGoogleMapsUrl(event.google_map_url))) && (
-                      <div className="w-full h-[300px] rounded-lg overflow-hidden border shadow-sm bg-muted/30 flex items-center justify-center">
+                      <div className="w-full h-[250px] rounded-lg overflow-hidden border shadow-sm bg-muted/30">
                         <iframe
                           src={
                             event.google_map_embed_code 
@@ -586,79 +657,10 @@ const EventDetails = () => {
                 </Card>
               )}
 
-              {/* Seats Info */}
-              <Card className="bg-muted/50">
-                <CardContent className="pt-6 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      <span className="font-semibold">ที่นั่งคงเหลือ</span>
-                    </div>
-                    <span className="text-2xl font-bold">
-                      {event.seats_remaining} / {event.seats_total}
-                    </span>
-                  </div>
-                  <Progress value={seatsPercentage} className="h-3" />
-                  <p className="text-sm text-muted-foreground">
-                    {seatsPercentage.toFixed(0)}% ของที่นั่งยังว่าง
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Registration Period */}
-              {(event.registration_open_date || event.registration_close_date) && (
-                <Card className="bg-muted/50">
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold mb-3">ช่วงเวลาลงทะเบียน</h3>
-                    <div className="space-y-2 text-sm">
-                      {event.registration_open_date && (
-                        <p>
-                          <span className="text-muted-foreground">เปิดรับ: </span>
-                          {format(new Date(event.registration_open_date), "d MMM yyyy HH:mm", { locale: th })} น.
-                        </p>
-                      )}
-                      {event.registration_close_date && (
-                        <p>
-                          <span className="text-muted-foreground">ปิดรับ: </span>
-                          {format(new Date(event.registration_close_date), "d MMM yyyy HH:mm", { locale: th })} น.
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Additional Info */}
-              {(event.waitlist_enabled || event.allow_overbooking) && (
-                <Card className="bg-muted/50">
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold mb-3">ข้อมูลเพิ่มเติม</h3>
-                    <div className="space-y-2 text-sm">
-                      {event.waitlist_enabled && (
-                        <p className="flex items-center gap-2">
-                          <Badge variant="outline">Waitlist</Badge>
-                          <span>มีระบบรายการรอ</span>
-                          {event.max_waitlist_size && (
-                            <span className="text-muted-foreground">
-                              (สูงสุด {event.max_waitlist_size} คน)
-                            </span>
-                          )}
-                        </p>
-                      )}
-                      {event.allow_overbooking && (
-                        <p className="flex items-center gap-2">
-                          <Badge variant="outline">Overbooking</Badge>
-                          <span>อนุญาตให้รับเกิน {event.overbooking_percentage}%</span>
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Action Buttons */}
               {!userRegistration && (
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-2">
                   {isStaff ? (
                     <>
                       <Button
@@ -697,7 +699,7 @@ const EventDetails = () => {
 
               {/* Staff actions for registered events */}
               {isStaff && userRegistration && (
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-2">
                   <Button
                     onClick={() => navigate(`/events/${event.id}/edit`)}
                     variant="outline"
