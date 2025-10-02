@@ -78,7 +78,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-6">
             {user && (
               <>
-                {isAdmin && (
+                {isStaff && (
                   <>
                     {/* Dashboard */}
                     <Button
@@ -122,10 +122,12 @@ const Navbar = () => {
                           <CreditCard className="mr-2 h-4 w-4" />
                           จัดการการชำระเงิน
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/admin/members")}>
-                          <Users className="mr-2 h-4 w-4" />
-                          จัดการสมาชิก
-                        </DropdownMenuItem>
+                        {isAdmin && (
+                          <DropdownMenuItem onClick={() => navigate("/admin/members")}>
+                            <Users className="mr-2 h-4 w-4" />
+                            จัดการสมาชิก
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
 
@@ -147,15 +149,6 @@ const Navbar = () => {
                       ตั้งค่า
                     </Button>
                 </>
-                )}
-                {isStaff && !isAdmin && (
-                  <Button
-                    variant={isActive("/check-in") ? "default" : "ghost"}
-                    onClick={() => navigate("/check-in")}
-                  >
-                    <ScanLine className="mr-2 h-4 w-4" />
-                    Check-In
-                  </Button>
                 )}
                 {!isAdmin && !isStaff && (
                   <>
@@ -218,7 +211,7 @@ const Navbar = () => {
           <div className="md:hidden py-4 space-y-2">
             {user && (
               <>
-                {isAdmin && (
+                {isStaff && (
                   <>
                     <div className="px-4 py-2 text-sm font-semibold text-muted-foreground">
                       Admin Menu
@@ -271,17 +264,19 @@ const Navbar = () => {
                       <CreditCard className="mr-2 h-4 w-4" />
                       จัดการการชำระเงิน
                     </Button>
-                    <Button
-                      variant={isActive("/admin/members") ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        navigate("/admin/members");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      จัดการสมาชิก
-                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant={isActive("/admin/members") ? "default" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => {
+                          navigate("/admin/members");
+                          setMobileMenuOpen(false);
+                        }}
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        จัดการสมาชิก
+                      </Button>
+                    )}
 
                     <div className="px-4 py-2 text-xs font-semibold text-muted-foreground">
                       Other
@@ -310,19 +305,6 @@ const Navbar = () => {
                       ตั้งค่า
                     </Button>
                 </>
-                )}
-                {isStaff && !isAdmin && (
-                  <Button
-                    variant={isActive("/check-in") ? "default" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => {
-                      navigate("/check-in");
-                      setMobileMenuOpen(false);
-                    }}
-                  >
-                    <ScanLine className="mr-2 h-4 w-4" />
-                    Check-In
-                  </Button>
                 )}
                 {!isAdmin && !isStaff && (
                   <>
