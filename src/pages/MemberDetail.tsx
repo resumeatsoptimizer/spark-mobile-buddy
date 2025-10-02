@@ -65,7 +65,7 @@ interface MemberDetails {
   user_id: string;
   email: string;
   name: string;
-  status: MemberStatus;
+  status: string;
   activity_level: string;
   last_login_at: string | null;
   created_at: string;
@@ -453,15 +453,18 @@ const MemberDetail = () => {
     }
   };
 
-  const getStatusBadge = (status: MemberStatus) => {
-    const config = {
+  const getStatusBadge = (status: string) => {
+    const config: Record<string, { icon: any; color: string; label: string }> = {
       active: { icon: CheckCircle, color: "bg-green-500", label: "Active" },
       inactive: { icon: XCircle, color: "bg-gray-500", label: "Inactive" },
       suspended: { icon: XCircle, color: "bg-yellow-500", label: "Suspended" },
       blocked: { icon: Ban, color: "bg-red-500", label: "Blocked" },
+      new: { icon: User, color: "bg-blue-500", label: "New" },
+      dormant: { icon: Clock, color: "bg-orange-500", label: "Dormant" },
     };
 
-    const { icon: Icon, color, label } = config[status];
+    const statusConfig = config[status] || config.inactive;
+    const { icon: Icon, color, label } = statusConfig;
 
     return (
       <Badge className={color}>
