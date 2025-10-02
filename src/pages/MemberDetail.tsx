@@ -504,7 +504,7 @@ const MemberDetail = () => {
                       Verified
                     </Badge>
                   )}
-                  {member.roles.map((role: string, idx: number) => (
+                  {member.roles && member.roles.map((role: string, idx: number) => (
                     <Badge key={idx} variant="outline">{role}</Badge>
                   ))}
                 </div>
@@ -685,7 +685,7 @@ const MemberDetail = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {member.tags.length === 0 ? (
+                    {!member.tags || member.tags.length === 0 ? (
                       <p className="text-sm text-muted-foreground">ยังไม่มี tag</p>
                     ) : (
                       member.tags.map((tag: any, idx: number) => (
