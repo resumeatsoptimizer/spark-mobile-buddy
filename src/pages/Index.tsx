@@ -55,7 +55,7 @@ const Index = () => {
               <span className="text-sm font-medium">Iwelty Wellness Community</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-loose bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              ค้นพบกิจกรรม Wellness
+              <span className="pb-2 inline-block">ค้นพบกิจกรรม Wellness</span>
               <br />
               ที่เหมาะกับคุณ
             </h1>
