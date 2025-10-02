@@ -1096,7 +1096,7 @@ const AdminRegistrations = () => {
                         <div>
                           <p className="font-medium">
                             {reg.profiles?.name || 
-                             (reg.form_data as any)?.name || 
+                             (reg.form_data as any)?.full_name || 
                              'ไม่ระบุ'}
                           </p>
                           <p className="text-xs text-muted-foreground">

@@ -169,7 +169,7 @@ export function RegistrationsTab() {
                       <div>
                         <p className="font-medium text-sm">
                           {reg.profiles?.name || 
-                           (reg.form_data as any)?.name || 
+                           (reg.form_data as any)?.full_name || 
                            'ไม่ระบุ'}
                         </p>
                         <p className="text-xs text-muted-foreground">
