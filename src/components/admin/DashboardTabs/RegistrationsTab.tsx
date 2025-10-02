@@ -167,8 +167,14 @@ export function RegistrationsTab() {
                   <TableRow key={reg.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium text-sm">{reg.profiles?.name || '-'}</p>
-                        <p className="text-xs text-muted-foreground">{reg.profiles?.email || '-'}</p>
+                        <p className="font-medium text-sm">
+                          {reg.profiles?.name || 
+                           (reg.form_data as any)?.name || 
+                           'ไม่ระบุ'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {reg.profiles?.email || (reg.form_data as any)?.email || '-'}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">{reg.events?.title}</TableCell>
