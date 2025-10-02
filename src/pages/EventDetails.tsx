@@ -155,7 +155,7 @@ const EventDetails = () => {
     if (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถโหลดข้อมูลอีเว้นท์ได้",
+        description: "ไม่สามารถโหลดข้อมูลกิจกรรมได้",
         variant: "destructive",
       });
       navigate("/events");
@@ -211,7 +211,7 @@ const EventDetails = () => {
   };
 
   const handleDelete = async () => {
-    if (!event || !confirm(`คุณต้องการลบงานอีเว้นท์ "${event.title}" ใช่หรือไม่?`)) {
+    if (!event || !confirm(`คุณต้องการลบกิจกรรม "${event.title}" ใช่หรือไม่?`)) {
       return;
     }
 
@@ -223,13 +223,13 @@ const EventDetails = () => {
     if (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถลบงานอีเว้นท์ได้",
+        description: "ไม่สามารถลบกิจกรรมได้",
         variant: "destructive",
       });
     } else {
       toast({
         title: "ลบสำเร็จ",
-        description: `ลบงานอีเว้นท์ "${event.title}" เรียบร้อยแล้ว`,
+        description: `ลบกิจกรรม "${event.title}" เรียบร้อยแล้ว`,
       });
       navigate("/events");
     }
@@ -354,7 +354,7 @@ const EventDetails = () => {
               </BreadcrumbSeparator>
               <BreadcrumbItem>
                 <BreadcrumbLink onClick={() => navigate("/events")} className="cursor-pointer">
-                  งานอีเว้นท์
+                  กิจกรรม
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator>
@@ -668,7 +668,7 @@ const EventDetails = () => {
                         className="flex-1"
                       >
                         <Edit className="mr-2 h-4 w-4" />
-                        แก้ไขงานอีเว้นท์
+                        แก้ไขกิจกรรม
                       </Button>
                       <Button
                         variant="destructive"
@@ -706,7 +706,7 @@ const EventDetails = () => {
                     className="flex-1"
                   >
                     <Edit className="mr-2 h-4 w-4" />
-                    แก้ไขงานอีเว้นท์
+                    แก้ไขกิจกรรม
                   </Button>
                 </div>
               )}

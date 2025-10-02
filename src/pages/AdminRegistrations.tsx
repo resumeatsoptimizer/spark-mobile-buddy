@@ -1064,7 +1064,7 @@ const AdminRegistrations = () => {
                     />
                   </TableHead>
                   <TableHead>วันที่ลงทะเบียน</TableHead>
-                  <TableHead>งานอีเว้นท์</TableHead>
+                  <TableHead>กิจกรรม</TableHead>
                   <TableHead>ผู้ลงทะเบียน</TableHead>
                   <TableHead>ประเภทบัตร</TableHead>
                   <TableHead>สถานะ</TableHead>

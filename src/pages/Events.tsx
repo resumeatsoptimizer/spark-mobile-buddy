@@ -79,7 +79,7 @@ const Events = () => {
     if (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถโหลดข้อมูลอีเว้นท์ได้",
+        description: "ไม่สามารถโหลดข้อมูลกิจกรรมได้",
         variant: "destructive",
       });
     } else {
@@ -89,7 +89,7 @@ const Events = () => {
   };
 
   const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`คุณต้องการลบงานอีเว้นท์ "${title}" ใช่หรือไม่?`)) {
+    if (!confirm(`คุณต้องการลบกิจกรรม "${title}" ใช่หรือไม่?`)) {
       return;
     }
 
@@ -101,13 +101,13 @@ const Events = () => {
     if (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถลบงานอีเว้นท์ได้",
+        description: "ไม่สามารถลบกิจกรรมได้",
         variant: "destructive",
       });
     } else {
       toast({
         title: "ลบสำเร็จ",
-        description: `ลบงานอีเว้นท์ "${title}" เรียบร้อยแล้ว`,
+        description: `ลบกิจกรรม "${title}" เรียบร้อยแล้ว`,
       });
       fetchEvents();
     }
@@ -135,15 +135,15 @@ const Events = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">งานอีเว้นท์ทั้งหมด</h1>
+              <h1 className="text-3xl font-bold mb-2">กิจกรรมทั้งหมด</h1>
               <p className="text-muted-foreground">
-                {isStaff ? "จัดการงานอีเว้นท์ทั้งหมด" : "งานอีเว้นท์ที่เปิดรับสมัคร"}
+                {isStaff ? "จัดการกิจกรรมทั้งหมด" : "กิจกรรมที่เปิดรับสมัคร"}
               </p>
             </div>
             {isStaff && (
               <Button onClick={() => navigate("/events/create")}>
                 <Plus className="mr-2 h-4 w-4" />
-                สร้างงานอีเว้นท์
+                สร้างกิจกรรม
               </Button>
             )}
           </div>
@@ -156,14 +156,14 @@ const Events = () => {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-16">
                   <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">ยังไม่มีงานอีเว้นท์</h3>
+                  <h3 className="text-xl font-semibold mb-2">ยังไม่มีกิจกรรม</h3>
                   <p className="text-muted-foreground mb-4">
-                    {isStaff ? "เริ่มต้นสร้างงานอีเว้นท์แรกของคุณ" : "ยังไม่มีงานอีเว้นท์ที่เปิดรับสมัคร"}
+                    {isStaff ? "เริ่มต้นสร้างกิจกรรมแรกของคุณ" : "ยังไม่มีกิจกรรมที่เปิดรับสมัคร"}
                   </p>
                   {isStaff && (
                     <Button onClick={() => navigate("/events/create")}>
                       <Plus className="mr-2 h-4 w-4" />
-                      สร้างงานอีเว้นท์
+                      สร้างกิจกรรม
                     </Button>
                   )}
                 </CardContent>

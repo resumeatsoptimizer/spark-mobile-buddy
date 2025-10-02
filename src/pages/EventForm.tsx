@@ -179,7 +179,7 @@ const EventForm = () => {
     if (userRole !== "admin" && userRole !== "staff") {
       toast({
         title: "ไม่มีสิทธิ์เข้าถึง",
-        description: "คุณไม่มีสิทธิ์ในการจัดการงานอีเว้นท์",
+        description: "คุณไม่มีสิทธิ์ในการจัดการกิจกรรม",
         variant: "destructive",
       });
       navigate("/");
@@ -198,7 +198,7 @@ const EventForm = () => {
     if (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถโหลดข้อมูลงานอีเว้นท์ได้",
+        description: "ไม่สามารถโหลดข้อมูลกิจกรรมได้",
         variant: "destructive",
       });
       navigate("/events");
@@ -211,7 +211,7 @@ const EventForm = () => {
         setSourceEventTitle(data.title);
         setTitle(`สำเนา - ${data.title}`);
         toast({
-          title: "กำลังสร้างสำเนาอีเวนท์",
+          title: "กำลังสร้างสำเนากิจกรรม",
           description: `กำลังคัดลอกข้อมูลจาก "${data.title}" - แก้ไขก่อนบันทึก`,
         });
       } else {
@@ -426,7 +426,7 @@ const EventForm = () => {
         console.error("❌ Error saving event:", error);
         toast({
           title: "เกิดข้อผิดพลาด",
-          description: error.message || `ไม่สามารถ${isEditMode ? "แก้ไข" : "สร้าง"}งานอีเว้นท์ได้`,
+          description: error.message || `ไม่สามารถ${isEditMode ? "แก้ไข" : "สร้าง"}กิจกรรมได้`,
           variant: "destructive",
         });
       } else {
@@ -435,7 +435,7 @@ const EventForm = () => {
         const actionText = isEditMode ? "แก้ไข" : isDuplicateMode ? "สร้างสำเนา" : "สร้าง";
         toast({
           title: "สำเร็จ",
-          description: `${actionText}งานอีเว้นท์เรียบร้อยแล้ว พร้อมฟิลด์ลงทะเบียน ${enabledFields.length} ฟิลด์`,
+          description: `${actionText}กิจกรรมเรียบร้อยแล้ว พร้อมฟิลด์ลงทะเบียน ${enabledFields.length} ฟิลด์`,
         });
         navigate(eventId ? `/events/${eventId}` : "/events");
       }
@@ -463,10 +463,10 @@ const EventForm = () => {
             </Button>
             <div>
               <h1 className="text-2xl font-bold">
-                {isEditMode ? "แก้ไขงานอีเว้นท์" : "สร้างงานอีเว้นท์ใหม่"}
+                {isEditMode ? "แก้ไขกิจกรรม" : "สร้างกิจกรรมใหม่"}
               </h1>
               <p className="text-sm text-muted-foreground">
-                กรอกข้อมูลงานอีเว้นท์
+                กรอกข้อมูลกิจกรรม
               </p>
             </div>
           </div>
@@ -508,7 +508,7 @@ const EventForm = () => {
           <Card>
             <CardHeader>
               <CardTitle>ข้อมูลพื้นฐาน</CardTitle>
-              <CardDescription>ข้อมูลหลักของงานอีเว้นท์</CardDescription>
+              <CardDescription>ข้อมูลหลักของกิจกรรม</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Cover Image */}
@@ -535,7 +535,7 @@ const EventForm = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="title">ชื่องานอีเว้นท์ *</Label>
+                <Label htmlFor="title">ชื่อกิจกรรม *</Label>
                 <Input
                   id="title"
                   value={title}
@@ -557,7 +557,7 @@ const EventForm = () => {
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="รายละเอียดของงานอีเว้นท์..."
+                  placeholder="รายละเอียดของกิจกรรม..."
                   rows={4}
                 />
               </div>
@@ -712,7 +712,7 @@ const EventForm = () => {
               ยกเลิก
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? "กำลังบันทึก..." : isEditMode ? "บันทึกการแก้ไข" : isDuplicateMode ? "สร้างสำเนาอีเวนท์" : "สร้างงานอีเว้นท์"}
+              {loading ? "กำลังบันทึก..." : isEditMode ? "บันทึกการแก้ไข" : isDuplicateMode ? "สร้างสำเนากิจกรรม" : "สร้างกิจกรรม"}
             </Button>
           </div>
         </form>

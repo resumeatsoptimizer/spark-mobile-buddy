@@ -83,14 +83,14 @@ const Dashboard = () => {
           <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/events")}>
             <CardHeader>
               <Calendar className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>งานอีเว้นท์</CardTitle>
+              <CardTitle>กิจกรรม</CardTitle>
               <CardDescription>
-                {isStaff ? "จัดการและสร้างงานอีเว้นท์" : "ดูงานอีเว้นท์ที่เปิดรับสมัคร"}
+                {isStaff ? "จัดการและสร้างกิจกรรม" : "ดูกิจกรรมที่เปิดรับสมัคร"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button className="w-full">
-                {isStaff ? "จัดการงานอีเว้นท์" : "ดูงานอีเว้นท์"}
+                {isStaff ? "จัดการกิจกรรม" : "ดูกิจกรรม"}
               </Button>
             </CardContent>
           </Card>
@@ -135,7 +135,7 @@ const Dashboard = () => {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                งานอีเว้นท์ทั้งหมด
+                กิจกรรมทั้งหมด
               </CardTitle>
             </CardHeader>
             <CardContent>

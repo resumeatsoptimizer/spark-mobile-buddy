@@ -242,7 +242,7 @@ const Registrations = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">การลงทะเบียนของฉัน</h1>
           <p className="text-muted-foreground">
-            รายการงานอีเว้นท์ทั้งหมดที่คุณลงทะเบียน
+            รายการกิจกรรมทั้งหมดที่คุณลงทะเบียน
           </p>
         </div>
 
@@ -252,7 +252,7 @@ const Registrations = () => {
               <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold mb-2">ยังไม่มีการลงทะเบียน</h3>
               <p className="text-muted-foreground mb-4">
-                เริ่มต้นลงทะเบียนงานอีเว้นท์ของเราได้เลย
+                เริ่มต้นลงทะเบียนกิจกรรมของเราได้เลย
               </p>
             </CardContent>
           </Card>

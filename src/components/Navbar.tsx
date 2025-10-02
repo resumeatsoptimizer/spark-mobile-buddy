@@ -112,7 +112,7 @@ const Navbar = () => {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => navigate("/events")}>
                           <FolderTree className="mr-2 h-4 w-4" />
-                          จัดการงานอีเว้นท์
+                          จัดการกิจกรรม
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate("/admin/registrations")}>
                           <Users className="mr-2 h-4 w-4" />
@@ -164,7 +164,7 @@ const Navbar = () => {
                       onClick={() => navigate("/events")}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      งานอีเว้นท์ทั้งหมด
+                      กิจกรรมทั้งหมด
                     </Button>
                     <Button
                       variant={isActive("/registrations") ? "default" : "ghost"}
@@ -247,7 +247,7 @@ const Navbar = () => {
                       }}
                     >
                       <FolderTree className="mr-2 h-4 w-4" />
-                      จัดการงานอีเว้นท์
+                      จัดการกิจกรรม
                     </Button>
                     <Button
                       variant={isActive("/admin/registrations") ? "default" : "ghost"}
@@ -335,7 +335,7 @@ const Navbar = () => {
                       }}
                     >
                       <Calendar className="mr-2 h-4 w-4" />
-                      งานอีเว้นท์ทั้งหมด
+                      กิจกรรมทั้งหมด
                     </Button>
                     <Button
                       variant={isActive("/registrations") ? "default" : "ghost"}

@@ -252,7 +252,7 @@ const Auth = () => {
         <CardHeader className="space-y-1 pt-12">
           <CardTitle className="text-2xl font-bold text-center">Iwelty Event Dashboard</CardTitle>
           <CardDescription className="text-center">
-            ระบบจัดการงานอีเว้นท์และการลงทะเบียน
+            ระบบจัดการกิจกรรมและการลงทะเบียน
           </CardDescription>
         </CardHeader>
         <CardContent>

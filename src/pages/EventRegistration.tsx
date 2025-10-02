@@ -114,7 +114,7 @@ const EventRegistration = () => {
     if (error) {
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถโหลดข้อมูลงานอีเว้นท์ได้",
+        description: "ไม่สามารถโหลดข้อมูลกิจกรรมได้",
         variant: "destructive",
       });
       navigate("/");
