@@ -63,7 +63,7 @@ export function PaymentsTab() {
   const filteredPayments = payments.filter((p) => {
     const matchesSearch =
       p.registration?.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.registration?.form_data as any)?.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.registration?.profiles?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.registration?.event?.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.omise_charge_id?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === "all" || p.status === filterStatus;
@@ -286,16 +286,10 @@ export function PaymentsTab() {
                     <TableCell>
                       <div>
                         <p className="font-medium text-sm">
-                          {payment.registration?.profiles?.name || 
-                           payment.registration?.profiles?.email || 
-                           (payment.registration?.form_data as any)?.name ||
-                           (payment.registration?.form_data as any)?.email ||
-                           'ไม่ระบุ'}
+                          {payment.registration?.profiles?.name || 'ไม่ระบุ'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {payment.registration?.profiles?.email || 
-                           (payment.registration?.form_data as any)?.email || 
-                           '-'}
+                          {payment.registration?.profiles?.email || '-'}
                         </p>
                       </div>
                     </TableCell>
