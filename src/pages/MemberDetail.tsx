@@ -65,7 +65,7 @@ interface MemberDetails {
   user_id: string;
   email: string;
   name: string;
-  status: string;
+  status: string | null;
   activity_level: string;
   last_login_at: string | null;
   created_at: string;
@@ -453,7 +453,9 @@ const MemberDetail = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null | undefined) => {
+    console.log('getStatusBadge called with status:', status, 'type:', typeof status);
+    
     const config: Record<string, { icon: any; color: string; label: string }> = {
       active: { icon: CheckCircle, color: "bg-green-500", label: "Active" },
       inactive: { icon: XCircle, color: "bg-gray-500", label: "Inactive" },
@@ -463,7 +465,11 @@ const MemberDetail = () => {
       dormant: { icon: Clock, color: "bg-orange-500", label: "Dormant" },
     };
 
-    const statusConfig = config[status] || config.inactive;
+    // Default to 'new' if status is null or undefined
+    const validStatus = status || 'new';
+    console.log('validStatus:', validStatus, 'exists in config:', validStatus in config);
+    
+    const statusConfig = config[validStatus] || config.inactive;
     const { icon: Icon, color, label } = statusConfig;
 
     return (
