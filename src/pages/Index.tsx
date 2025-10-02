@@ -113,6 +113,7 @@ const Index = () => {
                         <img
                           src={event.cover_image_url}
                           alt={event.title}
+                          loading="lazy"
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300 cursor-pointer"
                           onClick={() => navigate(`/events/${event.id}`)}
                           onError={(e) => {

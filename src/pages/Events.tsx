@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,18 +35,17 @@ interface Event {
 const Events = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<Event[]>([]);
+  const queryClient = useQueryClient();
   const [userRole, setUserRole] = useState<string | null>(null);
 
+  // Auth check
   useEffect(() => {
     checkAuth();
-    fetchEvents();
   }, []);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    
+
     if (!session) {
       navigate("/auth");
       return;
@@ -60,62 +60,67 @@ const Events = () => {
     setUserRole(roles?.role || "participant");
   };
 
-  const fetchEvents = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("events")
-      .select(`
-        *,
-        ticket_types (
-          id,
-          name,
-          price,
-          seats_allocated,
-          seats_remaining
-        )
-      `)
-      .order("start_date", { ascending: false });
+  // Fetch events with React Query
+  const { data: events = [], isLoading } = useQuery({
+    queryKey: ['events'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("events")
+        .select(`
+          *,
+          ticket_types (
+            id,
+            name,
+            price,
+            seats_allocated,
+            seats_remaining
+          )
+        `)
+        .order("start_date", { ascending: false });
 
-    if (error) {
+      if (error) {
+        throw error;
+      }
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("events")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
       toast({
-        title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถโหลดข้อมูลกิจกรรมได้",
-        variant: "destructive",
+        title: "ลบสำเร็จ",
+        description: "ลบกิจกรรมเรียบร้อยแล้ว",
       });
-    } else {
-      setEvents(data || []);
-    }
-    setLoading(false);
-  };
-
-  const handleDelete = async (id: string, title: string) => {
-    if (!confirm(`คุณต้องการลบกิจกรรม "${title}" ใช่หรือไม่?`)) {
-      return;
-    }
-
-    const { error } = await supabase
-      .from("events")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
+    },
+    onError: () => {
       toast({
         title: "เกิดข้อผิดพลาด",
         description: "ไม่สามารถลบกิจกรรมได้",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "ลบสำเร็จ",
-        description: `ลบกิจกรรม "${title}" เรียบร้อยแล้ว`,
-      });
-      fetchEvents();
+    },
+  });
+
+  const handleDelete = useCallback((id: string, title: string) => {
+    if (confirm(`คุณต้องการลบกิจกรรม "${title}" ใช่หรือไม่?`)) {
+      deleteMutation.mutate(id);
     }
-  };
+  }, [deleteMutation]);
 
   const isStaff = userRole === "admin" || userRole === "staff";
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
