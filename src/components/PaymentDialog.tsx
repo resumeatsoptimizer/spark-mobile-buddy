@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CreditCard, Loader2, QrCode } from "lucide-react";
@@ -28,9 +29,10 @@ declare global {
 export function PaymentDialog({ open, onOpenChange, registrationId, amount, eventTitle, onSuccess }: PaymentDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'promptpay'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'promptpay' | 'internet_banking'>('card');
   const [qrCodeData, setQrCodeData] = useState<any>(null);
   const [chargeId, setChargeId] = useState<string>("");
+  const [selectedBank, setSelectedBank] = useState<string>('');
   const [cardData, setCardData] = useState({
     name: "",
     number: "",
@@ -269,6 +271,61 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
     });
   };
 
+  const handleInternetBankingSubmit = async () => {
+    if (!selectedBank) {
+      toast({
+        title: "กรุณาเลือกธนาคาร",
+        description: "โปรดเลือกธนาคารที่ต้องการชำระเงิน",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-omise-charge', {
+        body: {
+          amount,
+          registrationId,
+          paymentMethod: 'internet_banking',
+          bank: selectedBank,
+          returnUri: `${window.location.origin}/registrations`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.authorize_uri) {
+        toast({
+          title: "กำลังนำไปยังธนาคาร",
+          description: "กรุณารอสักครู่...",
+        });
+        // Redirect to bank's internet banking portal
+        window.location.href = data.authorize_uri;
+      } else {
+        throw new Error('ไม่ได้รับ URL สำหรับชำระเงิน');
+      }
+    } catch (error: any) {
+      console.error('Internet Banking payment error:', error);
+      
+      let errorTitle = "เกิดข้อผิดพลาด";
+      let errorDescription = error.message || "ไม่สามารถดำเนินการชำระเงินผ่านธนาคารได้";
+      
+      if (error.message?.includes('not configured')) {
+        errorTitle = "ระบบยังไม่พร้อม";
+        errorDescription = "ระบบชำระเงินผ่านธนาคารยังไม่ได้ตั้งค่า กรุณาติดต่อผู้ดูแลระบบ";
+      }
+      
+      toast({
+        title: errorTitle,
+        description: errorDescription,
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -287,15 +344,21 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
             onExpired={handleQRExpired}
           />
         ) : (
-          <Tabs value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'card' | 'promptpay')}>
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'card' | 'promptpay' | 'internet_banking')}>
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="card" className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4" />
-                บัตรเครดิต
+                บัตร
               </TabsTrigger>
               <TabsTrigger value="promptpay" className="flex items-center gap-2">
                 <QrCode className="w-4 h-4" />
-                PromptPay QR
+                QR
+              </TabsTrigger>
+              <TabsTrigger value="internet_banking" className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                ธนาคาร
               </TabsTrigger>
             </TabsList>
 
@@ -436,6 +499,77 @@ export function PaymentDialog({ open, onOpenChange, registrationId, amount, even
 
                 <p className="text-xs text-center text-muted-foreground">
                   การชำระเงินปลอดภัยด้วย Omise PromptPay
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="internet_banking" className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                  <div className="text-sm">
+                    <p className="text-muted-foreground">งาน</p>
+                    <p className="font-medium">{eventTitle}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-muted-foreground text-sm">ยอดชำระ</p>
+                    <p className="text-2xl font-bold">฿{amount.toLocaleString('th-TH')}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bank">เลือกธนาคาร</Label>
+                  <Select value={selectedBank} onValueChange={setSelectedBank}>
+                    <SelectTrigger id="bank">
+                      <SelectValue placeholder="เลือกธนาคารของคุณ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bbl">ธนาคารกรุงเทพ (Bangkok Bank)</SelectItem>
+                      <SelectItem value="kbank">ธนาคารกสิกรไทย (Kasikorn Bank)</SelectItem>
+                      <SelectItem value="ktb">ธนาคารกรุงไทย (Krung Thai Bank)</SelectItem>
+                      <SelectItem value="scb">ธนาคารไทยพาณิชย์ (Siam Commercial Bank)</SelectItem>
+                      <SelectItem value="bay">ธนาคารกรุงศรีอยุธยา (Bank of Ayudhya)</SelectItem>
+                      <SelectItem value="tmb">ธนาคารทหารไทยธนชาต (TMB Bank)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    ชำระเงินผ่านอินเทอร์เน็ตแบงก์กิ้ง
+                  </p>
+                  <p className="text-xs">
+                    • รองรับธนาคารหลักในประเทศไทย<br />
+                    • ชำระเงินโดยตรงจากบัญชีธนาคาร<br />
+                    • คุณจะถูกนำไปยังหน้าธนาคาร<br />
+                    • ปลอดภัย รวดเร็ว ยืนยันทันที
+                  </p>
+                </div>
+
+                <Button 
+                  onClick={handleInternetBankingSubmit} 
+                  className="w-full" 
+                  disabled={loading || !selectedBank}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      กำลังเชื่อมต่อธนาคาร...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="mr-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                      ไปยังหน้าธนาคาร
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  การชำระเงินปลอดภัยผ่านระบบธนาคาร
                 </p>
               </div>
             </TabsContent>

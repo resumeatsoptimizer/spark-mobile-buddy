@@ -54,7 +54,7 @@ serve(async (req) => {
       );
     }
 
-    const { amount, token, registrationId, paymentMethod = 'card', returnUri } = await req.json();
+    const { amount, token, registrationId, paymentMethod = 'card', returnUri, bank } = await req.json();
     
     console.log('Creating Omise payment:', { amount, registrationId, userId: user.id, paymentMethod });
 
@@ -69,6 +69,14 @@ serve(async (req) => {
     if (paymentMethod === 'card' && !token) {
       return new Response(
         JSON.stringify({ error: 'Card token is required for card payments' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate internet banking requires bank selection
+    if (paymentMethod === 'internet_banking' && !bank) {
+      return new Response(
+        JSON.stringify({ error: 'Bank selection is required for internet banking' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -196,6 +204,66 @@ serve(async (req) => {
       });
 
       charge = await chargeResponse.json();
+    } else if (paymentMethod === 'internet_banking') {
+      // Handle Internet Banking payment
+      console.log('Creating Internet Banking source:', { bank, amount });
+
+      // Create Internet Banking source
+      const sourceResponse = await fetch('https://api.omise.co/sources', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(omiseSecretKey + ':')}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          amount: Math.round(amount * 100).toString(),
+          currency: 'THB',
+          type: 'internet_banking',
+          'internet_banking[bank]': bank
+        }).toString()
+      });
+
+      if (!sourceResponse.ok) {
+        const errorData = await sourceResponse.json();
+        console.error('Omise internet banking source creation error:', errorData);
+        throw new Error(errorData.message || 'Failed to create Internet Banking source');
+      }
+
+      const source = await sourceResponse.json();
+      sourceId = source.id;
+
+      console.log('Internet Banking source created:', { sourceId, bank });
+
+      // Create charge with source
+      const chargeResponse = await fetch('https://api.omise.co/charges', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(omiseSecretKey + ':')}`,
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify({
+          amount: Math.round(amount * 100),
+          currency: 'THB',
+          source: sourceId,
+          description: `Payment for ${eventTitle}`,
+          return_uri: returnUri || `${supabaseUrl}/registrations`,
+          metadata: {
+            registration_id: registrationId,
+            user_id: user.id,
+            event_title: eventTitle,
+            payment_method: 'internet_banking',
+            bank: bank
+          },
+        }),
+      });
+
+      charge = await chargeResponse.json();
+      console.log('Internet Banking charge created:', { 
+        chargeId: charge.id, 
+        status: charge.status, 
+        authorizeUri: charge.authorize_uri 
+      });
     } else {
       // Create card charge
       const chargeResponse = await fetch('https://api.omise.co/charges', {
@@ -231,7 +299,7 @@ serve(async (req) => {
     const require3ds = requireAction;
     let paymentStatus = 'pending';
     
-    if (paymentMethod === 'promptpay') {
+    if (paymentMethod === 'promptpay' || paymentMethod === 'internet_banking') {
       paymentStatus = 'pending';
     } else if (charge.paid) {
       paymentStatus = 'success';
