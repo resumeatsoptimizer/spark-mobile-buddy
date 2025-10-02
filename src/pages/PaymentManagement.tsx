@@ -354,9 +354,7 @@ const PaymentManagement = () => {
                         <div>
                           <p className="font-medium">
                             {payment.registration?.profiles?.name || 
-                             payment.registration?.profiles?.email || 
                              (payment.registration?.form_data as any)?.name ||
-                             (payment.registration?.form_data as any)?.email ||
                              'ไม่ระบุ'}
                           </p>
                           <p className="text-xs text-muted-foreground">
