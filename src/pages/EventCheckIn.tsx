@@ -162,10 +162,15 @@ export default function EventCheckIn() {
     if (!selectedEventId) return;
     
     try {
-      // Phase 2: Use seats_total from currentEvent instead of counting registrations
-      const totalRegistrations = currentEvent?.seats_total || 0;
+      // Count actual registrations (A) - confirmed and paid only
+      const { count: totalRegistrations } = await supabase
+        .from('registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', selectedEventId)
+        .eq('status', 'confirmed')
+        .eq('payment_status', 'paid');
       
-      // Count checked-in
+      // Count checked-in (C)
       const { count: checkedIn } = await supabase
         .from('event_check_ins')
         .select('*', { count: 'exact', head: true })
@@ -190,7 +195,7 @@ export default function EventCheckIn() {
       }));
       
       setSummary({
-        totalRegistrations: totalRegistrations,
+        totalRegistrations: totalRegistrations || 0,
         totalCheckedIn: checkedIn || 0,
         byTicketType: byTicketArray
       });
@@ -370,8 +375,14 @@ export default function EventCheckIn() {
     }
   };
 
-  const capacityPercentage = currentEvent 
-    ? Math.round(((currentEvent.seats_total - currentEvent.seats_remaining) / currentEvent.seats_total) * 100)
+  // Calculate capacity percentage: A / B (registered / total capacity)
+  const capacityPercentage = currentEvent && currentEvent.seats_total > 0
+    ? Math.round((summary.totalRegistrations / currentEvent.seats_total) * 100)
+    : 0;
+
+  // Calculate check-in percentage: C / A (checked in / registered)
+  const checkedInPercentage = summary.totalRegistrations > 0
+    ? Math.round((summary.totalCheckedIn / summary.totalRegistrations) * 100)
     : 0;
 
   const getCapacityColor = () => {
@@ -386,13 +397,6 @@ export default function EventCheckIn() {
     return 'bg-green-500';
   };
 
-  // Phase 4: Calculate actual remaining seats and check for mismatch
-  const actualRemaining = currentEvent 
-    ? currentEvent.seats_total - summary.totalCheckedIn 
-    : 0;
-  
-  const isCapacityMismatch = currentEvent 
-    && Math.abs(currentEvent.seats_remaining - actualRemaining) > 1;
 
   return (
     <div className="min-h-screen bg-background">
@@ -432,32 +436,26 @@ export default function EventCheckIn() {
 
         {/* Capacity & Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Capacity Card */}
+          {/* Capacity Card - A/B (ลงทะเบียน/เปิดรับ) */}
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-3">
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-muted-foreground">ที่นั่งคงเหลือ</span>
+                  <span className="text-sm font-medium text-muted-foreground">ลงทะเบียน / เปิดรับ</span>
                   <Users className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div className={`text-3xl font-bold ${getCapacityColor()}`}>
-                  {currentEvent?.seats_remaining || 0} / {currentEvent?.seats_total || 0}
+                  {summary.totalRegistrations} / {currentEvent?.seats_total || 0}
                 </div>
                 <Progress value={capacityPercentage} className="h-2" />
+                <div className="text-xs text-muted-foreground">
+                  {capacityPercentage}% ของที่นั่งทั้งหมด
+                </div>
                 {capacityPercentage >= 90 && (
                   <Alert variant="destructive" className="py-2">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      ⚠️ ที่นั่งเหลือน้อย!
-                    </AlertDescription>
-                  </Alert>
-                )}
-                {/* Phase 4: Alert when capacity data doesn't match */}
-                {isCapacityMismatch && (
-                  <Alert variant="destructive" className="py-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      ⚠️ ข้อมูลไม่ sync: DB = {currentEvent.seats_remaining}, คำนวณ = {actualRemaining}
+                      ⚠️ ที่นั่งใกล้เต็ม!
                     </AlertDescription>
                   </Alert>
                 )}
@@ -465,21 +463,24 @@ export default function EventCheckIn() {
             </CardContent>
           </Card>
 
-          {/* Check-In Summary */}
+          {/* Check-In Summary - C/A (เช็คอินแล้ว/ลงทะเบียน) */}
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-3">
                 <div className="flex justify-between items-start">
-                  <span className="text-sm font-medium text-muted-foreground">เช็คอินแล้ว</span>
+                  <span className="text-sm font-medium text-muted-foreground">เช็คอิน / ลงทะเบียน</span>
                   <CheckCircle className="w-5 h-5 text-green-500" />
                 </div>
-                <div className="text-3xl font-bold">
+                <div className="text-3xl font-bold text-green-600">
                   {summary.totalCheckedIn} / {summary.totalRegistrations}
                 </div>
                 <Progress 
-                  value={summary.totalRegistrations > 0 ? (summary.totalCheckedIn / summary.totalRegistrations) * 100 : 0} 
+                  value={checkedInPercentage} 
                   className="h-2"
                 />
+                <div className="text-xs text-muted-foreground">
+                  {checkedInPercentage}% เช็คอินแล้ว
+                </div>
               </div>
             </CardContent>
           </Card>
