@@ -20,6 +20,24 @@ import Navbar from "@/components/Navbar";
 import { CategoriesSelector } from "@/components/event-form/CategoriesSelector";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 
+// Helper function to safely extract iframe src from Google Maps embed code
+const extractSafeIframeSrc = (embedCode: string): string | null => {
+  if (!embedCode || typeof embedCode !== 'string') return null;
+
+  // Extract src from iframe tag
+  const iframeRegex = /<iframe[^>]+src=["']([^"']+)["'][^>]*>/i;
+  const match = embedCode.match(iframeRegex);
+
+  if (match && match[1]) {
+    const src = match[1];
+    // Only allow Google Maps domains
+    if (src.includes('google.com/maps/embed') || src.includes('maps.google.com')) {
+      return src;
+    }
+  }
+  return null;
+};
+
 const EventForm = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -614,12 +632,32 @@ const EventForm = () => {
                 </div>
 
                 {/* Map Preview */}
-                {googleMapEmbedCode && (
-                  <div className="mt-3 rounded-lg overflow-hidden border">
-                    <p className="text-xs font-medium mb-2 px-2 pt-2">ตัวอย่างแผนที่:</p>
-                    <div className="w-full h-[200px]" dangerouslySetInnerHTML={{ __html: googleMapEmbedCode }} />
-                  </div>
-                )}
+                {googleMapEmbedCode && (() => {
+                  const safeSrc = extractSafeIframeSrc(googleMapEmbedCode);
+                  return (
+                    <div className="mt-3 rounded-lg overflow-hidden border">
+                      <p className="text-xs font-medium mb-2 px-2 pt-2">ตัวอย่างแผนที่:</p>
+                      {safeSrc ? (
+                        <iframe
+                          src={safeSrc}
+                          width="100%"
+                          height="200"
+                          style={{ border: 0 }}
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          title="Google Maps Preview"
+                        />
+                      ) : (
+                        <div className="w-full h-[200px] flex items-center justify-center bg-muted">
+                          <p className="text-sm text-muted-foreground">
+                            โค้ดฝังแผนที่ไม่ถูกต้อง (รองรับเฉพาะ Google Maps)
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </CardContent>
           </Card>
