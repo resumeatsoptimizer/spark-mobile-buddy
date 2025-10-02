@@ -1095,12 +1095,10 @@ const AdminRegistrations = () => {
                       <TableCell>
                         <div>
                           <p className="font-medium">
-                            {reg.profiles?.name || 
-                             (reg.form_data as any)?.full_name || 
-                             'ไม่ระบุ'}
+                            {reg.profiles?.name || 'ไม่ระบุ'}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {reg.profiles?.email || (reg.form_data as any)?.email || '-'}
+                            {reg.profiles?.email || '-'}
                           </p>
                         </div>
                       </TableCell>

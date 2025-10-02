@@ -401,10 +401,14 @@ const EventRegistration = () => {
   const renderField = (field: RegistrationField) => {
     const icon = getIcon(field.icon);
     
+    // ตรวจสอบว่าเป็นฟิลด์ที่ต้อง disable หรือไม่
+    const isDisabled = field.id === 'full_name' || field.id === 'email';
+    
     const commonProps = {
       id: field.id,
       required: field.required,
       placeholder: field.placeholder,
+      disabled: isDisabled,
     };
 
     const inputElement = (() => {
@@ -443,6 +447,7 @@ const EventRegistration = () => {
               type={field.type}
               value={formData[field.id] || ""}
               onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
+              className={isDisabled ? "bg-muted cursor-not-allowed" : ""}
             />
           );
       }
@@ -454,6 +459,7 @@ const EventRegistration = () => {
           {icon}
           <span>
             {field.label} {field.required && <span className="text-destructive">*</span>}
+            {isDisabled && <span className="text-xs text-muted-foreground ml-2">(จากข้อมูลสมาชิก)</span>}
           </span>
         </Label>
         {inputElement}

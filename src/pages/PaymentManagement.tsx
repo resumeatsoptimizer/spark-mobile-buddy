@@ -353,14 +353,10 @@ const PaymentManagement = () => {
                       <TableCell>
                         <div>
                           <p className="font-medium">
-                            {payment.registration?.profiles?.name || 
-                             (payment.registration?.form_data as any)?.full_name ||
-                             'ไม่ระบุ'}
+                            {payment.registration?.profiles?.name || 'ไม่ระบุ'}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {payment.registration?.profiles?.email || 
-                             (payment.registration?.form_data as any)?.email || 
-                             '-'}
+                            {payment.registration?.profiles?.email || '-'}
                           </p>
                         </div>
                       </TableCell>
