@@ -236,9 +236,9 @@ serve(async (req) => {
 
     const eventData = JSON.parse(toolCall.function.arguments);
     
-    // Add default Iwelty placeholder from Supabase Storage if no cover image was provided
+    // Add default Iwelty placeholder if no cover image was provided
     if (!eventData.cover_image_url) {
-      eventData.cover_image_url = 'https://qhvxqmldpifwehnsrlyn.supabase.co/storage/v1/object/public/event-images/iwelty-event-placeholder.jpg';
+      eventData.cover_image_url = '/images/iwelty-event-placeholder.jpg';
     }
 
     return new Response(
