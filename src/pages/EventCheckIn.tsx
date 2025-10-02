@@ -284,6 +284,36 @@ export default function EventCheckIn() {
     }
   };
 
+  const syncCapacity = async () => {
+    if (!selectedEventId || !currentEvent) return;
+    
+    try {
+      // Recalculate seats_remaining based on actual check-ins
+      const { count: checkInCount } = await supabase
+        .from('event_check_ins')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', selectedEventId);
+      
+      const newRemaining = currentEvent.seats_total - (checkInCount || 0);
+      
+      await supabase
+        .from('events')
+        .update({ seats_remaining: newRemaining })
+        .eq('id', selectedEventId);
+      
+      console.log('✅ Auto-synced capacity:', newRemaining);
+      
+      // Refresh event data
+      fetchCurrentEvent();
+      fetchSummary();
+      
+      return true;
+    } catch (error) {
+      console.error('Auto-sync failed:', error);
+      return false;
+    }
+  };
+
   const processCheckIn = async (data: string) => {
     try {
       setScanning(true);
@@ -352,9 +382,13 @@ export default function EventCheckIn() {
 
       if (result.success) {
         setLastCheckIn(result.check_in);
+        
+        // ✨ Auto Sync Capacity หลังเช็คอินสำเร็จ
+        await syncCapacity();
+        
         toast({
-          title: 'Check-In Successful',
-          description: 'Participant has been checked in',
+          title: 'Check-In Successful ✅',
+          description: 'Capacity updated automatically',
         });
         setQrData('');
       }
@@ -716,31 +750,13 @@ export default function EventCheckIn() {
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    if (!selectedEventId || !currentEvent) return;
-                    
-                    try {
-                      // Recalculate seats_remaining based on actual check-ins
-                      const { count: checkInCount } = await supabase
-                        .from('event_check_ins')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('event_id', selectedEventId);
-                      
-                      const newRemaining = currentEvent.seats_total - (checkInCount || 0);
-                      
-                      await supabase
-                        .from('events')
-                        .update({ seats_remaining: newRemaining })
-                        .eq('id', selectedEventId);
-                      
+                    const success = await syncCapacity();
+                    if (success) {
                       toast({ 
                         title: '✅ Capacity Synced!',
-                        description: `อัพเดท seats_remaining เป็น ${newRemaining}`
+                        description: `อัพเดทที่นั่งเรียบร้อยแล้ว`
                       });
-                      
-                      fetchCurrentEvent();
-                      fetchSummary();
-                    } catch (error) {
-                      console.error('Sync error:', error);
+                    } else {
                       toast({
                         title: '❌ Sync Failed',
                         description: 'ไม่สามารถ sync capacity ได้',
