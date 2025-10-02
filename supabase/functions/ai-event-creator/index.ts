@@ -46,6 +46,7 @@ serve(async (req) => {
 - "วันเวลาจัดงาน:" → แปลงเป็น startDate และ endDate (ISO format)
 - "เปิด-ปิดรับสมัคร:" → แปลงเป็น registrationOpenDate และ registrationCloseDate
 - "ราคา:" → ใช้สร้าง ticketTypes (ถ้าฟรีให้ price = 0, ถ้าระบุราคาให้ใช้ราคานั้นตรงๆ)
+- "ภาพปก:" → ใช้เป็น cover_image_url (ถ้าผู้ใช้ระบุ URL ภาพ)
 - "รายละเอียดเพิ่มเติม:" → ใช้ขยายความเป็น description
 
 ข้อมูลที่ต้องสร้าง:
@@ -96,6 +97,10 @@ serve(async (req) => {
                 description: { 
                   type: 'string',
                   description: 'Detailed Thai event description with formatting (200-500 words)'
+                },
+                cover_image_url: {
+                  type: 'string',
+                  description: 'URL of cover image if user specified in prompt'
                 },
                 eventLocation: {
                   type: 'string',
@@ -225,6 +230,11 @@ serve(async (req) => {
     }
 
     const eventData = JSON.parse(toolCall.function.arguments);
+    
+    // Add default Iwelty placeholder if no cover image was provided
+    if (!eventData.cover_image_url) {
+      eventData.cover_image_url = '/images/iwelty-event-placeholder.jpg';
+    }
 
     return new Response(
       JSON.stringify({ eventData }),

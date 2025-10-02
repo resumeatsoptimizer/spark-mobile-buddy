@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 interface EventData {
   title: string;
   description: string;
+  cover_image_url?: string;
   eventLocation?: string;
   googleMapUrl?: string;
   startDate?: string;
@@ -136,6 +137,7 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
 วันเวลาจัดงาน: [วัน/เดือน/ปี และเวลา]
 เปิด-ปิดรับสมัคร: [วันที่เปิดและปิดรับสมัคร]
 ราคา: [ฟรี หรือ ระบุราคา เช่น 500 บาท]
+ภาพปก: [URL ภาพปก (ถ้ามี)]
 รายละเอียดเพิ่มเติม: [อธิบายลักษณะงาน กิจกรรม สิ่งที่ผู้เข้าร่วมจะได้รับ ฯลฯ]
 
 ตัวอย่าง:
@@ -176,6 +178,18 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
             <div>
               <h4 className="font-semibold mb-2">Generated Event</h4>
               <div className="space-y-2">
+                {generatedData.cover_image_url && (
+                  <div className="relative aspect-video w-full rounded-lg overflow-hidden border mb-3">
+                    <img
+                      src={generatedData.cover_image_url}
+                      alt={generatedData.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
                 <div>
                   <span className="text-sm font-medium">Title:</span>
                   <p className="text-sm text-muted-foreground">{generatedData.title}</p>

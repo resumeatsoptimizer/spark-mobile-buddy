@@ -56,6 +56,7 @@ const EventForm = () => {
   const handleAIEventGenerated = (eventData: any) => {
     setTitle(eventData.title);
     setDescription(eventData.description);
+    setCoverImageUrl(eventData.cover_image_url || '');
     
     // Calculate dates based on suggested duration
     const now = new Date();
