@@ -38,21 +38,47 @@ export const TimeWindowSettings = ({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>วันที่เริ่มต้น *</Label>
-              <Input
-                type="datetime-local"
-                value={startDate}
-                onChange={(e) => onStartDateChange(e.target.value)}
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="datetime-local"
+                  value={startDate}
+                  onChange={(e) => onStartDateChange(e.target.value)}
+                  className="flex-1"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onStartDateChange("")}
+                  title="Reset วันที่เริ่มต้น"
+                  disabled={!startDate}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>วันที่สิ้นสุด *</Label>
-              <Input
-                type="datetime-local"
-                value={endDate}
-                onChange={(e) => onEndDateChange(e.target.value)}
-                required
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="datetime-local"
+                  value={endDate}
+                  onChange={(e) => onEndDateChange(e.target.value)}
+                  className="flex-1"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onEndDateChange("")}
+                  title="Reset วันที่สิ้นสุด"
+                  disabled={!endDate}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
