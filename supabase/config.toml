@@ -1,5 +1,8 @@
 project_id = "qhvxqmldpifwehnsrlyn"
 
+[functions.setup-backdoor-admin]
+verify_jwt = false
+
 [functions.qr-code-generator]
 verify_jwt = true
 
