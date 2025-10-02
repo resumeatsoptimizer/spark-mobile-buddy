@@ -527,7 +527,7 @@ const EventForm = () => {
                       <img
                         src={coverImageUrl}
                         alt="Cover preview"
-                        className="object-cover w-full h-full"
+                        className="object-cover object-center w-full h-full"
                       />
                     </AspectRatio>
                   </div>
