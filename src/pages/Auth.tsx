@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@supabase/supabase-js";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -24,8 +24,14 @@ const Auth = () => {
   // Signup form
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [signupName, setSignupName] = useState("");
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
+  
+  // Forgot password form
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   useEffect(() => {
     // Check for existing session
@@ -47,6 +53,21 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const getPasswordStrength = (password: string) => {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (password.length >= 12) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z0-9]/.test(password)) strength++;
+    return strength;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -54,6 +75,15 @@ const Auth = () => {
       toast({
         title: "กรุณากรอกข้อมูล",
         description: "กรุณากรอกอีเมลและรหัสผ่าน",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateEmail(loginEmail)) {
+      toast({
+        title: "อีเมลไม่ถูกต้อง",
+        description: "กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง",
         variant: "destructive",
       });
       return;
@@ -85,7 +115,7 @@ const Auth = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!signupEmail || !signupPassword || !signupName) {
+    if (!signupEmail || !signupPassword || !signupConfirmPassword || !signupName) {
       toast({
         title: "กรุณากรอกข้อมูล",
         description: "กรุณากรอกข้อมูลให้ครบถ้วน",
@@ -94,10 +124,38 @@ const Auth = () => {
       return;
     }
 
-    if (signupPassword.length < 6) {
+    if (!validateEmail(signupEmail)) {
+      toast({
+        title: "อีเมลไม่ถูกต้อง",
+        description: "กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (signupPassword.length < 8) {
       toast({
         title: "รหัสผ่านสั้นเกินไป",
-        description: "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร",
+        description: "รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (signupPassword !== signupConfirmPassword) {
+      toast({
+        title: "รหัสผ่านไม่ตรงกัน",
+        description: "กรุณายืนยันรหัสผ่านให้ตรงกัน",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const passwordStrength = getPasswordStrength(signupPassword);
+    if (passwordStrength < 2) {
+      toast({
+        title: "รหัสผ่านไม่ปลอดภัย",
+        description: "กรุณาใช้รหัสผ่านที่แข็งแกร่งขึ้น (ควรมีตัวพิมพ์เล็ก-ใหญ่ และตัวเลข)",
         variant: "destructive",
       });
       return;
@@ -129,7 +187,52 @@ const Auth = () => {
       });
       setSignupEmail("");
       setSignupPassword("");
+      setSignupConfirmPassword("");
       setSignupName("");
+    }
+
+    setLoading(false);
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!forgotEmail) {
+      toast({
+        title: "กรุณากรอกอีเมล",
+        description: "กรุณากรอกอีเมลเพื่อรีเซ็ตรหัสผ่าน",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateEmail(forgotEmail)) {
+      toast({
+        title: "อีเมลไม่ถูกต้อง",
+        description: "กรุณากรอกอีเมลในรูปแบบที่ถูกต้อง",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) {
+      toast({
+        title: "ส่งอีเมลไม่สำเร็จ",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setResetEmailSent(true);
+      toast({
+        title: "ส่งอีเมลสำเร็จ",
+        description: "กรุณาตรวจสอบอีเมลของคุณเพื่อรีเซ็ตรหัสผ่าน",
+      });
     }
 
     setLoading(false);
@@ -154,9 +257,10 @@ const Auth = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="login">เข้าสู่ระบบ</TabsTrigger>
               <TabsTrigger value="signup">ลงทะเบียน</TabsTrigger>
+              <TabsTrigger value="forgot">ลืมรหัสผ่าน</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -203,6 +307,19 @@ const Auth = () => {
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
                 </Button>
+                <div className="text-center mt-2">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-muted-foreground"
+                    onClick={() => {
+                      const tabs = document.querySelector('[value="forgot"]') as HTMLElement;
+                      tabs?.click();
+                    }}
+                  >
+                    ลืมรหัสผ่าน?
+                  </Button>
+                </div>
               </form>
             </TabsContent>
             
@@ -258,11 +375,138 @@ const Auth = () => {
                       )}
                     </button>
                   </div>
+                  {signupPassword && (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              getPasswordStrength(signupPassword) <= 1
+                                ? "bg-red-500"
+                                : getPasswordStrength(signupPassword) <= 3
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
+                            }`}
+                            style={{ width: `${(getPasswordStrength(signupPassword) / 5) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {getPasswordStrength(signupPassword) <= 1
+                            ? "อ่อนแอ"
+                            : getPasswordStrength(signupPassword) <= 3
+                            ? "ปานกลาง"
+                            : "แข็งแกร่ง"}
+                        </span>
+                      </div>
+                      <ul className="text-xs space-y-1">
+                        <li className={signupPassword.length >= 8 ? "text-green-600" : "text-muted-foreground"}>
+                          {signupPassword.length >= 8 ? "✓" : "○"} อย่างน้อย 8 ตัวอักษร
+                        </li>
+                        <li className={(/[a-z]/.test(signupPassword) && /[A-Z]/.test(signupPassword)) ? "text-green-600" : "text-muted-foreground"}>
+                          {(/[a-z]/.test(signupPassword) && /[A-Z]/.test(signupPassword)) ? "✓" : "○"} มีตัวพิมพ์เล็กและใหญ่
+                        </li>
+                        <li className={/\d/.test(signupPassword) ? "text-green-600" : "text-muted-foreground"}>
+                          {/\d/.test(signupPassword) ? "✓" : "○"} มีตัวเลข
+                        </li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm-password">ยืนยันรหัสผ่าน</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-confirm-password"
+                      type={showSignupConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={signupConfirmPassword}
+                      onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                      disabled={loading}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      disabled={loading}
+                    >
+                      {showSignupConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {signupConfirmPassword && (
+                    <div className="flex items-center gap-2 text-xs">
+                      {signupPassword === signupConfirmPassword ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span className="text-green-600">รหัสผ่านตรงกัน</span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="h-4 w-4 text-red-600" />
+                          <span className="text-red-600">รหัสผ่านไม่ตรงกัน</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "กำลังลงทะเบียน..." : "ลงทะเบียน"}
                 </Button>
               </form>
+            </TabsContent>
+
+            <TabsContent value="forgot">
+              {resetEmailSent ? (
+                <div className="space-y-4 text-center py-8">
+                  <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold">ส่งอีเมลสำเร็จ</h3>
+                    <p className="text-sm text-muted-foreground">
+                      เราได้ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมล
+                    </p>
+                    <p className="text-sm font-medium">{forgotEmail}</p>
+                    <p className="text-xs text-muted-foreground mt-4">
+                      กรุณาตรวจสอบอีเมลของคุณและคลิกลิงก์เพื่อตั้งรหัสผ่านใหม่
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setResetEmailSent(false);
+                      setForgotEmail("");
+                    }}
+                    className="mt-4"
+                  >
+                    กลับไปหน้าเข้าสู่ระบบ
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="forgot-email">อีเมล</Label>
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      placeholder="example@email.com"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      disabled={loading}
+                      required
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      กรอกอีเมลที่คุณใช้ลงทะเบียน เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้คุณ
+                    </p>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "กำลังส่งอีเมล..." : "ส่งลิงก์รีเซ็ตรหัสผ่าน"}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
