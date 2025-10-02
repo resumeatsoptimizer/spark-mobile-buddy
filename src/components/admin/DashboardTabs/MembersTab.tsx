@@ -113,7 +113,7 @@ export function MembersTab() {
     URL.revokeObjectURL(url);
   };
 
-  const handleUpdateRoles = async (userId: string, roles: string[]) => {
+  const handleUpdateRole = async (userId: string, role: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
@@ -126,14 +126,14 @@ export function MembersTab() {
             Authorization: `Bearer ${session.access_token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ userId, roles }),
+          body: JSON.stringify({ userId, role }),
         }
       );
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Failed to update roles");
+        throw new Error(result.error || "Failed to update role");
       }
 
       toast({
@@ -307,29 +307,23 @@ export function MembersTab() {
                           <DropdownMenuSub>
                             <DropdownMenuSubTrigger>
                               <Shield className="mr-2 h-4 w-4" />
-                              จัดการสิทธิ์
+                              เปลี่ยนสิทธิ์
                             </DropdownMenuSubTrigger>
                             <DropdownMenuSubContent>
                               <DropdownMenuItem
-                                onClick={() => handleUpdateRoles(member.user_id, ["admin"])}
+                                onClick={() => handleUpdateRole(member.user_id, "admin")}
                               >
-                                Admin
+                                Admin (สิทธิ์สูงสุด)
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleUpdateRoles(member.user_id, ["staff"])}
+                                onClick={() => handleUpdateRole(member.user_id, "staff")}
                               >
-                                Staff
+                                Staff (เจ้าหน้าที่)
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleUpdateRoles(member.user_id, ["participant"])}
+                                onClick={() => handleUpdateRole(member.user_id, "participant")}
                               >
-                                Participant
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleUpdateRoles(member.user_id, [])}
-                              >
-                                ลบสิทธิ์ทั้งหมด
+                                Participant (ผู้เข้าร่วม)
                               </DropdownMenuItem>
                             </DropdownMenuSubContent>
                           </DropdownMenuSub>

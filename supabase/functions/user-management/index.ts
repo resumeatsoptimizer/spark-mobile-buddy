@@ -14,7 +14,7 @@ interface CreateUserRequest {
 
 interface UpdateRolesRequest {
   userId: string;
-  roles: string[];
+  role: string;
 }
 
 interface DeleteUserRequest {
@@ -87,26 +87,23 @@ Deno.serve(async (req) => {
 
       console.log(`User created successfully: ${newUser.user.id}`);
 
-      // Assign role - use upsert to handle duplicates from trigger
-      // The handle_new_user() trigger auto-assigns 'participant' role
-      // So we use ON CONFLICT to update if needed
+      // Delete any existing role (e.g., from trigger) and insert the correct one
+      await supabaseClient
+        .from('user_roles')
+        .delete()
+        .eq('user_id', newUser.user.id);
+
+      // Assign single role
       const { error: roleError } = await supabaseClient
         .from('user_roles')
-        .upsert(
-          { user_id: newUser.user.id, role },
-          { onConflict: 'user_id,role', ignoreDuplicates: false }
-        );
+        .insert({ user_id: newUser.user.id, role });
 
       if (roleError) {
         console.error('Error assigning role:', roleError);
-        // Don't throw here if it's a duplicate - it's expected from trigger
-        if (roleError.code !== '23505') {
-          throw roleError;
-        }
-        console.log('Role already exists from trigger, continuing...');
-      } else {
-        console.log(`Role ${role} assigned successfully`);
+        throw roleError;
       }
+
+      console.log(`Role ${role} assigned successfully`);
 
       return new Response(
         JSON.stringify({ success: true, user: newUser.user }),
@@ -115,42 +112,34 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'update-roles' && req.method === 'POST') {
-      const { userId, roles }: UpdateRolesRequest = await req.json();
+      const { userId, role }: UpdateRolesRequest = await req.json();
 
-      console.log(`Updating roles for user ${userId}:`, roles);
+      console.log(`Updating role for user ${userId} to:`, role);
 
-      // Use a transaction-like approach: delete then insert with proper error handling
-      // First, delete existing roles
+      // Delete existing role
       const { error: deleteError } = await supabaseClient
         .from('user_roles')
         .delete()
         .eq('user_id', userId);
 
       if (deleteError) {
-        console.error('Error deleting existing roles:', deleteError);
+        console.error('Error deleting existing role:', deleteError);
         throw deleteError;
       }
 
-      console.log('Existing roles deleted');
+      console.log('Existing role deleted');
 
-      // Insert new roles using upsert to handle any conflicts
-      if (roles.length > 0) {
-        const roleInserts = roles.map((role) => ({ user_id: userId, role }));
-        
-        const { error: roleError } = await supabaseClient
-          .from('user_roles')
-          .upsert(roleInserts, { 
-            onConflict: 'user_id,role',
-            ignoreDuplicates: true 
-          });
+      // Insert new single role
+      const { error: roleError } = await supabaseClient
+        .from('user_roles')
+        .insert({ user_id: userId, role });
 
-        if (roleError) {
-          console.error('Error inserting new roles:', roleError);
-          throw roleError;
-        }
-
-        console.log(`Successfully assigned ${roles.length} role(s)`);
+      if (roleError) {
+        console.error('Error inserting new role:', roleError);
+        throw roleError;
       }
+
+      console.log(`Successfully assigned role: ${role}`);
 
       return new Response(
         JSON.stringify({ success: true }),
