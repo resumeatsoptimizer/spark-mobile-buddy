@@ -137,9 +137,6 @@ export default function EventCheckIn() {
         .order('start_date', { ascending: true });
       
       setEvents(data || []);
-      if (data && data.length > 0) {
-        setSelectedEventId(data[0].id);
-      }
     } catch (error) {
       console.error('Error fetching events:', error);
     }
