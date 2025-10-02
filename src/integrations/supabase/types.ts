@@ -2109,10 +2109,14 @@ export type Database = {
           activity_level: string | null
           created_at: string | null
           email: string | null
+          engagement_score: number | null
+          last_login_at: string | null
           last_registration_at: string | null
           name: string | null
           status: string | null
           total_amount_paid: number | null
+          total_events_attended: number | null
+          total_payments: number | null
           total_registrations: number | null
           user_id: string | null
         }

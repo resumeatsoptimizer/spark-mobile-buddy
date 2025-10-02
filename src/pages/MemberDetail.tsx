@@ -60,23 +60,20 @@ import {
 type MemberStatus = "active" | "inactive" | "suspended" | "blocked";
 
 interface MemberDetails {
-  id: string;
+  user_id: string;
   email: string;
-  name: string | null;
-  phone: string | null;
-  line_id: string | null;
-  avatar_url: string | null;
-  bio: string | null;
+  name: string;
   status: MemberStatus;
-  account_verified: boolean;
+  activity_level: string;
   last_login_at: string | null;
   created_at: string;
+  last_registration_at: string | null;
   total_registrations: number;
   total_events_attended: number;
   total_payments: number;
   total_amount_paid: number;
   engagement_score: number;
-  tags: any[];
+  tags: string[];
   roles: string[];
 }
 
@@ -202,10 +199,22 @@ const MemberDetail = () => {
         variant: "destructive",
       });
     } else if (data) {
-      // Ensure tags and roles are always arrays
+      // Ensure all data is properly structured
       const rawData = data as any;
-      const memberData = {
-        ...rawData,
+      const memberData: MemberDetails = {
+        user_id: rawData.user_id,
+        email: rawData.email,
+        name: rawData.name || 'ไม่มีข้อมูล',
+        status: rawData.status || 'new',
+        activity_level: rawData.activity_level || 'inactive',
+        total_registrations: rawData.total_registrations || 0,
+        total_events_attended: rawData.total_events_attended || 0,
+        total_payments: rawData.total_payments || 0,
+        last_registration_at: rawData.last_registration_at,
+        last_login_at: rawData.last_login_at,
+        created_at: rawData.created_at,
+        total_amount_paid: rawData.total_amount_paid || 0,
+        engagement_score: rawData.engagement_score || 0,
         tags: rawData.tags || [],
         roles: rawData.roles || [],
       };
@@ -505,12 +514,6 @@ const MemberDetail = () => {
                 </p>
                 <div className="flex gap-2 mt-2">
                   {getStatusBadge(member.status)}
-                  {member.account_verified && (
-                    <Badge className="bg-blue-500">
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Verified
-                    </Badge>
-                  )}
                   {member.roles && member.roles.map((role: string, idx: number) => (
                     <Badge key={idx} variant="outline">{role}</Badge>
                   ))}
@@ -586,6 +589,12 @@ const MemberDetail = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{member.engagement_score}</div>
+              <p className="text-xs text-muted-foreground">
+                {member.activity_level === 'high' && 'ระดับสูง'}
+                {member.activity_level === 'medium' && 'ระดับปานกลาง'}
+                {member.activity_level === 'low' && 'ระดับต่ำ'}
+                {member.activity_level === 'inactive' && 'ไม่มีกิจกรรม'}
+              </p>
             </CardContent>
           </Card>
 
@@ -599,7 +608,7 @@ const MemberDetail = () => {
             <CardContent>
               <div className="text-2xl font-bold">{member.total_registrations}</div>
               <p className="text-xs text-muted-foreground">
-                เข้าร่วม {member.total_events_attended} events
+                เข้าร่วมแล้ว {member.total_events_attended} งาน
               </p>
             </CardContent>
           </Card>
@@ -612,9 +621,9 @@ const MemberDetail = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{member.total_payments}</div>
+              <div className="text-2xl font-bold">฿{member.total_amount_paid.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                ฿{member.total_amount_paid.toLocaleString()}
+                {member.total_payments} ครั้ง
               </p>
             </CardContent>
           </Card>
@@ -662,16 +671,13 @@ const MemberDetail = () => {
                     <p className="font-medium">{member.email}</p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Phone</Label>
-                    <p className="font-medium">{member.phone || "-"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">LINE ID</Label>
-                    <p className="font-medium">{member.line_id || "-"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Bio</Label>
-                    <p className="font-medium">{member.bio || "-"}</p>
+                    <Label className="text-muted-foreground">Activity Level</Label>
+                    <p className="font-medium">
+                      {member.activity_level === 'high' && 'สูง'}
+                      {member.activity_level === 'medium' && 'ปานกลาง'}
+                      {member.activity_level === 'low' && 'ต่ำ'}
+                      {member.activity_level === 'inactive' && 'ไม่มีกิจกรรม'}
+                    </p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">สมัครเมื่อ</Label>
