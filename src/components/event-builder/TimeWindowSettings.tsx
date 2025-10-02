@@ -1,6 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 
 interface TimeWindowSettingsProps {
   startDate: string;
@@ -61,20 +63,46 @@ export const TimeWindowSettings = ({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>เปิดลงทะเบียน</Label>
-              <Input
-                type="datetime-local"
-                value={registrationOpenDate}
-                onChange={(e) => onRegistrationOpenDateChange(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="datetime-local"
+                  value={registrationOpenDate}
+                  onChange={(e) => onRegistrationOpenDateChange(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onRegistrationOpenDateChange("")}
+                  title="Reset เป็นค่าเริ่มต้น (เปิดทันที)"
+                  disabled={!registrationOpenDate}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">ว่างไว้ = เปิดทันที</p>
             </div>
             <div className="space-y-2">
               <Label>ปิดลงทะเบียน</Label>
-              <Input
-                type="datetime-local"
-                value={registrationCloseDate}
-                onChange={(e) => onRegistrationCloseDateChange(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="datetime-local"
+                  value={registrationCloseDate}
+                  onChange={(e) => onRegistrationCloseDateChange(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => onRegistrationCloseDateChange("")}
+                  title="Reset เป็นค่าเริ่มต้น (ปิดเมื่องานเริ่ม)"
+                  disabled={!registrationCloseDate}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">ว่างไว้ = ปิดเมื่องานเริ่ม</p>
             </div>
           </div>
