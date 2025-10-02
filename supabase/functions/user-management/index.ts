@@ -163,10 +163,27 @@ Deno.serve(async (req) => {
 
       console.log(`Deleting user: ${userId}`);
 
-      // Delete user (cascades to user_roles and profiles)
+      // Try to delete user from auth
       const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(userId);
 
       if (deleteError) {
+        // If user not found in auth, they might already be deleted
+        // Clean up orphaned records in public tables
+        if (deleteError.status === 404 || deleteError.code === 'user_not_found') {
+          console.log('User not found in auth, cleaning up related records');
+          
+          // Delete related records manually
+          await supabaseClient.from('user_roles').delete().eq('user_id', userId);
+          await supabaseClient.from('profiles').delete().eq('id', userId);
+          
+          console.log('Cleanup completed for non-existent user');
+          
+          return new Response(
+            JSON.stringify({ success: true, message: 'User records cleaned up' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         console.error('Error deleting user:', deleteError);
         throw deleteError;
       }

@@ -342,6 +342,16 @@ const MemberManagement = () => {
           errorMessage = "ไม่สามารถลบได้ เนื่องจากมีข้อมูลที่เกี่ยวข้อง";
         } else if (errorMessage.includes("permission")) {
           errorMessage = "คุณไม่มีสิทธิ์ลบผู้ใช้นี้";
+        } else if (errorMessage.includes("not found") || errorMessage.includes("User not found")) {
+          // User already deleted, just refresh the view
+          toast({
+            title: "สำเร็จ",
+            description: "ผู้ใช้ถูกลบไปแล้ว กำลังอัพเดตข้อมูล...",
+          });
+          await supabase.rpc('refresh_member_stats_mv');
+          await fetchData();
+          setDeleteUserId(null);
+          return;
         }
         
         throw new Error(errorMessage);
@@ -349,17 +359,20 @@ const MemberManagement = () => {
 
       toast({
         title: "สำเร็จ",
-        description: "ลบผู้ใช้เรียบร้อยแล้ว",
+        description: result.message || "ลบผู้ใช้เรียบร้อยแล้ว",
       });
 
+      // Refresh materialized view and data
+      await supabase.rpc('refresh_member_stats_mv');
+      await fetchData();
       setDeleteUserId(null);
-      fetchMembers();
     } catch (error: any) {
       toast({
         title: "เกิดข้อผิดพลาด",
         description: error.message,
         variant: "destructive",
       });
+      setDeleteUserId(null);
     }
   };
 
