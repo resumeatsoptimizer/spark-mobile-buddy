@@ -25,13 +25,42 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = `You are an AI event creation assistant. Generate comprehensive event details based on user input. Consider:
-- Event type (physical, virtual, hybrid)
-- Appropriate timing and duration
-- Engaging descriptions
-- Relevant custom fields
-- Professional formatting
-- SEO-friendly content`;
+    const systemPrompt = `You are an AI event creation assistant for Thailand-based events. Generate comprehensive event details in Thai language based on user input.
+
+CRITICAL INSTRUCTIONS:
+- Generate ALL responses in Thai language (except URLs and technical fields)
+- Provide complete, ready-to-use event information
+- Consider Thai cultural context, holidays, and business practices
+- Use Thai Baht (THB) for pricing
+- Suggest appropriate venues/platforms popular in Thailand
+
+REQUIRED OUTPUT FOR ALL EVENT TYPES:
+1. Title: Engaging, descriptive Thai event name (50-100 chars)
+2. Description: Detailed Thai description with formatting (200-500 words)
+3. Duration: Realistic hours and minutes based on event type
+4. Capacity: Appropriate number of participants
+5. Location: Specific venue name and address (for physical/hybrid)
+6. Google Map URL: Real venue link (use popular Thai venues like QSNCC, Impact Arena, etc.)
+7. Start/End Dates: Suggest optimal dates (weekends for public events, weekdays for corporate)
+8. Registration Window: Open 2-4 weeks before, close 2-3 days before event
+9. Ticket Types: At least 2 types with Thai pricing (Early Bird, Regular, VIP)
+10. Waitlist Settings: Enable for popular events
+11. Visibility: public (default), private (for corporate), invitation_only (for exclusive)
+12. Categories: Thai event categories (เทคโนโลยี, ธุรกิจ, กีฬา, ศิลปะ, etc.)
+13. Tags: Relevant Thai keywords
+14. Marketing Tips: 3-5 actionable tips in Thai
+
+EVENT TYPE SPECIFIC:
+- Physical: Bangkok venues (QSNCC, Impact, CentralWorld, hotels)
+- Virtual: Zoom, Microsoft Teams, Google Meet
+- Hybrid: Combine both with streaming details
+
+PRICING GUIDELINES:
+- Free events: Community, education, charity
+- Workshop/Training: 500-3,000 THB
+- Seminars/Conferences: 1,000-5,000 THB
+- Premium/VIP: 5,000-20,000 THB
+- Concert/Festival: 800-5,000 THB`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -58,49 +87,109 @@ serve(async (req) => {
               properties: {
                 title: { 
                   type: 'string',
-                  description: 'Engaging event title (max 100 chars)'
+                  description: 'Engaging Thai event title (50-100 chars)'
                 },
                 description: { 
                   type: 'string',
-                  description: 'Detailed event description with formatting'
+                  description: 'Detailed Thai event description with formatting (200-500 words)'
+                },
+                eventLocation: {
+                  type: 'string',
+                  description: 'Specific venue name and address in Thai (for physical/hybrid events)'
+                },
+                googleMapUrl: {
+                  type: 'string',
+                  description: 'Google Maps URL of the venue (use real popular Thai venues)'
+                },
+                startDate: {
+                  type: 'string',
+                  description: 'Suggested start date and time in ISO format (YYYY-MM-DDTHH:mm:ss)'
+                },
+                endDate: {
+                  type: 'string',
+                  description: 'Suggested end date and time in ISO format (YYYY-MM-DDTHH:mm:ss)'
                 },
                 suggestedDuration: {
                   type: 'object',
                   properties: {
-                    hours: { type: 'number' },
-                    minutes: { type: 'number' }
-                  }
+                    hours: { type: 'number', description: 'Duration in hours' },
+                    minutes: { type: 'number', description: 'Additional minutes' }
+                  },
+                  required: ['hours', 'minutes']
                 },
                 suggestedCapacity: { 
                   type: 'number',
-                  description: 'Recommended number of participants'
+                  description: 'Recommended number of participants based on event type'
                 },
-                customFields: {
+                registrationOpenDate: {
+                  type: 'string',
+                  description: 'Registration open date (2-4 weeks before event) in ISO format'
+                },
+                registrationCloseDate: {
+                  type: 'string',
+                  description: 'Registration close date (2-3 days before event) in ISO format'
+                },
+                ticketTypes: {
                   type: 'array',
+                  description: 'Array of ticket types with Thai names and THB pricing',
                   items: {
                     type: 'object',
                     properties: {
-                      label: { type: 'string' },
+                      name: { type: 'string', description: 'Ticket name in Thai (e.g., บัตรผู้เข้าชม, บัตร Early Bird, บัตร VIP)' },
+                      price: { type: 'number', description: 'Price in Thai Baht (0 for free tickets)' },
+                      seats: { type: 'number', description: 'Number of seats available for this ticket type' },
+                      description: { type: 'string', description: 'Thai description of what this ticket includes' }
+                    },
+                    required: ['name', 'price', 'seats']
+                  }
+                },
+                waitlistEnabled: {
+                  type: 'boolean',
+                  description: 'Enable waitlist for popular events (true for high-demand events)'
+                },
+                maxWaitlistSize: {
+                  type: 'number',
+                  description: 'Maximum waitlist size (typically 20-50% of capacity)'
+                },
+                visibility: {
+                  type: 'string',
+                  enum: ['public', 'private', 'invitation_only'],
+                  description: 'Event visibility: public (default), private (corporate), invitation_only (exclusive)'
+                },
+                meetingPlatform: {
+                  type: 'string',
+                  description: 'Platform for virtual/hybrid events (Zoom, Google Meet, Microsoft Teams)'
+                },
+                customFields: {
+                  type: 'array',
+                  description: 'Relevant custom registration fields in Thai',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      label: { type: 'string', description: 'Field label in Thai' },
                       type: { type: 'string', enum: ['text', 'select', 'checkbox'] },
                       required: { type: 'boolean' },
-                      options: { type: 'array', items: { type: 'string' } }
+                      options: { type: 'array', items: { type: 'string' }, description: 'Options in Thai for select fields' }
                     }
                   }
                 },
                 suggestedCategories: {
                   type: 'array',
+                  description: 'Thai event categories (e.g., เทคโนโลยี, ธุรกิจ, กีฬา, ศิลปะ)',
                   items: { type: 'string' }
                 },
                 suggestedTags: {
                   type: 'array',
+                  description: 'Relevant Thai keywords for search',
                   items: { type: 'string' }
                 },
                 marketingTips: {
                   type: 'array',
+                  description: 'Actionable marketing tips in Thai (3-5 tips)',
                   items: { type: 'string' }
                 }
               },
-              required: ['title', 'description', 'suggestedDuration', 'suggestedCapacity']
+              required: ['title', 'description', 'suggestedDuration', 'suggestedCapacity', 'startDate', 'endDate', 'registrationOpenDate', 'registrationCloseDate', 'ticketTypes', 'visibility']
             }
           }
         }],

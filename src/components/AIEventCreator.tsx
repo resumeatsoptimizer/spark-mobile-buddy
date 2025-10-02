@@ -12,8 +12,24 @@ import { Badge } from "@/components/ui/badge";
 interface EventData {
   title: string;
   description: string;
+  eventLocation?: string;
+  googleMapUrl?: string;
+  startDate?: string;
+  endDate?: string;
   suggestedDuration: { hours: number; minutes: number };
   suggestedCapacity: number;
+  registrationOpenDate?: string;
+  registrationCloseDate?: string;
+  ticketTypes?: Array<{
+    name: string;
+    price: number;
+    seats: number;
+    description?: string;
+  }>;
+  waitlistEnabled?: boolean;
+  maxWaitlistSize?: number;
+  visibility?: string;
+  meetingPlatform?: string;
   customFields?: any[];
   suggestedCategories?: string[];
   suggestedTags?: string[];
@@ -112,10 +128,10 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
           <Label htmlFor="prompt">Event Description</Label>
           <Textarea
             id="prompt"
-            placeholder="e.g., 'A tech conference for AI developers with workshops on LLMs and practical sessions'"
+            placeholder="ตัวอย่าง:&#10;• งานวิ่งมินิมาราธอน 10K ที่สวนลุมพินี เปิดรับสมัคร 500 คน มีของที่ระลึก&#10;• สัมมนาเทคโนโลยี AI สำหรับธุรกิจ SME ที่โรงแรม 5 ดาว ราคา 2,500 บาท&#10;• Workshop ทำอาหารไทยต้นตำรับ ณ ครัวเรียนทำอาหาร พร้อมวุฒิบัตร&#10;• คอนเสิร์ตดนตรีคลาสสิก ที่ Thailand Cultural Centre ราคา 1,000-3,000 บาท&#10;• นิทรรศการศิลปะร่วมสมัย ฟรี ณ หอศิลป์ 3 วัน"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="min-h-[100px] mt-2"
+            className="min-h-[120px] mt-2 text-sm"
           />
         </div>
 
@@ -166,6 +182,32 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
                     {generatedData.description}
                   </p>
                 </div>
+                {generatedData.eventLocation && (
+                  <div>
+                    <span className="text-sm font-medium">Location:</span>
+                    <p className="text-sm text-muted-foreground">{generatedData.eventLocation}</p>
+                  </div>
+                )}
+                {generatedData.startDate && (
+                  <div className="flex gap-4">
+                    <div>
+                      <span className="text-sm font-medium">Start:</span>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(generatedData.startDate).toLocaleDateString('th-TH', { 
+                          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium">End:</span>
+                      <p className="text-sm text-muted-foreground">
+                        {generatedData.endDate ? new Date(generatedData.endDate).toLocaleDateString('th-TH', { 
+                          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                        }) : '-'}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-4">
                   <div>
                     <span className="text-sm font-medium">Duration:</span>
@@ -180,6 +222,21 @@ const AIEventCreator = ({ onEventGenerated }: AIEventCreatorProps) => {
                     </p>
                   </div>
                 </div>
+                {generatedData.ticketTypes && generatedData.ticketTypes.length > 0 && (
+                  <div>
+                    <span className="text-sm font-medium">Ticket Types:</span>
+                    <div className="space-y-1 mt-1">
+                      {generatedData.ticketTypes.map((ticket, i) => (
+                        <div key={i} className="text-sm text-muted-foreground flex justify-between">
+                          <span>{ticket.name}</span>
+                          <span className="font-medium">
+                            {ticket.price === 0 ? 'ฟรี' : `${ticket.price.toLocaleString('th-TH')} บาท`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {generatedData.suggestedCategories && (
                   <div>
                     <span className="text-sm font-medium">Categories:</span>
