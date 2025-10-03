@@ -10,16 +10,17 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: 'registration' | 'payment_success' | 'status_update';
+  type: 'registration' | 'payment_success' | 'payment_failed' | 'status_update';
   recipientEmail: string;
   recipientName: string;
   eventTitle: string;
-  eventDate: string;
+  eventDate?: string;
   eventLocation?: string;
   registrationId: string;
   status?: string;
   amount?: number;
   ticketType?: string;
+  failureReason?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -50,13 +51,13 @@ const handler = async (req: Request): Promise<Response> => {
             <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h2 style="color: #0066cc; margin-top: 0;">รายละเอียดกิจกรรม</h2>
               <p><strong>ชื่อกิจกรรม:</strong> ${emailData.eventTitle}</p>
-              <p><strong>วันที่:</strong> ${new Date(emailData.eventDate).toLocaleDateString('th-TH', {
+              <p><strong>วันที่:</strong> ${emailData.eventDate ? new Date(emailData.eventDate).toLocaleDateString('th-TH', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
-              })}</p>
+              }) : '-'}</p>
               ${emailData.eventLocation ? `<p><strong>สถานที่:</strong> ${emailData.eventLocation}</p>` : ''}
               ${emailData.ticketType ? `<p><strong>ประเภทบัตร:</strong> ${emailData.ticketType}</p>` : ''}
               <p><strong>หมายเลขการลงทะเบียน:</strong> ${emailData.registrationId}</p>
@@ -94,18 +95,55 @@ const handler = async (req: Request): Promise<Response> => {
 
             <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="color: #333; margin-top: 0;">รายละเอียดกิจกรรม</h3>
-              <p><strong>วันที่:</strong> ${new Date(emailData.eventDate).toLocaleDateString('th-TH', {
+              <p><strong>วันที่:</strong> ${emailData.eventDate ? new Date(emailData.eventDate).toLocaleDateString('th-TH', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
-              })}</p>
+              }) : '-'}</p>
               ${emailData.eventLocation ? `<p><strong>สถานที่:</strong> ${emailData.eventLocation}</p>` : ''}
             </div>
 
             <p style="color: #666; margin-top: 20px;">
               ขอบคุณที่ใช้บริการของเรา
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+            <p style="color: #999; font-size: 12px; text-align: center;">
+              อีเมลนี้ส่งอัตโนมัติ กรุณาอย่าตอบกลับ
+            </p>
+          </div>
+        `;
+        break;
+
+      case 'payment_failed':
+        subject = `การชำระเงินไม่สำเร็จ - ${emailData.eventTitle}`;
+        html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #333; border-bottom: 2px solid #cc0000; padding-bottom: 10px;">
+              ⚠️ การชำระเงินไม่สำเร็จ
+            </h1>
+            <p>สวัสดีคุณ ${emailData.recipientName}</p>
+            <p>เราไม่สามารถดำเนินการชำระเงินของคุณได้</p>
+            
+            <div style="background-color: #fff0f0; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #cc0000;">
+              <h2 style="color: #cc0000; margin-top: 0;">รายละเอียด</h2>
+              <p><strong>ชื่อกิจกรรม:</strong> ${emailData.eventTitle}</p>
+              <p><strong>หมายเลขการลงทะเบียน:</strong> ${emailData.registrationId}</p>
+              ${emailData.failureReason ? `<p><strong>สาเหตุ:</strong> ${emailData.failureReason}</p>` : ''}
+            </div>
+
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #333; margin-top: 0;">ขั้นตอนถัดไป</h3>
+              <p>1. ตรวจสอบข้อมูลบัตรของคุณ</p>
+              <p>2. ตรวจสอบยอดเงินในบัญชี</p>
+              <p>3. ลองชำระเงินอีกครั้ง</p>
+              <p>หรือติดต่อธนาคารของคุณเพื่อขอความช่วยเหลือ</p>
+            </div>
+
+            <p style="color: #666; margin-top: 20px;">
+              หากต้องการความช่วยเหลือ กรุณาติดต่อเรา
             </p>
             
             <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
@@ -137,13 +175,13 @@ const handler = async (req: Request): Promise<Response> => {
             <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${statusColor};">
               <h2 style="color: ${statusColor}; margin-top: 0;">สถานะปัจจุบัน: ${statusText}</h2>
               <p><strong>ชื่อกิจกรรม:</strong> ${emailData.eventTitle}</p>
-              <p><strong>วันที่:</strong> ${new Date(emailData.eventDate).toLocaleDateString('th-TH', {
+              <p><strong>วันที่:</strong> ${emailData.eventDate ? new Date(emailData.eventDate).toLocaleDateString('th-TH', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
-              })}</p>
+              }) : '-'}</p>
               ${emailData.eventLocation ? `<p><strong>สถานที่:</strong> ${emailData.eventLocation}</p>` : ''}
               <p><strong>หมายเลขการลงทะเบียน:</strong> ${emailData.registrationId}</p>
             </div>
