@@ -60,7 +60,7 @@ const Index = () => {
               <span className="inline-block">ที่เหมาะกับคุณ</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
-              เข้าร่วมกิจกรรมด้านสุขภาพและความเป็นอยู่ที่ดี
+              เข้าร่วมกิจกรรมด้านสุขภาพกายและใจ
               <br />
               พร้อมชุมชนที่ใส่ใจในทุกมิติของชีวิต
             </p>
