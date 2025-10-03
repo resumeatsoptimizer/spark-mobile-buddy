@@ -54,7 +54,7 @@ const Index = () => {
               <Sparkles className="h-4 w-4" />
               <span className="text-sm font-medium">Iwelty Wellness Community</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-6 pb-4 leading-loose bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 pb-4 leading-tight md:leading-relaxed bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
               <span className="inline-block">ค้นพบกิจกรรม Wellness</span>
               <br />
               <span className="inline-block">ที่เหมาะกับคุณ</span>
